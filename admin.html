@@ -200,8 +200,13 @@
         <div class="chart-card">
           <h3>📥 Importar Productos desde Excel</h3>
           <p style="color:var(--texto-secundario); margin-bottom:1.5rem;">
-            Subí un archivo Excel (.xlsx) o CSV con tu stock. Las columnas deben ser:
-            <strong>ID, Nombre, Categoria, Subcategoria, Descripcion, PrecioUSD, Imagen, Stock, Activo, Tags</strong>
+            Subí tu planilla Excel (.xlsx) o CSV. El sistema detecta automáticamente las columnas:
+            <strong>Producto, Cantidad, Costo Unitario, Total, Observaciones, DÓLAR, Categoría</strong>.
+            También soporta el formato estándar: ID, Nombre, Categoría, PrecioUSD, Imagen, Stock, Activo, Tags.
+          </p>
+          <p style="color:var(--texto-secundario); margin-bottom:1rem; font-size:0.85rem;">
+            💡 <strong>Tip:</strong> Si tu Excel tiene múltiples hojas, vas a poder elegir cuál importar.
+            Las observaciones como "EL COSTO +0,50USD" se suman automáticamente al precio base.
           </p>
           <div class="upload-zone" id="upload-zone">
             <div class="upload-icon">📄</div>
