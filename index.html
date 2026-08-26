@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PrincessLov - Indumentaria deportiva y pijamas para mujeres. Comprá online con envío a todo el país.">
+  <meta name="theme-color" content="#800020">
+  <title>PrincessLov | Indumentaria Deportiva y Pijamas</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- MercadoPago SDK -->
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body>
+
+  <!-- ============================================
+       LOADING SCREEN
+       ============================================ -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Cargando PrincessLov...</p>
+  </div>
+
+  <!-- ============================================
+       NAVBAR
+       ============================================ -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="#" class="logo">
+        <div class="logo-icon">👑</div>
+        PrincessLov
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#inicio" class="active">Inicio</a></li>
+        <li><a href="#categorias">Categorías</a></li>
+        <li><a href="#productos">Productos</a></li>
+        <li><a href="#" onclick="App.scrollToContact(); return false;">Contacto</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="btn-search" onclick="App.toggleSearch()" aria-label="Buscar">🔍</button>
+        <button class="btn-cart" onclick="App.openCart()" aria-label="Carrito">
+          🛒
+          <span id="cart-count" class="cart-count">0</span>
+        </button>
+        <button class="btn-menu" onclick="App.openMobileMenu()" aria-label="Menú">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============================================
+       COTIZADOR DÓLAR TICKER
+       ============================================ -->
+  <div class="dolar-ticker" id="dolar-ticker">
+    💵 Cotización del dólar: <strong id="dolar-valor">Cargando...</strong> | Precios actualizados al momento de la compra
+  </div>
+
+  <!-- ============================================
+       HERO SECTION
+       ============================================ -->
+  <section class="hero" id="inicio">
+    <div class="hero-content">
+      <h1>Vestite con <span>energía</span> y <span>estilo</span></h1>
+      <p>Indumentaria deportiva y pijamas diseñadas para vos. Calidad, comodidad y los mejores precios.</p>
+      <button class="btn-hero" onclick="App.scrollToProducts()">
+        Ver Catálogo 🛍️
+      </button>
+    </div>
+  </section>
+
+  <!-- ============================================
+       CATEGORÍAS
+       ============================================ -->
+  <section class="categorias-section" id="categorias">
+    <div class="section-title">
+      <h2>Nuestras Categorías</h2>
+      <p>Encontrá lo que buscás</p>
+    </div>
+    <div id="categorias-grid" class="categorias-grid">
+      <!-- Se renderiza dinámicamente -->
+    </div>
+  </section>
+
+  <!-- ============================================
+       PRODUCTOS
+       ============================================ -->
+  <section class="productos-section" id="productos">
+    <div class="productos-header">
+      <div class="section-title" style="text-align:left; margin-bottom:0;">
+        <h2>Todos los Productos</h2>
+        <p id="productos-count">Cargando productos...</p>
+      </div>
+      <div class="filtros" id="filtros-container">
+        <!-- Se renderiza dinámicamente -->
+      </div>
+    </div>
+    <div id="productos-grid" class="productos-grid">
+      <!-- Se renderiza dinámicamente -->
+    </div>
+  </section>
+
+  <!-- ============================================
+       CONTACTO / FOOTER CTA
+       ============================================ -->
+  <section id="contacto" style="background: linear-gradient(135deg, #FDE8EF, #F8D0DC); padding: 3rem 1.5rem; text-align: center;">
+    <h2 style="font-size:1.8rem; font-weight:800; color:#6B0F2A; margin-bottom:0.5rem;">¿Tenés dudas?</h2>
+    <p style="color:#6B5559; margin-bottom:1.5rem; max-width:500px; margin-left:auto; margin-right:auto;">Escribinos por WhatsApp y te ayudamos con lo que necesites</p>
+    <a id="contacto-whatsapp-btn" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:0.5rem; background:#25D366; color:white; padding:1rem 2rem; border-radius:50px; font-size:1rem; font-weight:700; text-decoration:none; transition:all 0.3s;">
+      💬 Chateá con nosotros
+    </a>
+  </section>
+
+  <!-- ============================================
+       FOOTER
+       ============================================ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>PrincessLov</h4>
+          <p>Indumentaria deportiva y pijamas para mujeres que buscan estilo, comodidad y calidad.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Links Útiles</h4>
+          <a href="#inicio">Inicio</a>
+          <a href="#categorias">Categorías</a>
+          <a href="#productos">Productos</a>
+          <a href="#contacto">Contacto</a>
+        </div>
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <p>📍 Puerto Iguazú, Misiones</p>
+          <p id="footer-whatsapp-link">📱 WhatsApp: Cargando...</p>
+        </div>
+        <div class="footer-col">
+          <h4>Seguínos</h4>
+          <div class="footer-social">
+            <a href="#" id="footer-instagram" target="_blank" aria-label="Instagram">📷</a>
+            <a href="#" id="footer-facebook" target="_blank" aria-label="Facebook">📘</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 PrincessLov. Todos los derechos reservados. Hecho con 💕</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================
+       CART SIDEBAR
+       ============================================ -->
+  <div id="cart-overlay" class="cart-overlay" onclick="App.closeCart()"></div>
+  <div id="cart-sidebar" class="cart-sidebar">
+    <div class="cart-header">
+      <h3>🛒 Tu Carrito</h3>
+      <button class="btn-close-cart" onclick="App.closeCart()">✕</button>
+    </div>
+    <div id="cart-items" class="cart-items">
+      <!-- Se renderiza dinámicamente -->
+    </div>
+    <div class="cart-footer" id="cart-footer">
+      <!-- Se renderiza dinámicamente -->
+    </div>
+  </div>
+
+  <!-- ============================================
+       CHECKOUT MODAL
+       ============================================ -->
+  <div id="checkout-modal" class="modal-overlay">
+    <div class="modal" id="checkout-modal-content">
+      <!-- Se renderiza dinámicamente por CheckoutService -->
+    </div>
+  </div>
+
+  <!-- ============================================
+       SEARCH OVERLAY
+       ============================================ -->
+  <div id="search-overlay" class="search-overlay" onclick="if(event.target===this) App.toggleSearch()">
+    <div class="search-box">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Buscar productos..." oninput="App.handleSearch(this.value)">
+      </div>
+      <div id="search-results" class="search-results"></div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MOBILE MENU
+       ============================================ -->
+  <div id="mobile-menu" class="mobile-menu">
+    <div class="mobile-menu-header">
+      <div class="logo" style="font-size:1.2rem;">
+        <div class="logo-icon" style="width:32px; height:32px; font-size:1rem;">👑</div>
+        PrincessLov
+      </div>
+      <button class="btn-close-cart" onclick="App.closeMobileMenu()">✕</button>
+    </div>
+    <ul class="mobile-menu-links">
+      <li><a href="#inicio" onclick="App.closeMobileMenu()">Inicio</a></li>
+      <li><a href="#categorias" onclick="App.closeMobileMenu()">Categorías</a></li>
+      <li><a href="#productos" onclick="App.closeMobileMenu()">Productos</a></li>
+      <li><a href="#contacto" onclick="App.closeMobileMenu()">Contacto</a></li>
+    </ul>
+  </div>
+
+  <!-- ============================================
+       TOAST CONTAINER
+       ============================================ -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ============================================
+       SCRIPTS
+       ============================================ -->
+  <script src="data/config.js"></script>
+  <script src="js/sheets.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/checkout.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
