@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin PrincessLov</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+  <!-- Chart.js for graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- SheetJS for Excel import -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="admin-layout">
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="logo">
+      <span class="logo-icon">👑</span>
+      <span class="logo-text">PrincessLov</span>
+      <span class="logo-badge">Admin</span>
+    </div>
+    <nav class="admin-nav">
+      <a href="#" class="nav-item active" data-section="dashboard" onclick="AdminApp.navigate('dashboard')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-section="products" onclick="AdminApp.navigate('products')">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">Productos</span>
+      </a>
+      <a href="#" class="nav-item" data-section="orders" onclick="AdminApp.navigate('orders')">
+        <span class="nav-icon">🛒</span>
+        <span class="nav-label">Pedidos</span>
+      </a>
+      <a href="#" class="nav-item" data-section="import" onclick="AdminApp.navigate('import')">
+        <span class="nav-icon">📥</span>
+        <span class="nav-label">Importar Excel</span>
+      </a>
+      <a href="#" class="nav-item" data-section="expenses" onclick="AdminApp.navigate('expenses')">
+        <span class="nav-icon">💰</span>
+        <span class="nav-label">Gastos</span>
+      </a>
+      <a href="#" class="nav-item" data-section="financial" onclick="AdminApp.navigate('financial')">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Finanzas</span>
+      </a>
+      <a href="#" class="nav-item" data-section="settings" onclick="AdminApp.navigate('settings')">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Configuración</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="index.html" class="nav-item" target="_blank">
+        <span class="nav-icon">🌐</span>
+        <span class="nav-label">Ver Tienda</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="admin-main">
+    <!-- TOPBAR -->
+    <div class="admin-topbar">
+      <div class="topbar-left">
+        <h1 id="page-title">Dashboard</h1>
+        <span id="page-breadcrumb" class="breadcrumb">Resumen general</span>
+      </div>
+      <div class="topbar-right">
+        <div class="dolar-badge" id="admin-dolar-badge">
+          💵 Dólar: <strong id="admin-dolar-value">$--</strong>
+        </div>
+        <a href="index.html" class="btn btn-sm btn-secondary" target="_blank">🌐 Ver Tienda</a>
+      </div>
+    </div>
+
+    <!-- CONTENT SECTIONS -->
+    <div class="admin-content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section id="section-dashboard" class="admin-section active">
+        <!-- Period filter tabs -->
+        <div class="tab-nav" id="dashboard-tabs">
+          <button class="tab active" data-period="hoy" onclick="AdminDashboard.setPeriod('hoy')">Hoy</button>
+          <button class="tab" data-period="semana" onclick="AdminDashboard.setPeriod('semana')">7 días</button>
+          <button class="tab" data-period="mes" onclick="AdminDashboard.setPeriod('mes')">30 días</button>
+          <button class="tab" data-period="trimestre" onclick="AdminDashboard.setPeriod('trimestre')">3 meses</button>
+          <button class="tab" data-period="anio" onclick="AdminDashboard.setPeriod('anio')">1 año</button>
+          <button class="tab" data-period="all" onclick="AdminDashboard.setPeriod('all')">Todo</button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" id="dashboard-stats">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>Ventas diarias</h3>
+            <canvas id="chart-ventas"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Pedidos por estado</h3>
+            <canvas id="chart-estados"></canvas>
+          </div>
+        </div>
+
+        <!-- Break-even + Top Products -->
+        <div class="charts-grid">
+          <div class="chart-card breakeven-card" id="breakeven-card">
+            <h3>🎯 Punto de Equilibrio</h3>
+            <div id="breakeven-content">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>🏆 Top Productos Más Vendidos</h3>
+            <div id="top-products-list">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Alerts -->
+        <div class="chart-card" id="stock-alerts-card" style="display:none;">
+          <h3>⚠️ Alertas de Stock Bajo</h3>
+          <div id="stock-alerts-list"></div>
+        </div>
+      </section>
+
+      <!-- ===== PRODUCTS ===== -->
+      <section id="section-products" class="admin-section">
+        <div class="products-toolbar">
+          <div class="toolbar-left">
+            <input type="text" class="search-input" placeholder="Buscar producto..." id="products-search" oninput="AdminProducts.search(this.value)">
+            <select id="products-filter-cat" onchange="AdminProducts.filterByCategory(this.value)">
+              <option value="">Todas las categorías</option>
+            </select>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-primary" onclick="AdminProducts.openForm()">+ Nuevo Producto</button>
+            <button class="btn btn-secondary" onclick="AdminProducts.exportCSV()">📤 Exportar CSV</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="products-table" id="products-table">
+            <thead>
+              <tr>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Precio USD</th>
+                <th>Precio ARS</th>
+                <th>Stock</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="products-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">📦</div>
+          <h3>No hay productos cargados</h3>
+          <p>Agregá productos manualmente o importá un Excel</p>
+          <button class="btn btn-primary" onclick="AdminProducts.openForm()">+ Agregar Producto</button>
+        </div>
+      </section>
+
+      <!-- ===== ORDERS ===== -->
+      <section id="section-orders" class="admin-section">
+        <div class="products-toolbar">
+          <div class="toolbar-left">
+            <input type="text" class="search-input" placeholder="Buscar pedido..." id="orders-search" oninput="AdminOrders.search(this.value)">
+            <select id="orders-filter-status" onchange="AdminOrders.filterByStatus(this.value)">
+              <option value="">Todos los estados</option>
+            </select>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-primary" onclick="AdminOrders.openForm()">+ Nuevo Pedido</button>
+            <button class="btn btn-secondary" onclick="AdminOrders.exportCSV()">📤 Exportar CSV</button>
+          </div>
+        </div>
+        <div id="orders-list">
+          <!-- Rendered by JS -->
+        </div>
+        <div id="orders-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">🛒</div>
+          <h3>No hay pedidos</h3>
+          <p>Los pedidos aparecerán cuando los clientes compren por la tienda</p>
+        </div>
+      </section>
+
+      <!-- ===== IMPORT EXCEL ===== -->
+      <section id="section-import" class="admin-section">
+        <div class="chart-card">
+          <h3>📥 Importar Productos desde Excel</h3>
+          <p style="color:var(--texto-secundario); margin-bottom:1.5rem;">
+            Subí un archivo Excel (.xlsx) o CSV con tu stock. Las columnas deben ser:
+            <strong>ID, Nombre, Categoria, Subcategoria, Descripcion, PrecioUSD, Imagen, Stock, Activo, Tags</strong>
+          </p>
+          <div class="upload-zone" id="upload-zone">
+            <div class="upload-icon">📄</div>
+            <p><strong>Arrastrá tu archivo acá</strong></p>
+            <p style="color:var(--texto-secundario); font-size:0.85rem;">o hacé click para seleccionar</p>
+            <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="AdminImport.handleFile(this.files[0])">
+          </div>
+        </div>
+
+        <!-- Import Preview -->
+        <div id="import-preview-section" style="display:none;">
+          <div class="chart-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+              <h3>📋 Vista previa del archivo</h3>
+              <div id="import-stats" class="import-stats"></div>
+            </div>
+            <div class="table-container" style="max-height:400px; overflow-y:auto;">
+              <table class="products-table" id="import-preview-table">
+                <thead id="import-preview-head"></thead>
+                <tbody id="import-preview-body"></tbody>
+              </table>
+            </div>
+            <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+              <button class="btn btn-primary" onclick="AdminImport.confirmImport()">✅ Confirmar Importación</button>
+              <button class="btn btn-secondary" onclick="AdminImport.cancelImport()">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Export section -->
+        <div class="chart-card" style="margin-top:1.5rem;">
+          <h3>📤 Exportar Datos</h3>
+          <p style="color:var(--texto-secundario); margin-bottom:1rem;">Descargá tu catálogo actual como archivo Excel o CSV</p>
+          <div style="display:flex; gap:0.75rem;">
+            <button class="btn btn-secondary" onclick="AdminImport.exportProductsCSV()">📄 Exportar como CSV</button>
+            <button class="btn btn-secondary" onclick="AdminImport.exportProductsXLSX()">📊 Exportar como Excel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== EXPENSES ===== -->
+      <section id="section-expenses" class="admin-section">
+        <div class="products-toolbar">
+          <div class="toolbar-left">
+            <h3 style="color:var(--borgona-400);">Gastos del Negocio</h3>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-primary" onclick="AdminExpenses.openForm()">+ Nuevo Gasto</button>
+          </div>
+        </div>
+        <div id="expenses-list">
+          <!-- Rendered by JS -->
+        </div>
+        <div id="expenses-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">💰</div>
+          <h3>No hay gastos registrados</h3>
+          <p>Registrá tus gastos fijos y variables para calcular el punto de equilibrio</p>
+        </div>
+      </section>
+
+      <!-- ===== FINANCIAL ===== -->
+      <section id="section-financial" class="admin-section">
+        <div class="stats-grid" id="financial-stats">
+          <!-- Rendered by JS -->
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>💰 Resumen Financiero</h3>
+            <canvas id="chart-financial"></canvas>
+          </div>
+          <div class="chart-card breakeven-card">
+            <h3>🎯 Análisis de Punto de Equilibrio</h3>
+            <div id="financial-breakeven"></div>
+          </div>
+        </div>
+        <div class="chart-card" style="margin-top:1.5rem;">
+          <h3>📋 Historial de Gastos</h3>
+          <div id="financial-expenses-list"></div>
+        </div>
+      </section>
+
+      <!-- ===== SETTINGS ===== -->
+      <section id="section-settings" class="admin-section">
+        <div class="chart-card">
+          <h3>⚙️ Configuración del Negocio</h3>
+          <form id="settings-form" onsubmit="AdminSettings.save(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nombre del negocio</label>
+                <input type="text" id="set-nombre" value="PrincessLov">
+              </div>
+              <div class="form-group">
+                <label>Número de WhatsApp</label>
+                <input type="tel" id="set-whatsapp" placeholder="5493757XXXXXX">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="set-email" placeholder="princesslov@email.com">
+              </div>
+              <div class="form-group">
+                <label>Instagram</label>
+                <input type="text" id="set-instagram" placeholder="@princesslov">
+              </div>
+            </div>
+
+            <h4 style="margin:1.5rem 0 1rem; color:var(--borgona-400);">Cotización y Márgenes</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Cotización dólar manual</label>
+                <input type="number" id="set-dolar-manual" placeholder="1200">
+              </div>
+              <div class="form-group">
+                <label>Margen de ganancia (ej: 1.30 = 30%)</label>
+                <input type="number" step="0.01" id="set-margen" placeholder="1.30">
+              </div>
+            </div>
+
+            <h4 style="margin:1.5rem 0 1rem; color:var(--borgona-400);">Gastos Fijos Mensuales (ARS)</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Alquiler</label>
+                <input type="number" id="set-gasto-alquiler" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label>Servicios</label>
+                <input type="number" id="set-gasto-servicios" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label>Internet</label>
+                <input type="number" id="set-gasto-internet" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label>Transporte</label>
+                <input type="number" id="set-gasto-transporte" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label>Otros gastos fijos</label>
+                <input type="number" id="set-gasto-otros" placeholder="0">
+              </div>
+            </div>
+
+            <h4 style="margin:1.5rem 0 1rem; color:var(--borgona-400);">Costos Variables (USD)</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Envoltorio por unidad</label>
+                <input type="number" step="0.01" id="set-cv-envoltorio" placeholder="0.50">
+              </div>
+              <div class="form-group">
+                <label>Etiqueta por unidad</label>
+                <input type="number" step="0.01" id="set-cv-etiqueta" placeholder="0.10">
+              </div>
+            </div>
+
+            <div style="margin-top:1.5rem; display:flex; gap:0.75rem;">
+              <button type="submit" class="btn btn-primary">💾 Guardar Configuración</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- PRODUCT FORM MODAL -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="product-modal-title">Nuevo Producto</h3>
+      <button class="btn-close-modal" onclick="AdminProducts.closeForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="product-form" onsubmit="AdminProducts.save(event)">
+        <input type="hidden" id="pf-id">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" id="pf-nombre" required>
+          </div>
+          <div class="form-group">
+            <label>Categoría *</label>
+            <select id="pf-categoria" required>
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Subcategoría</label>
+            <input type="text" id="pf-subcategoria">
+          </div>
+          <div class="form-group">
+            <label>Precio costo USD *</label>
+            <input type="number" step="0.01" id="pf-preciousd" required>
+          </div>
+          <div class="form-group">
+            <label>Stock *</label>
+            <input type="number" id="pf-stock" required value="0">
+          </div>
+          <div class="form-group">
+            <label>Tags (separados por coma)</label>
+            <input type="text" id="pf-tags" placeholder="nuevo, oferta">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <textarea id="pf-descripcion" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>URL de imagen</label>
+          <input type="url" id="pf-imagen" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="pf-activo" checked> Producto activo
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="document.getElementById('product-form').requestSubmit()">💾 Guardar</button>
+      <button class="btn btn-secondary" onclick="AdminProducts.closeForm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER FORM MODAL -->
+<div class="modal-overlay" id="order-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="order-modal-title">Nuevo Pedido</h3>
+      <button class="btn-close-modal" onclick="AdminOrders.closeForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="order-form" onsubmit="AdminOrders.save(event)">
+        <input type="hidden" id="of-id">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Cliente *</label>
+            <input type="text" id="of-cliente" required>
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="of-telefono">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="of-email">
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="of-estado"></select>
+          </div>
+          <div class="form-group">
+            <label>Medio de pago</label>
+            <select id="of-pago"></select>
+          </div>
+          <div class="form-group">
+            <label>Método de envío</label>
+            <select id="of-envio"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dirección</label>
+          <input type="text" id="of-direccion">
+        </div>
+
+        <h4 style="margin:1rem 0 0.75rem; color:var(--borgona-400);">Productos del pedido</h4>
+        <div id="order-items-container">
+          <!-- Dynamic rows -->
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="AdminOrders.addItemRow()" style="margin-top:0.5rem;">+ Agregar producto</button>
+
+        <div class="form-grid" style="margin-top:1rem;">
+          <div class="form-group">
+            <label>Costo total (ARS)</label>
+            <input type="number" id="of-costo" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Notas</label>
+            <input type="text" id="of-notas">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="document.getElementById('order-form').requestSubmit()">💾 Guardar</button>
+      <button class="btn btn-secondary" onclick="AdminOrders.closeForm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPENSE FORM MODAL -->
+<div class="modal-overlay" id="expense-modal">
+  <div class="modal" style="max-width:450px;">
+    <div class="modal-header">
+      <h3>Nuevo Gasto</h3>
+      <button class="btn-close-modal" onclick="AdminExpenses.closeForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="expense-form" onsubmit="AdminExpenses.save(event)">
+        <div class="form-group">
+          <label>Concepto *</label>
+          <input type="text" id="ef-concepto" required placeholder="Ej: Alquiler, Empaquetado...">
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Monto (ARS) *</label>
+            <input type="number" id="ef-monto" required>
+          </div>
+          <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" id="ef-fecha">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="ef-categoria">
+            <option value="fijo">Gasto fijo</option>
+            <option value="variable">Gasto variable</option>
+            <option value="envio">Envío</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notas</label>
+          <input type="text" id="ef-notas" placeholder="Observaciones...">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="document.getElementById('expense-form').requestSubmit()">💾 Guardar</button>
+      <button class="btn btn-secondary" onclick="AdminExpenses.closeForm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="admin-toast-container" class="toast-container"></div>
+
+<!-- SCRIPTS (order matters) -->
+<script src="data/config.js"></script>
+<script src="data/admin-config.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/admin-data.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/admin-dashboard.js"></script>
+<script src="js/admin-products.js"></script>
+<script src="js/admin-orders.js"></script>
+<script src="js/admin-expenses.js"></script>
+<script src="js/admin-import.js"></script>
+<script src="js/admin-settings.js"></script>
+
+</body>
+</html>
