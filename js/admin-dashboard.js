@@ -15,6 +15,11 @@ const AdminDashboard = {
   },
 
   render() {
+    // Sincronizar pestaña de período activa con el estado actual
+    document.querySelectorAll('#dashboard-tabs .tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.period === this.currentPeriod);
+    });
+
     this.renderStats();
     this.renderCharts();
     this.renderBreakEven();
@@ -59,8 +64,9 @@ const AdminDashboard = {
 
   renderVentasChart(stats) {
     const canvas = document.getElementById('chart-ventas');
-    if (!canvas) return;
+    if (!canvas || typeof Chart === 'undefined') return;
 
+    try {
     if (this.charts.ventas) this.charts.ventas.destroy();
 
     const labels = stats.ventasPorDia.map(d => {
@@ -102,12 +108,16 @@ const AdminDashboard = {
         },
       },
     });
+    } catch (e) {
+      console.error('Error al renderizar gráfico de ventas:', e);
+    }
   },
 
   renderEstadosChart(stats) {
     const canvas = document.getElementById('chart-estados');
-    if (!canvas) return;
+    if (!canvas || typeof Chart === 'undefined') return;
 
+    try {
     if (this.charts.estados) this.charts.estados.destroy();
 
     const labels = [];
@@ -141,6 +151,9 @@ const AdminDashboard = {
         cutout: '60%',
       },
     });
+    } catch (e) {
+      console.error('Error al renderizar gráfico de estados:', e);
+    }
   },
 
   renderBreakEven() {
@@ -263,7 +276,8 @@ const AdminDashboard = {
 
   renderFinancialChart(stats) {
     const canvas = document.getElementById('chart-financial');
-    if (!canvas) return;
+    if (!canvas || typeof Chart === 'undefined') return;
+    try {
     if (this.charts.financial) this.charts.financial.destroy();
 
     this.charts.financial = new Chart(canvas, {
@@ -282,6 +296,9 @@ const AdminDashboard = {
         scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } },
       },
     });
+    } catch (e) {
+      console.error('Error al renderizar gráfico financiero:', e);
+    }
   },
 
   renderFinancialBreakEven(be) {

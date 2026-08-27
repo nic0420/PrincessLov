@@ -91,11 +91,16 @@ const AdminData = {
     order.id = order.id || this.generateId();
     order.fecha = order.fecha || new Date().toISOString();
     order.estado = order.estado || 'pendiente';
+    order.items = order.items || [];
+    if (!order.total) {
+      order.total = order.items.reduce((s, i) => s + ((i.precioUnitario || 0) * i.cantidad), 0);
+    }
+    if (order.costoTotal == null) order.costoTotal = 0;
     orders.push(order);
     this.saveOrders(orders);
 
     // Descontar stock
-    if (order.items) {
+    if (order.items.length) {
       order.items.forEach(item => {
         this.adjustStock(item.productoId, -item.cantidad);
       });
