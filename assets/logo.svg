@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="roseGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8C3B9" />
+      <stop offset="50%" stop-color="#C08B7E" />
+      <stop offset="100%" stop-color="#9C684C" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="500" height="500" fill="#F8E8E6" />
+  <!-- Circle Frame -->
+  <circle cx="250" cy="250" r="180" fill="none" stroke="url(#roseGold)" stroke-width="4" />
+  <!-- PL Monogram Text in Serif -->
+  <text x="220" y="295" font-family="'The Seasons', 'Playfair Display', Georgia, serif" font-size="160" font-weight="400" fill="#5A1C27" text-anchor="end">P</text>
+  <text x="225" y="335" font-family="'The Seasons', 'Playfair Display', Georgia, serif" font-size="160" font-weight="400" fill="#5A1C27" text-anchor="start">L</text>
+</svg>

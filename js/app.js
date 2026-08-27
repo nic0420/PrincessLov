@@ -18,6 +18,7 @@ const App = {
 
       this.renderDolarTicker();
       this.renderSidebarFilters();
+      this.renderQuickPills();
       this.renderHeroShowcase();
       this.renderProductos(SheetsService.productos);
       this.renderCartSidebar();
@@ -39,7 +40,26 @@ const App = {
     }
   },
 
-  /* ---------- SIDEBAR FILTERS ---------- */
+  /* ---------- QUICK PILLS CATEGORÍAS ---------- */
+  renderQuickPills() {
+    const container = document.getElementById('quick-pills');
+    if (!container) return;
+
+    const cats = SheetsService.obtenerCategoriasConConteo();
+
+    container.innerHTML = `
+      <div class="quick-pill ${this.categoriaActual === 'todos' ? 'active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos">
+        <span>🏷️ Todos</span>
+      </div>
+      ${cats.map(cat => `
+        <div class="quick-pill ${cat.id === this.categoriaActual ? 'active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}">
+          <span>${cat.icon} ${cat.nombre}</span>
+        </div>
+      `).join('')}
+    `;
+  },
+
+  /* ---------- SIDEBAR DRAWER FILTERS ---------- */
   renderSidebarFilters() {
     const container = document.getElementById('filter-categories');
     if (!container) return;
@@ -48,7 +68,7 @@ const App = {
 
     container.innerHTML = `
       <li class="filter-item ${this.categoriaActual === 'todos' ? 'active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos">
-        <span><span class="filter-icon">🏷️</span> Todos</span>
+        <span><span class="filter-icon">🏷️</span> Todos los productos</span>
         <span class="filter-count">${SheetsService.productos.length}</span>
       </li>
       ${cats.map(cat => `
@@ -121,6 +141,10 @@ const App = {
       item.classList.toggle('active', item.dataset.cat === catId);
     });
 
+    document.querySelectorAll('#quick-pills .quick-pill').forEach(pill => {
+      pill.classList.toggle('active', pill.dataset.cat === catId);
+    });
+
     const titleEl = document.getElementById('productos-title');
     if (titleEl) {
       if (catId === 'todos') {
@@ -132,7 +156,6 @@ const App = {
     }
 
     this.aplicarFiltros();
-    this.closeSidebar();
   },
 
   setStockFilter(filter) {
@@ -169,9 +192,11 @@ const App = {
 
     if (productos.length === 0) {
       grid.innerHTML = `
-        <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--texto-light);">
-          <div style="font-size:3rem; margin-bottom:1rem;">📦</div>
-          <p style="font-size:1.1rem; font-weight:600;">No se encontraron productos</p>
+        <div style="grid-column:1/-1; text-align:center; padding:4rem 1rem; color:var(--texto-light);">
+          <div style="font-size:3.5rem; margin-bottom:1rem;">📦</div>
+          <p style="font-size:1.2rem; font-weight:700; color:var(--burgundy);">No se encontraron productos</p>
+          <p style="font-size:0.9rem; margin-top:0.5rem;">Intenta cambiando los filtros o la búsqueda</p>
+          <button onclick="App.filtrarCategoria('todos'); App.setStockFilter('all');" style="margin-top:1.5rem; background:var(--burgundy); color:white; padding:0.8rem 1.8rem; border-radius:50px; font-weight:700;">Ver todos los productos</button>
         </div>
       `;
       return;
@@ -189,7 +214,7 @@ const App = {
           ${badge}
           <div class="producto-img-wrap">
             <img src="${p.imagen}" alt="${p.nombre}"
-                 onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22350%22><rect width=%22300%22 height=%22350%22 fill=%22%23eedbd8%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239c684c%22 font-size=%2216%22>Sin imagen</text></svg>'">
+                 onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22350%22><rect width=%22300%22 height=%22350%22 fill=%22%23eedbd8%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239c684c%22 font-size=%2216%22>PrincessLov</text></svg>'">
           </div>
           <div class="producto-info">
             <div class="producto-categoria">${p.categoriaOriginal}</div>
@@ -199,15 +224,15 @@ const App = {
               <span class="precio-ars">${SheetsService.formatPrecioARS(precioARS)}</span>
               <span class="precio-usd">USD ${p.precioUSD.toFixed(2)}</span>
             </div>
-            <div class="producto-stock" style="color: ${sinStock ? '#d32f2f' : 'var(--texto-light)'}; ${sinStock ? 'font-weight:600;' : ''}">
-              ${sinStock ? 'Sin stock' : `Stock: ${p.stock} unidades`}
+            <div class="producto-stock" style="color: ${sinStock ? '#d32f2f' : 'var(--texto-light)'}; ${sinStock ? 'font-weight:700;' : ''}">
+              ${sinStock ? '⚠️ Sin stock' : `Stock: ${p.stock} unidades`}
             </div>
             <div class="producto-actions">
               <button class="btn-add-cart" data-id="${p.id}" ${sinStock ? 'disabled' : ''}>
-                ${sinStock ? 'Sin stock' : 'Agregar'}
+                ${sinStock ? 'Sin stock' : '🛒 Agregar'}
               </button>
               <a class="btn-whatsapp-quick"
-                 href="https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent('Hola! Me interesa: ' + p.nombre + ' - ' + SheetsService.formatPrecioARS(precioARS))}"
+                 href="https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent('Hola! Me interesa consultar sobre: ' + p.nombre + ' - ' + SheetsService.formatPrecioARS(precioARS))}"
                  target="_blank" title="Consultar por WhatsApp">
                 💬
               </a>
@@ -218,7 +243,7 @@ const App = {
     }).join('');
   },
 
-  /* ---------- SIDEBAR MOBILE ---------- */
+  /* ---------- SIDEBAR DRAWER CONTROL ---------- */
   openSidebar() {
     document.getElementById('sidebar')?.classList.add('open');
     document.getElementById('sidebar-overlay')?.classList.add('open');
@@ -243,8 +268,8 @@ const App = {
       itemsContainer.innerHTML = `
         <div class="cart-empty">
           <div class="empty-icon">🛒</div>
-          <p style="font-size:1.1rem; font-weight:600;">Tu carrito está vacío</p>
-          <p style="font-size:0.85rem; margin-top:0.5rem;">Agregá productos para comenzar tu compra</p>
+          <p style="font-size:1.1rem; font-weight:700; color:var(--burgundy);">Tu carrito está vacío</p>
+          <p style="font-size:0.85rem; margin-top:0.5rem; color:var(--texto-light);">Elegí prendas de nuestro catálogo para comenzar</p>
         </div>
       `;
       footerEl.innerHTML = '';
@@ -357,33 +382,39 @@ const App = {
 
   handleSearch(query) {
     const resultsEl = document.getElementById('search-results');
-    if (!resultsEl) return;
-
     if (!query || query.trim().length < 2) {
-      resultsEl.innerHTML = '';
+      if (resultsEl) resultsEl.innerHTML = '';
+      if (query.trim().length === 0) {
+        this.aplicarFiltros();
+      }
       return;
     }
 
     const results = SheetsService.buscarProductos(query);
 
-    if (results.length === 0) {
-      resultsEl.innerHTML = '<p style="text-align:center; padding:1rem; color:var(--texto-light);">No se encontraron productos</p>';
-      return;
-    }
+    if (resultsEl && document.getElementById('search-overlay')?.classList.contains('open')) {
+      if (results.length === 0) {
+        resultsEl.innerHTML = '<p style="text-align:center; padding:1rem; color:var(--texto-light);">No se encontraron productos</p>';
+        return;
+      }
 
-    resultsEl.innerHTML = results.slice(0, 8).map(p => {
-      const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
-      return `
-        <div class="search-result-item" onclick="App.toggleSearch(); App.scrollToProducts();">
-          <img class="search-result-img" src="${p.imagen}" alt="${p.nombre}"
-               onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect width=%2250%22 height=%2250%22 fill=%22%23eedbd8%22/></svg>'">
-          <div>
-            <div class="search-result-name">${p.nombre}</div>
-            <div class="search-result-price">${SheetsService.formatPrecioARS(precioARS)}</div>
+      resultsEl.innerHTML = results.slice(0, 8).map(p => {
+        const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
+        return `
+          <div class="search-result-item" onclick="App.toggleSearch(); App.scrollToProducts();">
+            <img class="search-result-img" src="${p.imagen}" alt="${p.nombre}"
+                 onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect width=%2250%22 height=%2250%22 fill=%22%23eedbd8%22/></svg>'">
+            <div>
+              <div class="search-result-name">${p.nombre}</div>
+              <div class="search-result-price">${SheetsService.formatPrecioARS(precioARS)}</div>
+            </div>
           </div>
-        </div>
-      `;
-    }).join('');
+        `;
+      }).join('');
+    } else {
+      // Búsqueda directa en catálogo
+      this.renderProductos(results);
+    }
   },
 
   /* ---------- MENÚ MÓVIL ---------- */
@@ -404,7 +435,7 @@ const App = {
 
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = message;
+    toast.innerHTML = `<span>✨</span> ${message}`;
     container.appendChild(toast);
 
     setTimeout(() => {
@@ -460,6 +491,7 @@ document.addEventListener('click', (e) => {
     const producto = SheetsService.obtenerProducto(id);
     if (producto) {
       CartService.addItem(producto);
+      App.showToast(`Agregado: ${producto.nombre}`);
     }
   }
 
