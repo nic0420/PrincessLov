@@ -18,7 +18,6 @@ const App = {
 
       this.renderDolarTicker();
       this.renderSidebarFilters();
-      this.renderQuickPills();
       this.renderHeroShowcase();
       this.renderProductos(SheetsService.productos);
       this.renderCartSidebar();
@@ -38,25 +37,6 @@ const App = {
     if (el) {
       el.textContent = '$' + SheetsService.cotizacionDolar.toLocaleString('es-AR');
     }
-  },
-
-  /* ---------- QUICK PILLS CATEGORÍAS ---------- */
-  renderQuickPills() {
-    const container = document.getElementById('quick-pills');
-    if (!container) return;
-
-    const cats = SheetsService.obtenerCategoriasConConteo();
-
-    container.innerHTML = `
-      <div class="quick-pill ${this.categoriaActual === 'todos' ? 'active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos">
-        <span>🏷️ Todos</span>
-      </div>
-      ${cats.map(cat => `
-        <div class="quick-pill ${cat.id === this.categoriaActual ? 'active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}">
-          <span>${cat.icon} ${cat.nombre}</span>
-        </div>
-      `).join('')}
-    `;
   },
 
   /* ---------- SIDEBAR DRAWER FILTERS ---------- */
@@ -139,10 +119,6 @@ const App = {
 
     document.querySelectorAll('#filter-categories .filter-item').forEach(item => {
       item.classList.toggle('active', item.dataset.cat === catId);
-    });
-
-    document.querySelectorAll('#quick-pills .quick-pill').forEach(pill => {
-      pill.classList.toggle('active', pill.dataset.cat === catId);
     });
 
     const titleEl = document.getElementById('productos-title');

@@ -166,6 +166,43 @@ input, select { font-family: inherit; border: none; outline: none; }
   transform: translateY(-2px);
 }
 
+/* Botón claro arriba a la izquierda para abrir el desplegable lateral */
+.btn-drawer-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--burgundy);
+  color: white;
+  padding: 0.55rem 1.15rem;
+  border-radius: 50px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: var(--transicion);
+  box-shadow: 0 4px 14px rgba(156, 104, 76, 0.28);
+}
+
+.btn-drawer-nav:hover {
+  background: var(--burgundy-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(156, 104, 76, 0.4);
+}
+
+.btn-drawer-nav .drawer-nav-icon {
+  font-size: 1rem;
+}
+
+@media (max-width: 900px) {
+  .btn-drawer-nav .drawer-nav-text { display: none; }
+  .btn-drawer-nav {
+    padding: 0.55rem;
+    width: 42px;
+    height: 42px;
+    justify-content: center;
+    border-radius: 50%;
+  }
+}
+
 .cart-badge {
   position: absolute;
   top: -2px;
@@ -385,84 +422,6 @@ input, select { font-family: inherit; border: none; outline: none; }
   font-size: 0.88rem;
   font-weight: 800;
   color: var(--burgundy-dark);
-}
-
-/* ============================================
-   BARRA DE CATEGORÍAS RÁPIDAS
-   ============================================ */
-.quick-categories-bar {
-  background: white;
-  border-bottom: 1px solid var(--pink-200);
-  padding: 0.85rem 2rem;
-  position: sticky;
-  top: 76px;
-  z-index: 900;
-  box-shadow: 0 4px 12px rgba(156, 104, 76, 0.04);
-}
-
-.quick-categories-inner {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.quick-categories-inner::-webkit-scrollbar { display: none; }
-
-.btn-drawer-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--burgundy);
-  color: white;
-  padding: 0.6rem 1.2rem;
-  border-radius: 50px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  transition: var(--transicion);
-  flex-shrink: 0;
-}
-
-.btn-drawer-trigger:hover {
-  background: var(--burgundy-dark);
-  transform: scale(1.02);
-}
-
-.quick-pills {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.quick-pill {
-  padding: 0.5rem 1rem;
-  background: var(--pink-100);
-  color: var(--texto-light);
-  border-radius: 50px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: var(--transicion);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.quick-pill:hover {
-  background: var(--pink-200);
-  color: var(--burgundy);
-}
-
-.quick-pill.active {
-  background: var(--pink-300);
-  color: var(--burgundy-deep);
-  font-weight: 700;
 }
 
 /* ============================================
@@ -696,19 +655,21 @@ input, select { font-family: inherit; border: none; outline: none; }
 .btn-filter-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  background: var(--pink-200);
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
   color: var(--burgundy);
-  padding: 0.6rem 1.2rem;
-  border-radius: var(--radio-sm);
-  font-size: 0.85rem;
-  font-weight: 700;
+  border: 1.5px solid var(--pink-300);
+  border-radius: 50%;
+  font-size: 1.05rem;
   transition: var(--transicion);
 }
 
 .btn-filter-toggle:hover {
-  background: var(--burgundy);
-  color: white;
+  background: var(--pink-100);
+  border-color: var(--burgundy);
+  transform: rotate(45deg);
 }
 
 .productos-header h2 {
@@ -1235,30 +1196,30 @@ input, select { font-family: inherit; border: none; outline: none; }
 .mobile-menu-links a { display: block; padding: 0.8rem 1rem; border-radius: var(--radio-sm); font-size: 0.9rem; font-weight: 600; color: var(--texto); transition: var(--transicion); text-transform: uppercase; letter-spacing: 1px; }
 .mobile-menu-links a:hover { background: var(--pink-100); color: var(--burgundy); }
 
-/* BOTÓN FLOTANTE FILTER TOGGLE */
+/* BOTÓN FLOTANTE FILTER TOGGLE (discreto) */
 .btn-sidebar-toggle {
   position: fixed;
-  bottom: 2rem;
+  bottom: 1.5rem;
   left: 1.5rem;
-  background: var(--burgundy);
-  color: white;
-  font-size: 0.88rem;
-  font-weight: 700;
-  padding: 0.85rem 1.6rem;
-  border-radius: 50px;
-  box-shadow: 0 6px 25px rgba(156, 104, 76, 0.4);
+  width: 48px;
+  height: 48px;
+  background: white;
+  color: var(--burgundy);
+  border: 2px solid var(--pink-300);
+  font-size: 1.2rem;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(156, 104, 76, 0.2);
   z-index: 1500;
   transition: var(--transicion);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  justify-content: center;
 }
 
 .btn-sidebar-toggle:hover {
-  background: var(--burgundy-dark);
-  transform: scale(1.05);
+  background: var(--pink-100);
+  border-color: var(--burgundy);
+  transform: scale(1.08) rotate(45deg);
 }
 
 /* RESPONSIVE */

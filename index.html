@@ -33,6 +33,10 @@
        ============================================ -->
   <nav class="navbar">
     <div class="nav-left">
+      <button class="btn-drawer-nav" onclick="App.openSidebar()" title="Abrir filtros y categorías">
+        <span class="drawer-nav-icon">🎛️</span>
+        <span class="drawer-nav-text">Filtros</span>
+      </button>
       <button class="btn-menu-mobile" onclick="App.openMobileMenu()" aria-label="Menú">☰</button>
       <a href="#" class="logo">
         <img src="assets/logo.jpg" alt="PrincessLov" class="logo-img" onerror="this.src='assets/logo.svg'">
@@ -78,7 +82,7 @@
             Ver Catálogo →
           </button>
           <button class="btn-hero-secondary" onclick="App.openSidebar()">
-            🎛️ Ver Filtros y Categorías
+            🎛️ Explorar Categorías
           </button>
         </div>
       </div>
@@ -90,21 +94,6 @@
       </div>
     </div>
   </section>
-
-  <!-- ============================================
-       BARRA DE CONTROL DE CATEGORÍAS RÁPIDAS
-       ============================================ -->
-  <div class="quick-categories-bar">
-    <div class="quick-categories-inner">
-      <button class="btn-drawer-trigger" onclick="App.openSidebar()">
-        <span class="icon">🎛️</span>
-        <span class="text">Filtros y Categorías</span>
-      </button>
-      <div class="quick-pills" id="quick-pills">
-        <!-- Renderizado dinámico de píldoras rápidas -->
-      </div>
-    </div>
-  </div>
 
   <!-- ============================================
        LAYOUT: DESPLEGABLE LATERAL (SIDEBAR) + PRODUCTOS
@@ -182,9 +171,7 @@
     <main class="productos-area">
       <div class="productos-header">
         <div class="productos-header-left">
-          <button class="btn-filter-toggle" onclick="App.openSidebar()">
-            🎛️ Filtros
-          </button>
+          <button class="btn-filter-toggle" onclick="App.openSidebar()" title="Filtrar y categorías" aria-label="Filtros">⚙️</button>
           <h2 id="productos-title">Todos los Productos</h2>
         </div>
         <span class="productos-count" id="productos-count">Cargando productos...</span>
@@ -198,9 +185,7 @@
   <!-- ============================================
        BOTÓN FLOTANTE SIDEBAR TOGGLE
        ============================================ -->
-  <button class="btn-sidebar-toggle" id="btn-sidebar-toggle" onclick="App.openSidebar()" aria-label="Filtros y Categorías">
-    🎛️ Filtros
-  </button>
+  <button class="btn-sidebar-toggle" id="btn-sidebar-toggle" onclick="App.openSidebar()" aria-label="Filtrar" title="Filtrar">⚙️</button>
 
   <!-- ============================================
        CONTACTO
