@@ -150,7 +150,7 @@ const CONFIG = {
   // IMÁGENES
   // ==========================================
   imagenes: {
-    logo: "assets/logo.png",
+    logo: "assets/logo.jpg",
     placeholder: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='700'><rect width='600' height='700' fill='%23F8D0DC'/><text x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23800020' font-size='20' font-family='sans-serif'>Sin imagen</text></svg>",
     hero: "",
   },
