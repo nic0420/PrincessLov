@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="PrincessLov - Indumentaria deportiva y pijamas para mujeres. Comprá online con envío a todo el país.">
-  <meta name="theme-color" content="#800020">
-  <title>PrincessLov | Indumentaria Deportiva y Pijamas</title>
+  <meta name="description" content="PrincessLov - Sportwears, Pijamas y Lencerías para mujeres. Envíos a todo el país.">
+  <meta name="theme-color" content="#9c684c">
+  <title>PrincessLov | Sportwears, Pijamas y Lencerías</title>
 
-  <!-- Fonts -->
+  <!-- Fonts: Montserrat + The Seasons (serif) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=The+Seasons:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
   <!-- Styles -->
   <link rel="stylesheet" href="css/styles.css">
@@ -32,88 +32,136 @@
        NAVBAR
        ============================================ -->
   <nav class="navbar">
-    <div class="navbar-inner">
+    <div class="nav-left">
+      <button class="btn-menu-mobile" onclick="App.openMobileMenu()" aria-label="Menú">☰</button>
       <a href="#" class="logo">
-        <div class="logo-icon">👑</div>
-        PrincessLov
+        <img src="assets/logo.png" alt="PrincessLov" class="logo-img" onerror="this.style.display='none'">
+        <span class="logo-text">PrincessLov</span>
       </a>
-
       <ul class="nav-links">
         <li><a href="#inicio" class="active">Inicio</a></li>
-        <li><a href="#categorias">Categorías</a></li>
         <li><a href="#productos">Productos</a></li>
-        <li><a href="#" onclick="App.scrollToContact(); return false;">Contacto</a></li>
+        <li><a href="#contacto">Contacto</a></li>
       </ul>
-
-      <div class="nav-actions">
-        <button class="btn-search" onclick="App.toggleSearch()" aria-label="Buscar">🔍</button>
-        <button class="btn-cart" onclick="App.openCart()" aria-label="Carrito">
-          🛒
-          <span id="cart-count" class="cart-count">0</span>
-        </button>
-        <button class="btn-menu" onclick="App.openMobileMenu()" aria-label="Menú">☰</button>
-      </div>
+    </div>
+    <div class="nav-right">
+      <button class="nav-icon-btn" onclick="App.toggleSearch()" aria-label="Buscar">🔍</button>
+      <button class="nav-icon-btn" onclick="App.openCart()" aria-label="Carrito">
+        🛒
+        <span id="cart-count" class="cart-badge">0</span>
+      </button>
     </div>
   </nav>
 
   <!-- ============================================
-       COTIZADOR DÓLAR TICKER
+       DÓLAR TICKER
        ============================================ -->
   <div class="dolar-ticker" id="dolar-ticker">
     💵 Cotización del dólar: <strong id="dolar-valor">Cargando...</strong> | Precios actualizados al momento de la compra
   </div>
 
   <!-- ============================================
-       HERO SECTION
+       HERO - SHOWCASE DE PRODUCTOS DESTACADOS
        ============================================ -->
   <section class="hero" id="inicio">
     <div class="hero-content">
-      <h1>Vestite con <span>energía</span> y <span>estilo</span></h1>
-      <p>Indumentaria deportiva y pijamas diseñadas para vos. Calidad, comodidad y los mejores precios.</p>
-      <button class="btn-hero" onclick="App.scrollToProducts()">
-        Ver Catálogo 🛍️
-      </button>
-    </div>
-  </section>
-
-  <!-- ============================================
-       CATEGORÍAS
-       ============================================ -->
-  <section class="categorias-section" id="categorias">
-    <div class="section-title">
-      <h2>Nuestras Categorías</h2>
-      <p>Encontrá lo que buscás</p>
-    </div>
-    <div id="categorias-grid" class="categorias-grid">
-      <!-- Se renderiza dinámicamente -->
-    </div>
-  </section>
-
-  <!-- ============================================
-       PRODUCTOS
-       ============================================ -->
-  <section class="productos-section" id="productos">
-    <div class="productos-header">
-      <div class="section-title" style="text-align:left; margin-bottom:0;">
-        <h2>Todos los Productos</h2>
-        <p id="productos-count">Cargando productos...</p>
+      <div class="hero-text">
+        <p class="subtitle">Sportwears · Pijamas · Lencerías</p>
+        <h1>Encontrá tu estilo perfecto</h1>
+        <p class="tagline">Indumentaria deportiva y pijamas con los mejores precios. Calidad y comodidad para cada día.</p>
+        <button class="btn-hero" onclick="App.scrollToProducts()">
+          Ver Catálogo →
+        </button>
       </div>
-      <div class="filtros" id="filtros-container">
+      <div class="hero-showcase" id="hero-showcase">
+        <!-- Se renderiza dinámicamente con productos destacados -->
+        <div class="hero-product-card" style="background:var(--pink-200);min-height:240px;"></div>
+        <div class="hero-product-card" style="background:var(--pink-200);min-height:240px;"></div>
+        <div class="hero-product-card" style="background:var(--pink-200);min-height:240px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       LAYOUT: SIDEBAR FILTROS + PRODUCTOS
+       ============================================ -->
+  <div class="main-layout" id="productos">
+
+    <!-- SIDEBAR OVERLAY (mobile) -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="App.closeSidebar()"></div>
+
+    <!-- SIDEBAR DE FILTROS -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Buscar</h3>
+        <input type="text" class="sidebar-search" placeholder="Buscar productos..." oninput="App.handleSearch(this.value)">
+      </div>
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Categorías</h3>
+        <ul class="filter-list" id="filter-categories">
+          <!-- Se renderiza dinámicamente -->
+        </ul>
+      </div>
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Disponibilidad</h3>
+        <ul class="filter-list" id="filter-stock">
+          <li class="filter-item active" onclick="App.setStockFilter('all')" data-filter="all">
+            <span><span class="filter-icon">📦</span> Todos</span>
+          </li>
+          <li class="filter-item" onclick="App.setStockFilter('in')" data-filter="in">
+            <span><span class="filter-icon">✅</span> En stock</span>
+          </li>
+          <li class="filter-item" onclick="App.setStockFilter('out')" data-filter="out">
+            <span><span class="filter-icon">⏳</span> Sin stock</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Ordenar por</h3>
+        <ul class="filter-list" id="filter-sort">
+          <li class="filter-item active" onclick="App.setSortOrder('featured')" data-sort="featured">
+            <span><span class="filter-icon">⭐</span> Destacados</span>
+          </li>
+          <li class="filter-item" onclick="App.setSortOrder('price-asc')" data-sort="price-asc">
+            <span><span class="filter-icon">💰</span> Menor precio</span>
+          </li>
+          <li class="filter-item" onclick="App.setSortOrder('price-desc')" data-sort="price-desc">
+            <span><span class="filter-icon">💎</span> Mayor precio</span>
+          </li>
+          <li class="filter-item" onclick="App.setSortOrder('name')" data-sort="name">
+            <span><span class="filter-icon">🔤</span> A-Z</span>
+          </li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="productos-area">
+      <div class="productos-header">
+        <h2 id="productos-title">Todos los Productos</h2>
+        <span class="productos-count" id="productos-count">Cargando productos...</span>
+      </div>
+      <div id="productos-grid" class="productos-grid">
         <!-- Se renderiza dinámicamente -->
       </div>
-    </div>
-    <div id="productos-grid" class="productos-grid">
-      <!-- Se renderiza dinámicamente -->
-    </div>
-  </section>
+    </main>
+  </div>
 
   <!-- ============================================
-       CONTACTO / FOOTER CTA
+       BOTÓN SIDEBAR TOGGLE (mobile)
        ============================================ -->
-  <section id="contacto" style="background: linear-gradient(135deg, #FDE8EF, #F8D0DC); padding: 3rem 1.5rem; text-align: center;">
-    <h2 style="font-size:1.8rem; font-weight:800; color:#6B0F2A; margin-bottom:0.5rem;">¿Tenés dudas?</h2>
-    <p style="color:#6B5559; margin-bottom:1.5rem; max-width:500px; margin-left:auto; margin-right:auto;">Escribinos por WhatsApp y te ayudamos con lo que necesites</p>
-    <a id="contacto-whatsapp-btn" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:0.5rem; background:#25D366; color:white; padding:1rem 2rem; border-radius:50px; font-size:1rem; font-weight:700; text-decoration:none; transition:all 0.3s;">
+  <button class="btn-sidebar-toggle" id="btn-sidebar-toggle" onclick="App.openSidebar()" aria-label="Filtros">☰</button>
+
+  <!-- ============================================
+       CONTACTO
+       ============================================ -->
+  <section id="contacto" style="background: linear-gradient(135deg, var(--pink-100), var(--pink-200)); padding: 3rem 1.5rem; text-align: center;">
+    <h2 style="font-family:'The Seasons',Georgia,serif; font-size:1.8rem; color:var(--burgundy); margin-bottom:0.5rem;">¿Tenés dudas?</h2>
+    <p style="color:var(--texto-light); margin-bottom:1.5rem; max-width:500px; margin-left:auto; margin-right:auto;">Escribinos por WhatsApp y te ayudamos con lo que necesites</p>
+    <a id="contacto-whatsapp-btn" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:0.5rem; background:#25D366; color:white; padding:1rem 2rem; border-radius:50px; font-size:0.9rem; font-weight:700; text-decoration:none; transition:all 0.3s; text-transform:uppercase; letter-spacing:1px;">
       💬 Chateá con nosotros
     </a>
   </section>
@@ -126,12 +174,11 @@
       <div class="footer-grid">
         <div class="footer-col">
           <h4>PrincessLov</h4>
-          <p>Indumentaria deportiva y pijamas para mujeres que buscan estilo, comodidad y calidad.</p>
+          <p>Sportwears, pijamas y lencerías para mujeres que buscan estilo, comodidad y calidad.</p>
         </div>
         <div class="footer-col">
           <h4>Links Útiles</h4>
           <a href="#inicio">Inicio</a>
-          <a href="#categorias">Categorías</a>
           <a href="#productos">Productos</a>
           <a href="#contacto">Contacto</a>
         </div>
@@ -149,7 +196,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>© 2026 PrincessLov. Todos los derechos reservados. Hecho con 💕</p>
+        <p>© 2026 PrincessLov. Todos los derechos reservados.</p>
       </div>
     </div>
   </footer>
@@ -160,24 +207,18 @@
   <div id="cart-overlay" class="cart-overlay" onclick="App.closeCart()"></div>
   <div id="cart-sidebar" class="cart-sidebar">
     <div class="cart-header">
-      <h3>🛒 Tu Carrito</h3>
+      <h3>Tu Carrito</h3>
       <button class="btn-close-cart" onclick="App.closeCart()">✕</button>
     </div>
-    <div id="cart-items" class="cart-items">
-      <!-- Se renderiza dinámicamente -->
-    </div>
-    <div class="cart-footer" id="cart-footer">
-      <!-- Se renderiza dinámicamente -->
-    </div>
+    <div id="cart-items" class="cart-items"></div>
+    <div class="cart-footer" id="cart-footer"></div>
   </div>
 
   <!-- ============================================
        CHECKOUT MODAL
        ============================================ -->
   <div id="checkout-modal" class="modal-overlay">
-    <div class="modal" id="checkout-modal-content">
-      <!-- Se renderiza dinámicamente por CheckoutService -->
-    </div>
+    <div class="modal" id="checkout-modal-content"></div>
   </div>
 
   <!-- ============================================
@@ -198,15 +239,14 @@
        ============================================ -->
   <div id="mobile-menu" class="mobile-menu">
     <div class="mobile-menu-header">
-      <div class="logo" style="font-size:1.2rem;">
-        <div class="logo-icon" style="width:32px; height:32px; font-size:1rem;">👑</div>
-        PrincessLov
-      </div>
+      <a href="#" class="logo">
+        <img src="assets/logo.png" alt="PrincessLov" class="logo-img" style="width:36px;height:36px;" onerror="this.style.display='none'">
+        <span class="logo-text" style="font-size:1.1rem;">PrincessLov</span>
+      </a>
       <button class="btn-close-cart" onclick="App.closeMobileMenu()">✕</button>
     </div>
     <ul class="mobile-menu-links">
       <li><a href="#inicio" onclick="App.closeMobileMenu()">Inicio</a></li>
-      <li><a href="#categorias" onclick="App.closeMobileMenu()">Categorías</a></li>
       <li><a href="#productos" onclick="App.closeMobileMenu()">Productos</a></li>
       <li><a href="#contacto" onclick="App.closeMobileMenu()">Contacto</a></li>
     </ul>
