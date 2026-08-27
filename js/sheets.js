@@ -81,7 +81,7 @@ const SheetsService = {
           imagen: p['Imagen'] || CONFIG.imagenes.placeholder,
           stock: parseInt(p['Stock']) || 0,
           tags: p['Tags'] ? p['Tags'].split(',').map(t => t.trim().toLowerCase()) : [],
-          activo: true,
+          activo: p['Activo'] ? p['Activo'].toUpperCase() === 'TRUE' : true,
         }));
 
       this.lastFetch = new Date();
@@ -116,7 +116,7 @@ const SheetsService = {
             imagen: p['Imagen'] || CONFIG.imagenes.placeholder,
             stock: parseInt(p['Stock']) || 0,
             tags: p['Tags'] ? p['Tags'].split(',').map(t => t.trim().toLowerCase()) : [],
-            activo: true,
+            activo: p['Activo'] ? p['Activo'].toUpperCase() === 'TRUE' : true,
           }));
         return this.productos;
       })

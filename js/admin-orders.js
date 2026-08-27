@@ -169,9 +169,12 @@ const AdminOrders = {
     row.style.marginBottom = '0.5rem';
     row.innerHTML = `
       <div class="form-group" style="margin-bottom:0;">
-        <select class="order-item-product" required>
+        <select class="order-item-product" required onchange="AdminOrders.onProductChange(this)">
           <option value="">Producto...</option>
-          ${products.map(p => `<option value="${p.id}" ${item && item.productoId === p.id ? 'selected' : ''}>${p.nombre} (${AdminData.formatUSD(p.precioUSD)})</option>`).join('')}
+          ${products.map(p => {
+            const precioARS = AdminApp.dolarRate ? Math.round(p.precioUSD * AdminApp.dolarRate * (CONFIG?.cotizacion?.margenGanancia || 1.3)) : 0;
+            return `<option value="${p.id}" data-price="${precioARS}" ${item && item.productoId === p.id ? 'selected' : ''}>${p.nombre} (${AdminData.formatUSD(p.precioUSD)})</option>`;
+          }).join('')}
         </select>
       </div>
       <div class="form-group" style="margin-bottom:0;">
@@ -183,6 +186,18 @@ const AdminOrders = {
       <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
     `;
     container.appendChild(row);
+  },
+
+  onProductChange(select) {
+    const option = select.options[select.selectedIndex];
+    const price = option?.dataset?.price || '';
+    const row = select.closest('.form-grid');
+    if (row) {
+      const priceInput = row.querySelector('.order-item-precio');
+      if (priceInput && !priceInput.value) {
+        priceInput.value = price;
+      }
+    }
   },
 
   save(event) {

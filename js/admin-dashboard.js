@@ -225,8 +225,9 @@ const AdminDashboard = {
 
   /* ========== FINANCIAL SECTION ========== */
   renderFinancial() {
-    const stats = AdminData.getStats(this.currentPeriod === 'all' ? null : this.currentPeriod);
-    const totalExpenses = AdminData.getTotalExpenses();
+    const periodo = this.currentPeriod === 'all' ? null : this.currentPeriod;
+    const stats = AdminData.getStats(periodo);
+    const totalExpenses = AdminData.getTotalExpenses(periodo);
     const be = AdminData.calcularPuntoEquilibrio(AdminApp.dolarRate);
 
     const container = document.getElementById('financial-stats');
@@ -310,7 +311,12 @@ const AdminDashboard = {
   },
 
   renderFinancialExpenses() {
-    const expenses = AdminData.getExpenses().sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 15);
+    const periodo = this.currentPeriod === 'all' ? null : this.currentPeriod;
+    let expenses = AdminData.getExpenses().sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    if (periodo) {
+      expenses = expenses.filter(e => AdminData.isInPeriod(e.fecha, periodo));
+    }
+    expenses = expenses.slice(0, 15);
     const container = document.getElementById('financial-expenses-list');
     if (!container) return;
 

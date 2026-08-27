@@ -34,19 +34,18 @@ const AdminImport = {
     const map = {};
     headers.forEach((h, i) => {
       const lower = (h || '').toLowerCase().trim()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quitar tildes
-        .replace(/[^a-z0-9]/g, ''); // quitar espacios y符号
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // quitar tildes
 
       // Producto / Nombre
-      if (/^(producto|nombre|name|articulo|modelo|descripcion)$/i.test(lower)) {
+      if (/^(producto|nombre|name|articulo|modelo)$/i.test(lower)) {
         map.producto = i;
       }
       // Cantidad / Stock
       if (/^(cantidad|stock|unidades|uds|cant)$/i.test(lower)) {
         map.cantidad = i;
       }
-      // Costo Unitario
-      if (/^(costounitario|costouni|costo unitario|preciounitario|preciocosto|costo)$/i.test(lower)) {
+      // Costo Unitario (con o sin espacio)
+      if (/^(costo\s*unitario|costo\s*uni|preciounitario|preciocosto|costo)$/i.test(lower)) {
         map.costoUnitario = i;
       }
       // Total
@@ -58,19 +57,19 @@ const AdminImport = {
         map.observaciones = i;
       }
       // Dólar / Precio USD
-      if (/^(dolar|dollar|usd|preciousd|precio|price|costousd)$/i.test(lower)) {
+      if (/^(d[oó]lar|dollar|usd|preciousd|precio|price|costousd)$/i.test(lower)) {
         map.precioUSD = i;
       }
       // Categoría
-      if (/^(categoria|category|rubro|grupo|tipo)$/i.test(lower)) {
+      if (/^(categor[ií]a|category|rubro|grupo|tipo)$/i.test(lower)) {
         map.categoria = i;
       }
       // Subcategoría
-      if (/^(subcategoria|subcategory|subrubro)$/i.test(lower)) {
+      if (/^(subcategor[ií]a|subcategory|subrubro)$/i.test(lower)) {
         map.subcategoria = i;
       }
       // Descripción
-      if (/^(descripcion|description|desc|detalle)$/i.test(lower)) {
+      if (/^(descripci[oó]n|description|desc)$/i.test(lower)) {
         map.descripcion = i;
       }
       // Imagen / Foto
