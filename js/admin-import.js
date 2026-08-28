@@ -33,61 +33,33 @@ const AdminImport = {
   detectColumns(headers) {
     const map = {};
     headers.forEach((h, i) => {
-      const lower = (h || '').toLowerCase().trim()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // quitar tildes
+      const raw = (h || '').toString().trim();
+      if (!raw) return;
 
-      // Producto / Nombre
-      if (/^(producto|nombre|name|articulo|modelo)$/i.test(lower)) {
-        map.producto = i;
-      }
-      // Cantidad / Stock
-      if (/^(cantidad|stock|unidades|uds|cant)$/i.test(lower)) {
-        map.cantidad = i;
-      }
-      // Costo Unitario (con o sin espacio)
-      if (/^(costo\s*unitario|costo\s*uni|preciounitario|preciocosto|costo)$/i.test(lower)) {
-        map.costoUnitario = i;
-      }
-      // Total
-      if (/^(total|subtotal|montototal)$/i.test(lower)) {
-        map.total = i;
-      }
-      // Observaciones
-      if (/^(observaciones|obs|notas|comments|detalle)$/i.test(lower)) {
-        map.observaciones = i;
-      }
-      // Dólar / Precio USD
-      if (/^(d[oó]lar|dollar|usd|preciousd|precio|price|costousd)$/i.test(lower)) {
-        map.precioUSD = i;
-      }
-      // Categoría
-      if (/^(categor[ií]a|category|rubro|grupo|tipo)$/i.test(lower)) {
-        map.categoria = i;
-      }
-      // Subcategoría
-      if (/^(subcategor[ií]a|subcategory|subrubro)$/i.test(lower)) {
-        map.subcategoria = i;
-      }
-      // Descripción
-      if (/^(descripci[oó]n|description|desc)$/i.test(lower)) {
-        map.descripcion = i;
-      }
-      // Imagen / Foto
-      if (/^(imagen|image|foto|photo|url|img)$/i.test(lower)) {
-        map.imagen = i;
-      }
-      // ID
-      if (/^(id|codigo|cod|sku|reference)$/i.test(lower)) {
-        map.id = i;
-      }
-      // Tags
-      if (/^(tags|etiquetas|labels)$/i.test(lower)) {
-        map.tags = i;
-      }
-      // Activo
-      if (/^(activo|active|visible|habilitado)$/i.test(lower)) {
-        map.activo = i;
-      }
+      // Normalizar: minúsculas, sin tildes, espacios por cualquier signo
+      const key = raw.toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+      // (los caracteres especiales de la línea anterior son el rango U+0300–U+036F)
+
+      const has = (...subs) => subs.some(s => key.includes(s));
+      const set = (field) => { if (map[field] === undefined) map[field] = i; };
+
+      // Orden de prioridad para evitar colisiones
+      if (key === 'id' || has('codigo', 'sku', 'cod ')) set('id');
+      else if (has('imag', 'foto', 'url')) set('imagen');
+      else if (has('tag', 'etiqueta')) set('tags');
+      else if (has('activ', 'visible')) set('activo');
+      else if (has('descrip')) set('descripcion');
+      else if (has('subcateg', 'subrubro', 'sub rubro')) set('subcategoria');
+      else if (has('categ', 'rubro', 'grupo') || (has('tipo') && !has('precio'))) set('categoria');
+      else if (has('obs', 'nota', 'coment')) set('observaciones');
+      else if (has('cant', 'stock', 'unidad', 'uds')) set('cantidad');
+      else if (has('total', 'subtotal')) set('total');
+      else if (has('costo') && !has('envio')) set('costoUnitario');
+      else if (has('usd', 'dolar', 'price') || (has('precio') && !has('costo'))) set('precioUSD');
+      else if (has('producto', 'articulo', 'nombre', 'item', 'name')) set('producto');
     });
 
     return map;
@@ -205,11 +177,11 @@ const AdminImport = {
       return;
     }
 
-    // Buscar la fila de headers (buscar "Producto" o "Nombre" en las primeras 5 filas)
+    // Buscar la fila de headers (buscar palabras clave en las primeras 5 filas)
     let headerRow = 0;
     for (let i = 0; i < Math.min(5, rawData.length); i++) {
       const rowStr = rawData[i].join(' ').toLowerCase();
-      if (/producto|nombre|name|articulo/.test(rowStr)) {
+      if (/producto|nombre|articulo|item|sku|categoria/.test(rowStr)) {
         headerRow = i;
         break;
       }
@@ -217,6 +189,11 @@ const AdminImport = {
 
     const headers = rawData[headerRow];
     const colMap = this.detectColumns(headers);
+
+    if (colMap.producto === undefined) {
+      AdminApp.toast('No se detectó la columna de productos. Verificá que la primera fila tenga un encabezado como "Producto", "Nombre" o "Artículo".', 'error');
+      return;
+    }
 
     // Procesar filas de datos
     const products = [];
