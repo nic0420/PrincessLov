@@ -38,6 +38,9 @@ const CONFIG = {
   // 4. Copiá la URL generada
   sheets: {
     url: "https://docs.google.com/spreadsheets/d/TU_SHEET_ID/pub?output=csv&gid=0",
+    // URL del Google Apps Script Web App (para sync bidireccional completa)
+    // Obtené esta URL deployando el código de google-apps-script.gs como Web App
+    appsScriptUrl: "https://script.google.com/macros/s/TU_SCRIPT_ID/exec",
     // URL para cotización del dólar (opcional, editá manualmente si no funciona)
     dolarUrl: "https://criptoya.com/api/dolar", 
   },

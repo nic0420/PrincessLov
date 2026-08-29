@@ -371,9 +371,9 @@
   </main>
 </div>
 
-<!-- PRODUCT FORM MODAL -->
+<!-- PRODUCT FORM MODAL - COMPLETO E INTUITIVO -->
 <div class="modal-overlay" id="product-modal">
-  <div class="modal">
+  <div class="modal modal--large">
     <div class="modal-header">
       <h3 id="product-modal-title">Nuevo Producto</h3>
       <button class="btn-close-modal" onclick="AdminProducts.closeForm()">✕</button>
@@ -381,51 +381,213 @@
     <div class="modal-body">
       <form id="product-form" onsubmit="AdminProducts.save(event)">
         <input type="hidden" id="pf-id">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Nombre *</label>
-            <input type="text" id="pf-nombre" required>
+
+        <!-- TABS NAVIGATION -->
+        <div class="form-tabs" role="tablist" aria-label="Secciones del producto">
+          <button class="form-tab active" role="tab" data-tab="basico" aria-selected="true">📝 Básico</button>
+          <button class="form-tab" role="tab" data-tab="precios" aria-selected="false">💰 Precios & Stock</button>
+          <button class="form-tab" role="tab" data-tab="variantes" aria-selected="false">🎨 Variantes (Color/Talle)</button>
+          <button class="form-tab" role="tab" data-tab="imagenes" aria-selected="false">🖼️ Imágenes</button>
+          <button class="form-tab" role="tab" data-tab="caracteristicas" aria-selected="false">📋 Características</button>
+          <button class="form-tab" role="tab" data-tab="seo" aria-selected="false">🔍 SEO & Visibilidad</button>
+        </div>
+
+        <!-- TAB 1: BÁSICO -->
+        <div class="form-tab-panel active" id="tab-basico" role="tabpanel">
+          <div class="form-grid">
+            <div class="form-group form-group--full">
+              <label for="pf-nombre">Nombre del producto *</label>
+              <input type="text" id="pf-nombre" required placeholder="Ej: Conjunto Deportivo Borgoña" autocomplete="off">
+              <small class="form-hint">Nombre que verá el cliente en la tienda</small>
+            </div>
+            <div class="form-group">
+              <label for="pf-categoria">Categoría *</label>
+              <select id="pf-categoria" required>
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pf-subcategoria">Subcategoría</label>
+              <input type="text" id="pf-subcategoria" placeholder="Ej: Largas, Cortas, Unicolor">
+            </div>
+            <div class="form-group">
+              <label for="pf-sku">SKU / Código interno</label>
+              <input type="text" id="pf-sku" placeholder="Ej: PL-CONJ-BOR-001">
+              <small class="form-hint">Código único para tu gestión interna</small>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Categoría *</label>
-            <select id="pf-categoria" required>
-              <option value="">Seleccionar...</option>
-            </select>
+          <div class="form-group form-group--full">
+            <label for="pf-descripcion">Descripción completa *</label>
+            <textarea id="pf-descripcion" rows="5" placeholder="Describí el producto: materiales, uso recomendado, cuidados, qué incluye el pack..."></textarea>
+            <small class="form-hint">Se muestra completa en el detalle del producto. Usá párrafos para mejor lectura.</small>
           </div>
-          <div class="form-group">
-            <label>Subcategoría</label>
-            <input type="text" id="pf-subcategoria">
-          </div>
-          <div class="form-group">
-            <label>Precio costo USD *</label>
-            <input type="number" step="0.01" id="pf-preciousd" required>
-          </div>
-          <div class="form-group">
-            <label>Stock *</label>
-            <input type="number" id="pf-stock" required value="0">
-          </div>
-          <div class="form-group">
-            <label>Tags (separados por coma)</label>
-            <input type="text" id="pf-tags" placeholder="nuevo, oferta">
+          <div class="form-group form-group--full">
+            <label for="pf-descripcion-corta">Descripción corta (resumen para tarjetas)</label>
+            <textarea id="pf-descripcion-corta" rows="2" placeholder="Resumen en 1-2 líneas para la grilla de productos..."></textarea>
+            <small class="form-hint">Máx 160 caracteres. Si vacío, se toma el inicio de la descripción completa.</small>
           </div>
         </div>
-        <div class="form-group">
-          <label>Descripción</label>
-          <textarea id="pf-descripcion" rows="3"></textarea>
+
+        <!-- TAB 2: PRECIOS & STOCK -->
+        <div class="form-tab-panel" id="tab-precios" role="tabpanel">
+          <div class="form-section">
+            <h4>💵 Precios</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="pf-preciousd">Precio costo USD *</label>
+                <input type="number" step="0.01" min="0" id="pf-preciousd" required>
+                <small class="form-hint">Tu costo base en dólares. El precio ARS se calcula automáticamente (USD × Dólar × Margen)</small>
+              </div>
+              <div class="form-group">
+                <label for="pf-precio-ars-manual">Precio ARS manual (opcional)</label>
+                <input type="number" step="1" min="0" id="pf-precio-ars-manual" placeholder="Dejá vacío para auto">
+                <small class="form-hint">Si lo completás, este precio fija el valor final en pesos</small>
+              </div>
+              <div class="form-group">
+                <label for="pf-precio-oferta">Precio oferta ARS (opcional)</label>
+                <input type="number" step="1" min="0" id="pf-precio-oferta" placeholder="Precio con descuento">
+                <small class="form-hint">Si completás, se muestra tachado el precio normal y este en destacado</small>
+              </div>
+              <div class="form-group">
+                <label for="pf-margen-personalizado">Margen personalizado %</label>
+                <input type="number" step="1" min="0" max="500" id="pf-margen-personalizado" placeholder="Ej: 30 para 30%">
+                <small class="form-hint">Sobrescribe el margen global solo para este producto</small>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <h4>📦 Stock & Inventario</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="pf-stock">Stock total *</label>
+                <input type="number" min="0" id="pf-stock" required value="0">
+              </div>
+              <div class="form-group">
+                <label for="pf-stock-min">Stock mínimo (alerta)</label>
+                <input type="number" min="0" id="pf-stock-min" value="5">
+                <small class="form-hint">Alerta en dashboard cuando baje de este número</small>
+              </div>
+              <div class="form-group">
+                <label for="pf-peso">Peso (gramos)</label>
+                <input type="number" min="0" id="pf-peso" placeholder="Ej: 350">
+                <small class="form-hint">Para cálculo de envío automático</small>
+              </div>
+              <div class="form-group">
+                <label for="pf-dimensiones">Dimensiones (LxAxP cm)</label>
+                <input type="text" id="pf-dimensiones" placeholder="Ej: 30x20x5">
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>URL de imagen</label>
-          <input type="url" id="pf-imagen" placeholder="https://...">
+
+        <!-- TAB 3: VARIANTES (COLOR/TALLE) -->
+        <div class="form-tab-panel" id="tab-variantes" role="tabpanel">
+          <div class="form-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+              <h4>🎨 Variantes de Color y Talle</h4>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="AdminProducts.addVariantRow()">+ Agregar variante</button>
+            </div>
+            <p class="form-hint" style="margin-bottom:1rem;">Cada combinación color+talle tiene su propio stock. El stock total se suma automáticamente.</p>
+            <div id="variantes-container">
+              <!-- Filas dinámicas -->
+            </div>
+            <div class="form-hint">💡 Si el producto no tiene variantes (ej: talla única), dejá esta sección vacía y usá el stock total de la pestaña Precios.</div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="pf-activo" checked> Producto activo
-          </label>
+
+        <!-- TAB 4: IMÁGENES -->
+        <div class="form-tab-panel" id="tab-imagenes" role="tabpanel">
+          <div class="form-section">
+            <h4>🖼️ Imagen Principal</h4>
+            <div class="form-group">
+              <label for="pf-imagen">URL imagen principal *</label>
+              <input type="url" id="pf-imagen" placeholder="https://...jpg" required>
+              <small class="form-hint">Imagen que se ve en la grilla y como primera en el detalle. Ratio recomendado 3:4 (ej: 600x800px)</small>
+            </div>
+            <div id="pf-imagen-preview" class="image-preview" style="display:none;">
+              <img id="pf-imagen-preview-img" src="" alt="Preview" style="max-width:200px; max-height:260px; border-radius:4px; border:1px solid var(--border);">
+            </div>
+          </div>
+          <div class="form-section">
+            <h4>📸 Galería Adicional (hasta 8 imágenes)</h4>
+            <div id="gallery-container">
+              <!-- Filas dinámicas -->
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="AdminProducts.addGalleryRow()">+ Agregar imagen a galería</button>
+            <p class="form-hint" style="margin-top:0.5rem;">Estas imágenes se ven en el carrusel del detalle del producto. La primera de la galería es la segunda imagen del producto.</p>
+          </div>
         </div>
+
+        <!-- TAB 5: CARACTERÍSTICAS -->
+        <div class="form-tab-panel" id="tab-caracteristicas" role="tabpanel">
+          <div class="form-section">
+            <h4>📋 Especificaciones / Características</h4>
+            <p class="form-hint">Pares clave-valor que se muestran en una tabla ordenada en el detalle (ej: Material: 90% Poliéster 10% Elastano).</p>
+            <div id="specs-container">
+              <!-- Filas dinámicas -->
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="AdminProducts.addSpecRow()">+ Agregar característica</button>
+            <div style="margin-top:1rem; padding:1rem; background:var(--bg); border-radius:4px; border:1px solid var(--border);">
+              <strong>Plantillas rápidas:</strong>
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;">
+                <button type="button" class="btn btn-xs btn-ghost" onclick="AdminProducts.applySpecTemplate('deportivo')">🏃 Deportivo</button>
+                <button type="button" class="btn btn-xs btn-ghost" onclick="AdminProducts.applySpecTemplate('pijama')">🌙 Pijama</button>
+                <button type="button" class="btn btn-xs btn-ghost" onclick="AdminProducts.applySpecTemplate('lenceria')">🎀 Lencería</button>
+                <button type="button" class="btn btn-xs btn-ghost" onclick="AdminProducts.applySpecTemplate('generico')">📦 Genérico</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 6: SEO & VISIBILIDAD -->
+        <div class="form-tab-panel" id="tab-seo" role="tabpanel">
+          <div class="form-section">
+            <h4>🏷️ Tags y Categorización</h4>
+            <div class="form-group form-group--full">
+              <label for="pf-tags">Tags (separados por coma)</label>
+              <input type="text" id="pf-tags" placeholder="nuevo, oferta, bestseller, verano, algodon">
+              <small class="form-hint">Usados para filtros, búsquedas y recomendaciones. Sugeridos: nuevo, oferta, bestseller, temporada, material</small>
+            </div>
+          </div>
+          <div class="form-section">
+            <h4>👁️ Visibilidad</h4>
+            <div class="form-grid">
+              <div class="form-group form-group--checkbox">
+                <label>
+                  <input type="checkbox" id="pf-activo" checked> Producto activo (visible en tienda)
+                </label>
+              </div>
+              <div class="form-group form-group--checkbox">
+                <label>
+                  <input type="checkbox" id="pf-destacado"> Destacado (aparece en hero / recomendados)
+                </label>
+              </div>
+              <div class="form-group form-group--checkbox">
+                <label>
+                  <input type="checkbox" id="pf-solo-web"> Solo web (no en catálogo físico)
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <h4>🔍 SEO (Opcional)</h4>
+            <div class="form-grid">
+              <div class="form-group form-group--full">
+                <label for="pf-seo-title">Título SEO</label>
+                <input type="text" id="pf-seo-title" placeholder="Máx 60 chars. Si vacío, usa nombre del producto">
+              </div>
+              <div class="form-group form-group--full">
+                <label for="pf-seo-desc">Descripción SEO</label>
+                <textarea id="pf-seo-desc" rows="2" placeholder="Máx 160 chars. Para Google/search results"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </form>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="document.getElementById('product-form').requestSubmit()">💾 Guardar</button>
+      <button class="btn btn-primary" onclick="document.getElementById('product-form').requestSubmit()">💾 Guardar producto</button>
       <button class="btn btn-secondary" onclick="AdminProducts.closeForm()">Cancelar</button>
     </div>
   </div>

@@ -1,10 +1,15 @@
 /* ============================================
-   CART SERVICE - Carrito de Compras
+   CART SERVICE - Carrito de Compras (con soporte variantes)
    ============================================ */
 
 const CartService = {
   items: [],
   listeners: [],
+  shippingId: null,
+  shippingCost: 0,
+  discountAmount: 0,
+  promoCode: null,
+  promoData: null,
 
   /**
    * Inicializa el carrito desde localStorage
@@ -46,34 +51,48 @@ const CartService = {
   },
 
   /**
-   * Agrega un producto al carrito
+   * Agrega un producto al carrito (soporta variantes)
    */
-  addItem(producto, cantidad = 1) {
-    const existing = this.items.find(i => i.id === producto.id);
+  addItem(producto, cantidad = 1, variant = null) {
+    // Crear clave única: id + variante (color+talle)
+    const variantKey = variant ? `${variant.color}|${variant.talle}` : 'default';
+    const itemKey = `${producto.id}::${variantKey}`;
+
+    const existing = this.items.find(i => i.key === itemKey);
+
+    // Calcular precio ARS del producto (considera precio manual, oferta, margen)
+    const precioARS = SheetsService.calcularPrecioARS(producto.precioUSD, producto);
+    const precioUSD = producto.precioUSD;
 
     if (existing) {
       existing.cantidad = Math.min(existing.cantidad + cantidad, producto.stock);
     } else {
-      this.items.push({
+      const item = {
+        key: itemKey,
         id: producto.id,
         nombre: producto.nombre,
         imagen: producto.imagen,
-        precioUSD: producto.precioUSD,
-        precioARS: SheetsService.calcularPrecioARS(producto.precioUSD),
+        precioUSD: precioUSD,
+        precioARS: precioARS,
         cantidad: Math.min(cantidad, producto.stock),
         stock: producto.stock,
-      });
+        variante: variant ? `${variant.color} / ${variant.talle}` : null,
+        _variant: variant, // Para referencia interna
+      };
+      this.items.push(item);
     }
 
     this.save();
-    App.showToast(`${producto.nombre} agregado al carrito`);
+    const variantText = variant ? ` (${variant.color} / ${variant.talle})` : '';
+    App.showToast(`Agregado: ${producto.nombre}${variantText}`);
   },
 
   /**
    * Remueve un producto del carrito
    */
   removeItem(productId) {
-    this.items = this.items.filter(i => i.id !== productId);
+    // Soporta tanto ID simple como key compuesta
+    this.items = this.items.filter(i => i.key !== productId && i.id !== productId);
     this.save();
   },
 
@@ -81,7 +100,7 @@ const CartService = {
    * Actualiza la cantidad de un producto
    */
   updateQuantity(productId, newQty) {
-    const item = this.items.find(i => i.id === productId);
+    const item = this.items.find(i => i.key === productId || i.id === productId);
     if (item) {
       if (newQty <= 0) {
         this.removeItem(productId);
@@ -104,7 +123,11 @@ const CartService = {
    */
   getSubtotalARS() {
     this.items.forEach(item => {
-      item.precioARS = SheetsService.calcularPrecioARS(item.precioUSD);
+      // Recalcular por si cambió el dólar
+      const producto = SheetsService.obtenerProducto(item.id);
+      if (producto) {
+        item.precioARS = SheetsService.calcularPrecioARS(producto.precioUSD, producto);
+      }
     });
     return this.items.reduce((sum, i) => sum + (i.precioARS * i.cantidad), 0);
   },
@@ -178,46 +201,60 @@ const CartService = {
    */
   clear() {
     this.items = [];
+    this.shippingId = null;
+    this.shippingCost = 0;
+    this.discountAmount = 0;
+    this.promoCode = null;
+    this.promoData = null;
     this.save();
   },
 
   /**
-   * Genera el texto para WhatsApp
+   * Genera el texto para WhatsApp (completo con variantes)
    */
   generarMensajeWhatsApp(envioSeleccionado, datosCliente) {
     const precioEnvio = envioSeleccionado ? envioSeleccionado.precio : 0;
     const total = this.getTotalARS() + precioEnvio;
 
     let itemsTexto = this.items.map(i => {
-      return `• ${i.nombre} x${i.cantidad} - ${SheetsService.formatPrecioARS(i.precioARS * i.cantidad)}`;
+      const line = `• ${i.nombre} x${i.cantidad}`;
+      const variantText = i.variante ? ` (${i.variante})` : '';
+      const precioLine = SheetsService.formatPrecioARS(i.precioARS * i.cantidad);
+      return `${line}${variantText} - ${precioLine}`;
     }).join('\n');
+
+    // Agregar resumen de descuento/envío si aplica
+    const subtotal = this.getSubtotalARS();
+    if (this.discountAmount > 0) {
+      itemsTexto += `\n• Descuento (${this.promoCode}): -${SheetsService.formatPrecioARS(this.discountAmount)}`;
+    }
+    if (this.shippingCost > 0) {
+      itemsTexto += `\n• Envío: ${SheetsService.formatPrecioARS(this.shippingCost)}`;
+    }
 
     let datosTexto = '';
     if (datosCliente) {
-      datosTexto = `Nombre: ${datosCliente.nombre || '-'}`;
+      datosTexto = `👤 *Datos del cliente:*`;
+      datosTexto += `\nNombre: ${datosCliente.nombre || '-'}`;
       datosTexto += `\nTeléfono: ${datosCliente.telefono || '-'}`;
       datosTexto += `\nEmail: ${datosCliente.email || '-'}`;
-      datosTexto += `\nDirección: ${datosCliente.direccion || '-'}`;
-      if (datosCliente.localidad) {
-        datosTexto += `\nLocalidad: ${datosCliente.localidad}`;
-      }
-      if (datosCliente.provincia) {
-        datosTexto += `\nProvincia: ${datosCliente.provincia}`;
-      }
+      datosTexto += `\n📍 *Dirección:* ${datosCliente.direccion || '-'}`;
+      if (datosCliente.localidad) datosTexto += `\nLocalidad: ${datosCliente.localidad}`;
+      if (datosCliente.provincia) datosTexto += `\nProvincia: ${datosCliente.provincia}`;
     }
 
     const envioTexto = envioSeleccionado
-      ? `${envioSeleccionado.nombre}${precioEnvio > 0 ? ' (' + SheetsService.formatPrecioARS(precioEnvio) + ')' : ' (GRATIS)'}`
+      ? `${envioSeleccionado.nombre}${envioSeleccionado.precio > 0 ? ' (' + SheetsService.formatPrecioARS(envioSeleccionado.precio) + ')' : ' (GRATIS)'}`
       : 'No seleccionado';
 
     const pagoTexto = datosCliente?.medioPago || 'A coordinar';
 
     const mensaje = CONFIG.whatsappTemplate
       .replace('{items}', itemsTexto)
-      .replace('{total}', SheetsService.formatPrecioARS(total))
-      .replace('{envio}', envioTexto)
-      .replace('{pago}', pagoTexto)
-      .replace('{datos}', datosTexto);
+      .replace('{total}', SheetsService.formatPrecioARS(this.getTotalARS() + (envioSeleccionado?.precio || 0)))
+      .replace('{envio}', envioSeleccionado ? `${envioSeleccionado.nombre}${envioSeleccionado.precio > 0 ? ' (' + SheetsService.formatPrecioARS(envioSeleccionado.precio) + ')' : ' (GRATIS)'}` : 'No seleccionado')
+      .replace('{pago}', datosCliente?.medioPago || 'A coordinar')
+      .replace('{datos}', `${datosTexto}\n\n💰 *Subtotal:* ${SheetsService.formatPrecioARS(this.getSubtotalARS())}\n🚚 *Envío:* ${envioTexto}\n💳 *Total:* ${SheetsService.formatPrecioARS(this.getTotalARS() + (envioSeleccionado?.precio || 0))}`);
 
     return mensaje;
   },
@@ -230,5 +267,15 @@ const CartService = {
     const encoded = encodeURIComponent(mensaje);
     const url = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encoded}`;
     window.open(url, '_blank');
+  },
+
+  /**
+   * Genera mensaje simplificado para un solo producto (quick WhatsApp)
+   */
+  generarMensajeProducto(producto, cantidad = 1, variant = null) {
+    const precioARS = SheetsService.calcularPrecioARS(producto.precioUSD, producto);
+    const variantText = variant ? `\n${variant.color} / ${variant.talle}` : '';
+    const texto = `Hola! Me interesa: ${producto.nombre}${variantText}\nCantidad: ${cantidad}\nPrecio: ${SheetsService.formatPrecioARS(precioARS * cantidad)}`;
+    return texto;
   },
 };
