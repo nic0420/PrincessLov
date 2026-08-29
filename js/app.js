@@ -1,5 +1,5 @@
 /* ============================================================
-   APP - PrincessLov Tienda Online (SSENSE Editorial Style)
+   APP - PrincessLov Tienda Online (Zara/Mango Style)
    ============================================================ */
 
 const App = {
@@ -18,40 +18,17 @@ const App = {
 
       this.renderDolarTicker();
       this.renderSidebarFilters();
-      this.renderCategoryPills();
+      this.renderCatBar();
       this.renderProductos(SheetsService.productos);
       this.renderCartSidebar();
       this.actualizarUI();
       this.setupWhatsAppLink();
-      this.initHeaderScroll();
-      this.initFabFilter();
 
       this.hideLoading();
     } catch (error) {
       console.error('[App] Error inicializando:', error);
       this.hideLoading();
     }
-  },
-
-  /* ---------- HEADER SCROLL EFFECT ---------- */
-  initHeaderScroll() {
-    const header = document.getElementById('header');
-    if (!header) return;
-    let lastScroll = 0;
-    window.addEventListener('scroll', () => {
-      const scrolled = window.scrollY > 8;
-      header.classList.toggle('header--scrolled', scrolled);
-    }, { passive: true });
-  },
-
-  /* ---------- FAB FILTER MOBILE ---------- */
-  initFabFilter() {
-    const fab = document.getElementById('fab-filter');
-    if (!fab) return;
-    const mql = window.matchMedia('(max-width: 768px)');
-    const toggle = () => { fab.style.display = mql.matches ? 'flex' : 'none'; };
-    toggle();
-    mql.addEventListener?.('change', toggle);
   },
 
   /* ---------- DÓLAR TICKER ---------- */
@@ -68,32 +45,31 @@ const App = {
     const cats = SheetsService.obtenerCategoriasConConteo();
 
     container.innerHTML = `
-      <button class="filter-item ${this.categoriaActual === 'todos' ? 'filter-item--active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos">
-        <span><span class="filter-item__icon" aria-hidden="true">🏷️</span> Todos los productos</span>
-        <span class="filter-item__count">${SheetsService.productos.length}</span>
+      <button class="filter-btn ${this.categoriaActual === 'todos' ? 'filter-btn--active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos">
+        <span>Todos los productos</span>
+        <span class="filter-btn__count">${SheetsService.productos.length}</span>
       </button>
       ${cats.map(cat => `
-        <button class="filter-item ${cat.id === this.categoriaActual ? 'filter-item--active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}">
-          <span><span class="filter-item__icon" aria-hidden="true">${cat.icon}</span> ${cat.nombre}</span>
-          <span class="filter-item__count">${cat.count}</span>
+        <button class="filter-btn ${cat.id === this.categoriaActual ? 'filter-btn--active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}">
+          <span>${cat.icon} ${cat.nombre}</span>
+          <span class="filter-btn__count">${cat.count}</span>
         </button>
       `).join('')}
     `;
   },
 
-  /* ---------- CATEGORY PILLS (top of grid) ---------- */
-  renderCategoryPills() {
-    const container = document.getElementById('categories-pills');
+  /* ---------- CATEGORY BAR (sticky horizontal) ---------- */
+  renderCatBar() {
+    const container = document.getElementById('cat-bar');
     if (!container) return;
 
     const cats = SheetsService.obtenerCategoriasConConteo();
 
+    // Keep "Todos" as first pill, then categories
     container.innerHTML = `
-      <button class="filter-pill ${this.categoriaActual === 'todos' ? 'filter-pill--active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos">
-        🏷️ Todos
-      </button>
+      <button class="cat-pill ${this.categoriaActual === 'todos' ? 'cat-pill--active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos" aria-pressed="${this.categoriaActual === 'todos'}">Todos</button>
       ${cats.map(cat => `
-        <button class="filter-pill ${cat.id === this.categoriaActual ? 'filter-pill--active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}">
+        <button class="cat-pill ${cat.id === this.categoriaActual ? 'cat-pill--active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}" aria-pressed="${cat.id === this.categoriaActual}">
           ${cat.icon} ${cat.nombre}
         </button>
       `).join('')}
@@ -126,17 +102,22 @@ const App = {
   filtrarCategoria(catId) {
     this.categoriaActual = catId;
 
-    document.querySelectorAll('#filter-categories .filter-item').forEach(item => {
-      item.classList.toggle('filter-item--active', item.dataset.cat === catId);
+    // Sidebar filters
+    document.querySelectorAll('#filter-categories .filter-btn').forEach(btn => {
+      btn.classList.toggle('filter-btn--active', btn.dataset.cat === catId);
     });
 
-    document.querySelectorAll('.filter-pill').forEach(pill => {
-      pill.classList.toggle('filter-pill--active', pill.dataset.cat === catId);
+    // Category bar pills
+    document.querySelectorAll('.cat-pill').forEach(pill => {
+      const active = pill.dataset.cat === catId;
+      pill.classList.toggle('cat-pill--active', active);
+      pill.setAttribute('aria-pressed', active);
     });
 
+    // Section title
     const titleEl = document.getElementById('productos-title');
     if (titleEl) {
-      if (catId === 'todos') titleEl.textContent = 'Todos los Productos';
+      if (catId === 'todos') titleEl.textContent = 'Todos los productos';
       else {
         const cat = SheetsService.obtenerCategoriasConConteo().find(c => c.id === catId);
         titleEl.textContent = cat ? cat.nombre : catId;
@@ -148,22 +129,34 @@ const App = {
 
   setStockFilter(filter) {
     this.stockFilter = filter;
-
-    document.querySelectorAll('#filter-stock .filter-item').forEach(item => {
-      item.classList.toggle('filter-item--active', item.dataset.filter === filter);
+    document.querySelectorAll('#filter-stock .filter-btn').forEach(btn => {
+      btn.classList.toggle('filter-btn--active', btn.dataset.filter === filter);
     });
-
     this.aplicarFiltros();
   },
 
   setSortOrder(order) {
     this.sortOrder = order;
-
-    document.querySelectorAll('#filter-sort .filter-item').forEach(item => {
-      item.classList.toggle('filter-item--active', item.dataset.sort === order);
+    document.querySelectorAll('#filter-sort .filter-btn').forEach(btn => {
+      btn.classList.toggle('filter-btn--active', btn.dataset.sort === order);
     });
-
     this.aplicarFiltros();
+  },
+
+  /* ---------- HEADER SEARCH ---------- */
+  handleHeaderSearch(query) {
+    // If user types in header search, open search overlay and delegate
+    if (query && query.trim().length >= 2) {
+      const overlay = document.getElementById('search-overlay');
+      if (overlay && !overlay.classList.contains('search-overlay--open')) {
+        this.toggleSearch();
+      }
+      const input = document.getElementById('search-input');
+      if (input) input.value = query;
+      this.handleSearch(query);
+    } else if (query.trim().length === 0) {
+      this.aplicarFiltros();
+    }
   },
 
   /* ---------- PRODUCTOS GRID ---------- */
@@ -190,26 +183,26 @@ const App = {
       const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
       const sinStock = p.stock <= 0;
       let badge = '';
-      if (p.tags.includes('nuevo')) badge = '<span class="product-card__badge">Nuevo</span>';
-      else if (p.tags.includes('oferta')) badge = '<span class="product-card__badge">Oferta</span>';
+      if (p.tags.includes('nuevo')) badge = '<span class="badge badge--new">Nuevo</span>';
+      else if (p.tags.includes('oferta')) badge = '<span class="badge badge--sale">Oferta</span>';
+      else if (sinStock) badge = '<span class="badge badge--low">Pocas unidades</span>';
 
       return `
         <article class="product-card" data-id="${p.id}" role="listitem">
-          ${badge}
           <div class="product-card__media">
+            ${badge}
             <img class="product-card__image" src="${p.imagen}" alt="${p.nombre}"
                  loading="lazy"
                  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22><rect width=%22300%22 height=%22400%22 fill=%22%23eedbd8%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239c684c%22 font-size=%2216%22>PrincessLov</text></svg>'">
-            <button class="product-card__quick" data-id="${p.id}" aria-label="Agregar ${p.nombre} al carrito" title="Agregar al carrito">
+            <button class="product-card__quick" data-id="${p.id}" aria-label="Agregar ${p.nombre} al carrito" ${sinStock ? 'disabled' : ''}>
               <span aria-hidden="true">🛒</span>
             </button>
           </div>
-          <div class="product-card__content">
-            <div class="product-card__category">${p.categoriaOriginal}</div>
+          <div class="product-card__info">
+            <div class="product-card__cat">${p.categoriaOriginal}</div>
             <h3 class="product-card__name">${p.nombre}</h3>
-            <p class="product-card__desc">${p.descripcion}</p>
             <div class="product-card__prices">
-              <span class="price price--ars">${SheetsService.formatPrecioARS(precioARS)}</span>
+              <span class="price price--current">${SheetsService.formatPrecioARS(precioARS)}</span>
               <span class="price price--usd">USD ${p.precioUSD.toFixed(2)}</span>
             </div>
             <div class="product-card__stock ${sinStock ? 'product-card__stock--low' : ''}">
@@ -220,10 +213,11 @@ const App = {
       `;
     }).join('');
 
-    // Delegación para botones quick-add
+    // Delegación quick-add
     grid.querySelectorAll('.product-card__quick').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (btn.disabled) return;
         const id = btn.dataset.id;
         const producto = SheetsService.obtenerProducto(id);
         if (producto && producto.stock > 0) {
@@ -234,7 +228,7 @@ const App = {
     });
   },
 
-  /* ---------- SIDEBAR DRAWER CONTROL ---------- */
+  /* ---------- SIDEBAR DRAWER ---------- */
   openSidebar() {
     document.getElementById('sidebar')?.classList.add('drawer--open');
     document.getElementById('sidebar-overlay')?.classList.add('drawer-overlay--open');
@@ -247,7 +241,7 @@ const App = {
     document.body.classList.remove('no-scroll');
   },
 
-  /* ---------- CARRITO SIDEBAR ---------- */
+  /* ---------- CARRITO ---------- */
   renderCartSidebar() {
     const itemsContainer = document.getElementById('cart-items');
     const footerEl = document.getElementById('cart-footer');
@@ -259,8 +253,8 @@ const App = {
       itemsContainer.innerHTML = `
         <div class="cart__empty">
           <div class="cart__empty-icon" aria-hidden="true">🛒</div>
-          <p style="font-size:1.125rem; font-weight:500; color:var(--ink); margin-bottom:var(--space-2);">Tu carrito está vacío</p>
-          <p style="font-weight:300; color:var(--muted);">Elegí prendas de nuestro catálogo para comenzar</p>
+          <p style="font-size:16px; font-weight:500; color:var(--text); margin-bottom:8px;">Tu carrito está vacío</p>
+          <p style="font-weight:400; color:var(--text-muted);">Agregá productos para continuar</p>
         </div>
       `;
       footerEl.innerHTML = '';
@@ -270,14 +264,14 @@ const App = {
     itemsContainer.innerHTML = items.map(item => `
       <div class="cart-item" data-id="${item.id}">
         <img class="cart-item__img" src="${item.imagen}" alt="${item.nombre}"
-             onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2280%22><rect width=%2270%22 height=%2280%22 fill=%22%23eedbd8%22/></svg>'">
+             onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2284%22><rect width=%2264%22 height=%2284%22 fill=%22%23eedbd8%22/></svg>'">
         <div class="cart-item__details">
           <div class="cart-item__name">${item.nombre}</div>
           <div class="cart-item__price">${SheetsService.formatPrecioARS(item.precioARS * item.cantidad)}</div>
           <div class="cart-item__controls">
-            <button class="qty-btn" data-action="minus" data-id="${item.id}" aria-label="Disminuir cantidad">−</button>
+            <button class="qty-btn" data-action="minus" data-id="${item.id}" aria-label="Disminuir">−</button>
             <span class="qty-value">${item.cantidad}</span>
-            <button class="qty-btn" data-action="plus" data-id="${item.id}" aria-label="Aumentar cantidad">+</button>
+            <button class="qty-btn" data-action="plus" data-id="${item.id}" aria-label="Aumentar">+</button>
             <button class="cart-item__remove" data-action="remove" data-id="${item.id}" aria-label="Eliminar ${item.nombre}">✕</button>
           </div>
         </div>
@@ -289,18 +283,12 @@ const App = {
 
     footerEl.innerHTML = `
       <div class="cart__totals">
-        <div class="cart__row">
-          <span>Subtotal (${count} item${count > 1 ? 's' : ''})</span>
-          <span>${SheetsService.formatPrecioARS(total)}</span>
-        </div>
-        <div class="cart__row cart__row--total">
-          <span>Total</span>
-          <span>${SheetsService.formatPrecioARS(total)}</span>
-        </div>
+        <div class="cart__row"><span>Subtotal (${count} item${count > 1 ? 's' : ''})</span><span>${SheetsService.formatPrecioARS(total)}</span></div>
+        <div class="cart__row cart__row--total"><span>Total</span><span>${SheetsService.formatPrecioARS(total)}</span></div>
       </div>
       <div class="cart__actions">
-        <button class="btn btn--primary btn--block" onclick="App.openCheckout()">💳 Finalizar Compra</button>
-        <button class="btn btn--whatsapp btn--block" onclick="App.enviarCarritoWhatsApp()">💬 Comprar por WhatsApp</button>
+        <button class="btn btn--primary btn--block" onclick="App.openCheckout()">Finalizar compra</button>
+        <button class="btn btn--whatsapp btn--block" onclick="App.enviarCarritoWhatsApp()">Comprar por WhatsApp</button>
       </div>
     `;
   },
@@ -315,7 +303,6 @@ const App = {
     this.renderCartSidebar();
   },
 
-  /* ---------- CARRITO ACCIONES ---------- */
   openCart() {
     document.getElementById('cart-overlay')?.classList.add('cart-overlay--open');
     document.getElementById('cart-sidebar')?.classList.add('cart-sidebar--open');
@@ -329,10 +316,7 @@ const App = {
   },
 
   enviarCarritoWhatsApp() {
-    if (CartService.items.length === 0) {
-      this.showToast('El carrito está vacío');
-      return;
-    }
+    if (CartService.items.length === 0) { this.showToast('El carrito está vacío'); return; }
     const envio = CONFIG.envios.find(e => e.id === 'retiro');
     CartService.enviarWhatsApp(envio, null);
     this.closeCart();
@@ -340,10 +324,7 @@ const App = {
 
   /* ---------- CHECKOUT ---------- */
   openCheckout() {
-    if (CartService.items.length === 0) {
-      this.showToast('El carrito está vacío');
-      return;
-    }
+    if (CartService.items.length === 0) { this.showToast('El carrito está vacío'); return; }
     this.closeCart();
     CheckoutService.renderCheckout();
     document.getElementById('checkout-modal')?.classList.add('modal-overlay--open');
@@ -355,7 +336,7 @@ const App = {
     document.body.classList.remove('no-scroll');
   },
 
-  /* ---------- BÚSQUEDA ---------- */
+  /* ---------- SEARCH OVERLAY ---------- */
   toggleSearch() {
     const overlay = document.getElementById('search-overlay');
     if (!overlay) return;
@@ -388,14 +369,12 @@ const App = {
         resultsEl.innerHTML = '<div class="search__empty">No se encontraron productos</div>';
         return;
       }
-
       resultsEl.innerHTML = results.slice(0, 8).map(p => {
         const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
         return `
-          <button class="search__result" onclick="App.toggleSearch(); App.scrollToProducts();" aria-label="${p.nombre} - ${SheetsService.formatPrecioARS(precioARS)}">
-            <img class="search__result-img" src="${p.imagen}" alt="" loading="lazy"
-                 onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2272%22><rect width=%2256%22 height=%2272%22 fill=%22%23eedbd8%22/></svg>'">
-            <div class="search__result-info">
+          <button class="search__result" onclick="App.toggleSearch(); document.getElementById('productos')?.scrollIntoView({behavior:'smooth'});" aria-label="${p.nombre} - ${SheetsService.formatPrecioARS(precioARS)}">
+            <img class="search__result-img" src="${p.imagen}" alt="" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2248%22 height=%2264%22><rect width=%2248%22 height=%2264%22 fill=%22%23eedbd8%22/></svg>'">
+            <div>
               <div class="search__result-name">${p.nombre}</div>
               <div class="search__result-price">${SheetsService.formatPrecioARS(precioARS)}</div>
             </div>
@@ -407,7 +386,7 @@ const App = {
     }
   },
 
-  /* ---------- MENÚ MÓVIL ---------- */
+  /* ---------- MOBILE MENU ---------- */
   openMobileMenu() {
     document.getElementById('mobile-menu')?.classList.add('mobile-menu--open');
     document.getElementById('menu-btn')?.setAttribute('aria-expanded', 'true');
@@ -424,16 +403,14 @@ const App = {
   showToast(message) {
     const container = document.getElementById('toast-container');
     if (!container) return;
-
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.innerHTML = `<span aria-hidden="true">✨</span> ${message}`;
     container.appendChild(toast);
-
     setTimeout(() => {
       toast.classList.add('toast--out');
-      setTimeout(() => toast.remove(), 300);
-    }, 2700);
+      setTimeout(() => toast.remove(), 200);
+    }, 2500);
   },
 
   /* ---------- LOADING ---------- */
@@ -441,34 +418,23 @@ const App = {
     const el = document.getElementById('loading-screen');
     if (el) {
       el.classList.add('loading-screen--hidden');
-      setTimeout(() => el.remove(), 600);
+      setTimeout(() => el.remove(), 500);
     }
   },
 
-  /* ---------- SCROLL ---------- */
-  scrollToProducts() {
-    document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  },
-
-  scrollToContact() {
-    document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  },
-
-  /* ---------- WHATSAPP LINK ---------- */
+  /* ---------- WHATSAPP ---------- */
   setupWhatsAppLink() {
     const btn = document.getElementById('contacto-whatsapp-btn');
     if (btn) btn.href = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent('Hola! Quiero consultar por sus productos.')}`;
-
     const footerWa = document.getElementById('footer-whatsapp-link');
     if (footerWa) footerWa.innerHTML = `📱 WhatsApp: <a href="https://wa.me/${CONFIG.negocio.whatsapp}" target="_blank" style="color:var(--pink-300);">Escribinos</a>`;
-
     const footerIg = document.getElementById('footer-instagram');
     if (footerIg && CONFIG.negocio.instagram) footerIg.href = `https://instagram.com/${CONFIG.negocio.instagram}`;
   },
 };
 
 /* ============================================
-   EVENT LISTENERS (delegación)
+   EVENT LISTENERS
    ============================================ */
 document.addEventListener('DOMContentLoaded', () => App.init());
 
@@ -476,6 +442,7 @@ document.addEventListener('click', (e) => {
   /* Quick-add from product card */
   const quickBtn = e.target.closest('.product-card__quick');
   if (quickBtn) {
+    if (quickBtn.disabled) return;
     const id = quickBtn.dataset.id;
     const producto = SheetsService.obtenerProducto(id);
     if (producto && producto.stock > 0) {
@@ -485,28 +452,17 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  /* Add to cart from product card (legacy fallback) */
-  const addBtn = e.target.closest('.btn-add-cart');
-  if (addBtn && !addBtn.disabled) {
-    const id = addBtn.dataset.id;
-    const producto = SheetsService.obtenerProducto(id);
-    if (producto) {
-      CartService.addItem(producto);
-      App.showToast(`Agregado: ${producto.nombre}`);
-    }
-  }
-
-  /* Cart close */
-  if (e.target.closest('.icon-btn')?.id === 'cart-btn' || e.target.id === 'cart-overlay' || e.target.closest('.cart__header .icon-btn')) {
-    App.closeCart();
-  }
+  /* Cart open/close */
+  if (e.target.closest('#cart-btn')) { App.openCart(); return; }
+  if (e.target.id === 'cart-overlay' || e.target.closest('.cart__header .icon-btn')) { App.closeCart(); return; }
 
   /* Checkout close */
-  if (e.target.id === 'checkout-modal' || e.target.closest('.modal__close')) {
-    App.closeCheckout();
-  }
+  if (e.target.id === 'checkout-modal' || e.target.closest('.modal__close')) { App.closeCheckout(); return; }
 
-  /* Cart qty controls */
+  /* Mobile menu */
+  if (e.target.closest('#menu-btn')) { App.openMobileMenu(); return; }
+
+  /* Cart qty */
   if (e.target.closest('.qty-btn')) {
     const btn = e.target.closest('.qty-btn');
     const id = btn.dataset.id;
@@ -516,12 +472,13 @@ document.addEventListener('click', (e) => {
       if (action === 'plus') CartService.updateQuantity(id, item.cantidad + 1);
       else if (action === 'minus') CartService.updateQuantity(id, item.cantidad - 1);
     }
+    return;
   }
 
   /* Cart remove */
-  if (e.target.closest('.cart-item__remove') || e.target.closest('.btn-remove-item')) {
-    const btn = e.target.closest('.cart-item__remove') || e.target.closest('.btn-remove-item');
-    CartService.removeItem(btn.dataset.id);
+  if (e.target.closest('.cart-item__remove')) {
+    CartService.removeItem(e.target.closest('.cart-item__remove').dataset.id);
+    return;
   }
 });
 
@@ -531,7 +488,7 @@ document.addEventListener('keydown', (e) => {
     App.closeCheckout();
     App.closeMobileMenu();
     App.closeSidebar();
-    const searchOverlay = document.getElementById('search-overlay');
-    if (searchOverlay?.classList.contains('search-overlay--open')) App.toggleSearch();
+    const so = document.getElementById('search-overlay');
+    if (so?.classList.contains('search-overlay--open')) App.toggleSearch();
   }
 });
