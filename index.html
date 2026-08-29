@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#9c684c">
   <title>PrincessLov | Sportwears, Pijamas y Lencerías</title>
 
-  <!-- Fonts: Montserrat + The Seasons (serif) -->
+  <!-- Fonts: Montserrat (300,400,500) + The Seasons (serif) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=The+Seasons:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -20,306 +20,290 @@
 </head>
 <body>
 
-  <!-- ============================================
-       LOADING SCREEN
-       ============================================ -->
-  <div id="loading-screen" class="loading-screen">
-    <div class="loading-spinner"></div>
-    <p class="loading-text">Cargando PrincessLov...</p>
+  <!-- LOADING SCREEN -->
+  <div id="loading-screen" class="loading-screen" aria-hidden="true">
+    <div class="loading__spinner" aria-hidden="true"></div>
+    <p class="loading__text">Cargando PrincessLov...</p>
   </div>
 
-  <!-- ============================================
-       BANNER PROMOCIONAL
-       ============================================ -->
-  <div class="promo-banner">
-    <b>Envíos a todo el país</b>&nbsp;·&nbsp;Precios actualizados en dólar blue
-  </div>
-
-  <!-- ============================================
-       NAVBAR (dos niveles, estilo editorial)
-       ============================================ -->
-  <nav class="navbar">
-    <div class="nav-left">
-      <button class="btn-drawer-nav" onclick="App.openSidebar()" title="Abrir filtros y categorías">
-        <span class="drawer-nav-icon">🎛️</span>
-        <span class="drawer-nav-text">Filtros</span>
-      </button>
-      <button class="btn-menu-mobile" onclick="App.openMobileMenu()" aria-label="Menú">☰</button>
-      <a href="#inicio" class="logo">
-        <img src="assets/logo.jpg" alt="PrincessLov" class="logo-img" onerror="this.src='assets/logo.svg'">
-        <span class="logo-text">PrincessLov</span>
-      </a>
-    </div>
-    <div class="header-search" onclick="App.toggleSearch()" role="button" tabindex="0" aria-label="Buscar productos">
-      <span class="icon">🔍</span>
-      <span>Buscar productos...</span>
-    </div>
-    <div class="nav-right">
-      <button class="nav-icon-btn btn-mobile-search" onclick="App.toggleSearch()" aria-label="Buscar">🔍</button>
-      <button class="nav-icon-btn" onclick="App.openCart()" aria-label="Carrito">
-        🛒
-        <span id="cart-count" class="cart-badge">0</span>
-      </button>
-      <button class="btn-cta-nav" onclick="App.scrollToProducts()">Ver Productos</button>
-    </div>
-  </nav>
-
-  <nav class="main-nav">
-    <a href="#inicio" class="active">Inicio</a>
-    <a href="#productos">Productos</a>
-    <a href="#productos" onclick="App.openSidebar(); return false;">Categorías</a>
-    <a href="#contacto">Contacto</a>
-  </nav>
-
-  <!-- ============================================
-       DÓLAR TICKER
-       ============================================ -->
-  <div class="dolar-ticker" id="dolar-ticker">
-    💵 Cotización del dólar: <strong id="dolar-valor">Cargando...</strong> | Precios actualizados al momento de la compra
-  </div>
-
-  <!-- ============================================
-       HERO - SHOWCASE DE PRODUCTOS Y LOGO DESTACADO
-       ============================================ -->
-  <section class="hero" id="inicio">
-    <div class="hero-content">
-      <div class="hero-text">
-        <div class="hero-brand-badge">
-          <img src="assets/logo.jpg" alt="PrincessLov Logo" class="hero-logo-emblem" onerror="this.src='assets/logo.svg'">
-          <span class="subtitle">Sportwears · Pijamas · Lencerías</span>
-        </div>
-        <h1>Encontrá tu estilo perfecto</h1>
-        <span class="accent-underline"></span>
-        <p class="tagline">Indumentaria deportiva y pijamas con los mejores precios. Calidad y comodidad para cada día.</p>
-        <div class="hero-actions">
-          <button class="btn-hero" onclick="App.scrollToProducts()">
-            Ver Catálogo →
-          </button>
-          <button class="btn-hero-secondary" onclick="App.openSidebar()">
-            🎛️ Explorar Categorías
-          </button>
-        </div>
-      </div>
-      <div class="hero-showcase" id="hero-showcase">
-        <!-- Se renderiza dinámicamente con productos destacados -->
-        <div class="hero-product-card" style="background:var(--pink-200);min-height:240px;"></div>
-        <div class="hero-product-card" style="background:var(--pink-200);min-height:240px;"></div>
-        <div class="hero-product-card" style="background:var(--pink-200);min-height:240px;"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================
-       LAYOUT: DESPLEGABLE LATERAL (SIDEBAR) + PRODUCTOS
-       ============================================ -->
-  <div class="main-layout" id="productos">
-
-    <!-- OVERLAY PARA EL DESPLEGABLE LATERAL -->
-    <div id="sidebar-overlay" class="sidebar-overlay" onclick="App.closeSidebar()"></div>
-
-    <!-- SIDEBAR DESPLEGABLE LATERAL (DRAWER) -->
-    <aside class="sidebar-drawer" id="sidebar">
-      <div class="sidebar-drawer-header">
-        <div class="drawer-title">
-          <img src="assets/logo.jpg" alt="Logo" class="drawer-logo" onerror="this.src='assets/logo.svg'">
-          <h3>Filtros y Categorías</h3>
-        </div>
-        <button class="btn-close-drawer" onclick="App.closeSidebar()" aria-label="Cerrar Filtros">✕</button>
+  <!-- HEADER MINIMAL -->
+  <header class="header" id="header" role="banner">
+    <div class="container header__inner">
+      <div class="header__left">
+        <button class="menu-btn icon-btn" id="menu-btn" aria-label="Menú" aria-expanded="false" aria-controls="mobile-menu">
+          <span aria-hidden="true">☰</span>
+        </button>
+        <a href="#inicio" class="logo" aria-label="PrincessLov - Inicio">
+          <img src="assets/logo.jpg" alt="" class="logo__mark" onerror="this.src='assets/logo.svg'">
+          <span class="logo__text">PrincessLov</span>
+        </a>
       </div>
 
-      <div class="sidebar-drawer-body">
-        <div class="sidebar-section">
-          <h4 class="sidebar-title">🔍 Buscar</h4>
-          <input type="text" class="sidebar-search" placeholder="Buscar por nombre o descripción..." oninput="App.handleSearch(this.value)">
-        </div>
+      <nav class="nav" aria-label="Navegación principal">
+        <ul class="nav__list">
+          <li><a href="#inicio" class="nav__link" aria-current="page">Inicio</a></li>
+          <li><a href="#productos" class="nav__link">Productos</a></li>
+          <li><a href="#productos" class="nav__link" onclick="App.openSidebar(); return false;">Categorías</a></li>
+          <li><a href="#contacto" class="nav__link">Contacto</a></li>
+        </ul>
+      </nav>
 
-        <div class="sidebar-section">
-          <h4 class="sidebar-title">🏷️ Categorías</h4>
-          <ul class="filter-list" id="filter-categories">
-            <!-- Se renderiza dinámicamente -->
-          </ul>
-        </div>
-
-        <div class="sidebar-section">
-          <h4 class="sidebar-title">📦 Disponibilidad</h4>
-          <ul class="filter-list" id="filter-stock">
-            <li class="filter-item active" onclick="App.setStockFilter('all')" data-filter="all">
-              <span><span class="filter-icon">📦</span> Todos los productos</span>
-            </li>
-            <li class="filter-item" onclick="App.setStockFilter('in')" data-filter="in">
-              <span><span class="filter-icon">✅</span> En stock</span>
-            </li>
-            <li class="filter-item" onclick="App.setStockFilter('out')" data-filter="out">
-              <span><span class="filter-icon">⏳</span> Sin stock</span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="sidebar-section">
-          <h4 class="sidebar-title">🔃 Ordenar por</h4>
-          <ul class="filter-list" id="filter-sort">
-            <li class="filter-item active" onclick="App.setSortOrder('featured')" data-sort="featured">
-              <span><span class="filter-icon">⭐</span> Destacados</span>
-            </li>
-            <li class="filter-item" onclick="App.setSortOrder('price-asc')" data-sort="price-asc">
-              <span><span class="filter-icon">💰</span> Menor precio</span>
-            </li>
-            <li class="filter-item" onclick="App.setSortOrder('price-desc')" data-sort="price-desc">
-              <span><span class="filter-icon">💎</span> Mayor precio</span>
-            </li>
-            <li class="filter-item" onclick="App.setSortOrder('name')" data-sort="name">
-              <span><span class="filter-icon">🔤</span> Nombre A-Z</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="sidebar-drawer-footer">
-        <button class="btn-apply-filters" onclick="App.closeSidebar()">
-          Ver Productos
+      <div class="header__actions">
+        <button class="icon-btn icon-btn--search" id="search-btn" aria-label="Buscar productos" aria-expanded="false">
+          <span aria-hidden="true">🔍</span>
+        </button>
+        <button class="icon-btn icon-btn--cart" id="cart-btn" aria-label="Carrito de compras" aria-expanded="false">
+          <span aria-hidden="true">🛒</span>
+          <span id="cart-count" class="cart-count" aria-live="polite">0</span>
         </button>
       </div>
-    </aside>
+    </div>
+  </header>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="productos-area">
-      <div class="productos-header">
-        <div class="productos-header-left">
-          <button class="btn-filter-toggle" onclick="App.openSidebar()" title="Filtrar y categorías" aria-label="Filtros">⚙️</button>
-          <h2 id="productos-title">Todos los Productos</h2>
-        </div>
-        <span class="productos-count" id="productos-count">Cargando productos...</span>
-      </div>
-      <div id="categories-pills" class="categories-pills">
-        <!-- Se renderiza dinámicamente (App.renderCategoryPills) -->
-      </div>
-      <div id="productos-grid" class="productos-grid">
-        <!-- Se renderiza dinámicamente -->
-      </div>
-    </main>
+  <!-- DÓLAR TICKER -->
+  <div class="dolar-ticker" id="dolar-ticker" aria-live="polite" aria-atomic="true">
+    <div class="dolar-ticker__inner">
+      <span>💵 Cotización del dólar:</span>
+      <strong id="dolar-valor">Cargando...</strong>
+      <span>| Precios actualizados al momento de la compra</span>
+    </div>
   </div>
 
-  <!-- ============================================
-       BOTÓN FLOTANTE SIDEBAR TOGGLE
-       ============================================ -->
-  <button class="btn-sidebar-toggle" id="btn-sidebar-toggle" onclick="App.openSidebar()" aria-label="Filtrar" title="Filtrar">⚙️</button>
-
-  <!-- ============================================
-       CONTACTO
-       ============================================ -->
-  <section id="contacto" class="contacto-section">
-    <img src="assets/logo.jpg" alt="PrincessLov Logo" class="contacto-logo" onerror="this.src='assets/logo.svg'">
-    <h2>¿Tenés alguna consulta?</h2>
-    <p>Escribinos por WhatsApp y te asesoramos al instante sobre talles, stock o entregas.</p>
-    <a id="contacto-whatsapp-btn" href="#" target="_blank" class="btn-whatsapp-contacto">
-      💬 Chateá con nosotros por WhatsApp
-    </a>
+  <!-- HERO EDITORIAL -->
+  <section class="hero" id="inicio" aria-labelledby="hero-title">
+    <div class="hero__media" aria-hidden="true">
+      <img src="assets/conjunto-deportivo-borgona.jpg" alt="" loading="eager">
+    </div>
+    <div class="hero__content container">
+      <span class="hero__badge">Nueva colección</span>
+      <h1 id="hero-title" class="hero__title">Encontrá tu <em>estilo perfecto</em></h1>
+      <p class="hero__desc">Indumentaria deportiva, pijamas y lencería con los mejores precios. Calidad y comodidad para cada día.</p>
+      <div class="hero__cta">
+        <button class="btn btn--primary" onclick="App.scrollToProducts()">Ver catálogo</button>
+        <button class="btn btn--ghost" onclick="App.openSidebar()">Explorar categorías</button>
+      </div>
+    </div>
   </section>
 
-  <!-- ============================================
-       FOOTER
-       ============================================ -->
-  <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-grid">
-        <div class="footer-col brand-col">
-          <a href="#" class="footer-logo-link">
-            <img src="assets/logo.jpg" alt="PrincessLov" class="footer-logo-img" onerror="this.src='assets/logo.svg'">
-            <span class="footer-logo-text">PrincessLov</span>
-          </a>
-          <p>Sportwears, pijamas y lencerías para mujeres que buscan estilo, comodidad y calidad.</p>
+  <!-- PRODUCTOS -->
+  <main id="productos" class="section" role="main">
+    <div class="container">
+      <!-- OVERLAY PARA SIDEBAR -->
+      <div class="drawer-overlay" id="sidebar-overlay" aria-hidden="true" onclick="App.closeSidebar()"></div>
+
+      <!-- SIDEBAR DRAWER -->
+      <aside class="drawer" id="sidebar" role="complementary" aria-label="Filtros y categorías">
+        <div class="drawer__header">
+          <div class="drawer__title">
+            <img src="assets/logo.jpg" alt="" class="drawer__logo" onerror="this.src='assets/logo.svg'">
+            <h3>Filtros</h3>
+          </div>
+          <button class="drawer__close" onclick="App.closeSidebar()" aria-label="Cerrar filtros">
+            <span aria-hidden="true">✕</span>
+          </button>
         </div>
-        <div class="footer-col">
-          <h4>Links Útiles</h4>
-          <a href="#inicio">Inicio</a>
-          <a href="#productos">Productos</a>
-          <a href="#" onclick="App.openSidebar(); return false;">Categorías y Filtros</a>
-          <a href="#contacto">Contacto</a>
-        </div>
-        <div class="footer-col">
-          <h4>Contacto</h4>
-          <p>📍 Puerto Iguazú, Misiones</p>
-          <p id="footer-whatsapp-link">📱 WhatsApp: Cargando...</p>
-        </div>
-        <div class="footer-col">
-          <h4>Seguínos</h4>
-          <div class="footer-social">
-            <a href="#" id="footer-instagram" target="_blank" aria-label="Instagram">📷</a>
-            <a href="#" id="footer-facebook" target="_blank" aria-label="Facebook">📘</a>
+        <div class="drawer__body">
+          <div class="drawer__section">
+            <h4 class="drawer__section-title">Buscar</h4>
+            <input type="text" class="drawer__search" placeholder="Buscar por nombre o descripción..." oninput="App.handleSearch(this.value)" aria-label="Buscar productos">
+          </div>
+          <div class="drawer__section">
+            <h4 class="drawer__section-title">Categorías</h4>
+            <div class="filter-group" id="filter-categories" role="group" aria-label="Filtrar por categoría">
+              <!-- Renderizado dinámicamente -->
+            </div>
+          </div>
+          <div class="drawer__section">
+            <h4 class="drawer__section-title">Disponibilidad</h4>
+            <div class="filter-group" id="filter-stock" role="group" aria-label="Filtrar por stock">
+              <button class="filter-item filter-item--active" onclick="App.setStockFilter('all')" data-filter="all">
+                <span><span class="filter-item__icon" aria-hidden="true">📦</span> Todos los productos</span>
+                <span class="filter-item__count" id="stock-count-all">0</span>
+              </button>
+              <button class="filter-item" onclick="App.setStockFilter('in')" data-filter="in">
+                <span><span class="filter-item__icon" aria-hidden="true">✅</span> En stock</span>
+                <span class="filter-item__count" id="stock-count-in">0</span>
+              </button>
+              <button class="filter-item" onclick="App.setStockFilter('out')" data-filter="out">
+                <span><span class="filter-item__icon" aria-hidden="true">⏳</span> Sin stock</span>
+                <span class="filter-item__count" id="stock-count-out">0</span>
+              </button>
+            </div>
+          </div>
+          <div class="drawer__section">
+            <h4 class="drawer__section-title">Ordenar por</h4>
+            <div class="filter-group" id="filter-sort" role="group" aria-label="Ordenar productos">
+              <button class="filter-item filter-item--active" onclick="App.setSortOrder('featured')" data-sort="featured">
+                <span><span class="filter-item__icon" aria-hidden="true">⭐</span> Destacados</span>
+              </button>
+              <button class="filter-item" onclick="App.setSortOrder('price-asc')" data-sort="price-asc">
+                <span><span class="filter-item__icon" aria-hidden="true">💰</span> Menor precio</span>
+              </button>
+              <button class="filter-item" onclick="App.setSortOrder('price-desc')" data-sort="price-desc">
+                <span><span class="filter-item__icon" aria-hidden="true">💎</span> Mayor precio</span>
+              </button>
+              <button class="filter-item" onclick="App.setSortOrder('name')" data-sort="name">
+                <span><span class="filter-item__icon" aria-hidden="true">🔤</span> Nombre A-Z</span>
+              </button>
+            </div>
           </div>
         </div>
+        <div class="drawer__footer">
+          <button class="btn btn--primary btn--block" onclick="App.closeSidebar()">Ver productos</button>
+        </div>
+      </aside>
+
+      <!-- CONTENIDO PRINCIPAL -->
+      <div class="products">
+        <header class="products__header">
+          <div class="products__title-row">
+            <div class="section__header" style="margin:0;">
+              <span class="section__label">Catálogo</span>
+              <h2 class="section__title" id="productos-title">Todos los Productos</h2>
+            </div>
+            <span class="products__count" id="productos-count">Cargando...</span>
+          </div>
+          <div class="products__filters" id="categories-pills" role="group" aria-label="Categorías rápidas">
+            <!-- Renderizado dinámicamente -->
+          </div>
+        </header>
+
+        <div class="products__grid" id="productos-grid" role="list">
+          <!-- Renderizado dinámicamente -->
+        </div>
+
+        <!-- Empty state -->
+        <div id="productos-empty" class="cart__empty" style="display:none; grid-column:1/-1;">
+          <div class="cart__empty-icon" aria-hidden="true">🔍</div>
+          <p style="font-size:1.125rem; font-weight:500; color:var(--ink); margin-bottom:var(--space-2);">No se encontraron productos</p>
+          <p style="font-weight:300; color:var(--muted); margin-bottom:var(--space-4);">Probá cambiar los filtros o la búsqueda</p>
+          <button class="btn btn--primary" onclick="App.filtrarCategoria('todos'); App.setStockFilter('all');">Ver todos los productos</button>
+        </div>
       </div>
-      <div class="footer-bottom">
-        <p>© 2026 PrincessLov. Sportwears, Pijamas & Lencerías. Todos los derechos reservados.</p>
+    </div>
+  </main>
+
+  <!-- BOTÓN FLOTANTE SIDEBAR (mobile) -->
+  <button class="icon-btn" id="fab-filter" onclick="App.openSidebar()" aria-label="Abrir filtros" style="position:fixed; bottom:var(--space-5); right:var(--space-5); z-index:500; box-shadow:0 8px 24px -8px rgba(61,43,36,0.2); display:none;">
+    <span aria-hidden="true">🎛️</span>
+  </button>
+
+  <!-- CTA CONTACTO -->
+  <section class="cta" id="contacto" aria-labelledby="cta-title">
+    <div class="container">
+      <img src="assets/logo.jpg" alt="" class="cta__logo" onerror="this.src='assets/logo.svg'">
+      <h2 id="cta-title" class="cta__title">¿Tenés alguna consulta?</h2>
+      <p class="cta__desc">Escribinos por WhatsApp y te asesoramos al instante sobre talles, stock o entregas.</p>
+      <a id="contacto-whatsapp-btn" href="#" target="_blank" class="btn btn--whatsapp cta__btn">
+        <span aria-hidden="true">💬</span> Chateá con nosotros
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <a href="#inicio" class="footer__logo-link" aria-label="PrincessLov - Inicio">
+            <img src="assets/logo.jpg" alt="" class="footer__logo-img" onerror="this.src='assets/logo.svg'">
+            <span class="footer__logo-text">PrincessLov</span>
+          </a>
+          <p class="footer__tagline">Sportwears, pijamas y lencerías para mujeres que buscan estilo, comodidad y calidad.</p>
+          <div class="footer__social">
+            <a href="#" id="footer-instagram" target="_blank" class="footer__social-link" aria-label="Instagram">📷</a>
+            <a href="#" id="footer-facebook" target="_blank" class="footer__social-link" aria-label="Facebook">📘</a>
+          </div>
+        </div>
+        <div class="footer__col">
+          <h4 class="footer__col-title">Navegación</h4>
+          <ul class="footer__links">
+            <li><a href="#inicio" class="footer__link">Inicio</a></li>
+            <li><a href="#productos" class="footer__link">Productos</a></li>
+            <li><a href="#productos" class="footer__link" onclick="App.openSidebar(); return false;">Categorías</a></li>
+            <li><a href="#contacto" class="footer__link">Contacto</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h4 class="footer__col-title">Contacto</h4>
+          <ul class="footer__links">
+            <li><a href="#" class="footer__link">📍 Puerto Iguazú, Misiones</a></li>
+            <li><a href="#" id="footer-whatsapp-link" class="footer__link" target="_blank">📱 WhatsApp: Cargando...</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h4 class="footer__col-title">Envíos</h4>
+          <ul class="footer__links">
+            <li><a href="#" class="footer__link">Envío gratis en Iguazú</a></li>
+            <li><a href="#" class="footer__link">Neo Encomienda (interior)</a></li>
+            <li><a href="#" class="footer__link">Correo Argentino</a></li>
+            <li><a href="#" class="footer__link">Flecha / Vía Cargo</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>© 2026 PrincessLov. Todos los derechos reservados.</p>
+        <p>Hecho con ❤️ en Argentina</p>
       </div>
     </div>
   </footer>
 
-  <!-- ============================================
-       CART SIDEBAR
-       ============================================ -->
-  <div id="cart-overlay" class="cart-overlay" onclick="App.closeCart()"></div>
-  <div id="cart-sidebar" class="cart-sidebar">
-    <div class="cart-header">
-      <h3>Tu Carrito</h3>
-      <button class="btn-close-cart" onclick="App.closeCart()">✕</button>
-    </div>
-    <div id="cart-items" class="cart-items"></div>
-    <div class="cart-footer" id="cart-footer"></div>
+  <!-- CARRITO SIDEBAR -->
+  <div class="cart-overlay" id="cart-overlay" aria-hidden="true" onclick="App.closeCart()"></div>
+  <aside class="cart-sidebar" id="cart-sidebar" role="dialog" aria-label="Carrito de compras" aria-modal="true">
+    <header class="cart__header">
+      <h3>Tu carrito</h3>
+      <button class="icon-btn" onclick="App.closeCart()" aria-label="Cerrar carrito">
+        <span aria-hidden="true">✕</span>
+      </button>
+    </header>
+    <div class="cart__items" id="cart-items"></div>
+    <footer class="cart__footer" id="cart-footer"></footer>
+  </aside>
+
+  <!-- CHECKOUT MODAL -->
+  <div class="modal-overlay" id="checkout-modal" aria-hidden="true">
+    <div class="modal" id="checkout-modal-content" role="dialog" aria-modal="true" aria-labelledby="checkout-title"></div>
   </div>
 
-  <!-- ============================================
-       CHECKOUT MODAL
-       ============================================ -->
-  <div id="checkout-modal" class="modal-overlay">
-    <div class="modal" id="checkout-modal-content"></div>
-  </div>
-
-  <!-- ============================================
-       SEARCH OVERLAY
-       ============================================ -->
-  <div id="search-overlay" class="search-overlay" onclick="if(event.target===this) App.toggleSearch()">
-    <div class="search-box">
-      <div class="search-input-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Buscar productos..." oninput="App.handleSearch(this.value)">
+  <!-- SEARCH OVERLAY -->
+  <div class="search-overlay" id="search-overlay" aria-hidden="true" onclick="if(event.target===this) App.toggleSearch()">
+    <div class="search-box" role="search">
+      <div class="search__input-wrap">
+        <span class="search__icon" aria-hidden="true">🔍</span>
+        <input type="text" id="search-input" class="search__input" placeholder="Buscar productos..." oninput="App.handleSearch(this.value)" autocomplete="off" aria-label="Buscar productos">
       </div>
-      <div id="search-results" class="search-results"></div>
+      <div id="search-results" class="search__results"></div>
     </div>
   </div>
 
-  <!-- ============================================
-       MOBILE MENU
-       ============================================ -->
-  <div id="mobile-menu" class="mobile-menu">
-    <div class="mobile-menu-header">
-      <a href="#" class="logo">
-        <img src="assets/logo.jpg" alt="PrincessLov" class="logo-img" onerror="this.src='assets/logo.svg'">
-        <span class="logo-text" style="font-size:1.1rem;">PrincessLov</span>
+  <!-- MOBILE MENU -->
+  <nav class="mobile-menu" id="mobile-menu" role="navigation" aria-label="Menú móvil">
+    <div class="mobile-menu__header">
+      <a href="#inicio" class="mobile-menu__logo" aria-label="PrincessLov - Inicio">
+        <img src="assets/logo.jpg" alt="" class="mobile-menu__logo-img" onerror="this.src='assets/logo.svg'">
+        <span class="mobile-menu__logo-text">PrincessLov</span>
       </a>
-      <button class="btn-close-cart" onclick="App.closeMobileMenu()">✕</button>
+      <button class="mobile-menu__close" onclick="App.closeMobileMenu()" aria-label="Cerrar menú">
+        <span aria-hidden="true">✕</span>
+      </button>
     </div>
-    <ul class="mobile-menu-links">
-      <li><a href="#inicio" onclick="App.closeMobileMenu()">Inicio</a></li>
-      <li><a href="#productos" onclick="App.closeMobileMenu(); App.openSidebar();">Categorías & Filtros</a></li>
-      <li><a href="#productos" onclick="App.closeMobileMenu()">Productos</a></li>
-      <li><a href="#contacto" onclick="App.closeMobileMenu()">Contacto</a></li>
+    <ul class="mobile-menu__list">
+      <li><a href="#inicio" class="mobile-menu__link" onclick="App.closeMobileMenu()">Inicio</a></li>
+      <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.openSidebar();">Categorías & Filtros</a></li>
+      <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu()">Productos</a></li>
+      <li><a href="#contacto" class="mobile-menu__link" onclick="App.closeMobileMenu()">Contacto</a></li>
     </ul>
-  </div>
+  </nav>
 
-  <!-- ============================================
-       TOAST CONTAINER
-       ============================================ -->
-  <div id="toast-container" class="toast-container"></div>
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- ============================================
-       SCRIPTS
-       ============================================ -->
+  <!-- SCRIPTS -->
   <script src="data/config.js"></script>
   <script src="js/sheets.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/checkout.js"></script>
   <script src="js/app.js"></script>
-
 </body>
 </html>
