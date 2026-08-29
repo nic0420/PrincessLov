@@ -245,52 +245,129 @@ const App = {
   renderCartSidebar() {
     const itemsContainer = document.getElementById('cart-items');
     const footerEl = document.getElementById('cart-footer');
+    const totalsEl = document.getElementById('cart-totals');
+    const headerCountEl = document.getElementById('cart-header-count');
     if (!itemsContainer || !footerEl) return;
 
     const items = CartService.items;
 
+    // Header count
+    if (headerCountEl) {
+      headerCountEl.textContent = `${items.length} producto${items.length !== 1 ? 's' : ''}`;
+    }
+
     if (items.length === 0) {
       itemsContainer.innerHTML = `
         <div class="cart__empty">
-          <div class="cart__empty-icon" aria-hidden="true">🛒</div>
-          <p style="font-size:16px; font-weight:500; color:var(--text); margin-bottom:8px;">Tu carrito está vacío</p>
-          <p style="font-weight:400; color:var(--text-muted);">Agregá productos para continuar</p>
+          <div class="cart__empty-illustration" aria-hidden="true"></div>
+          <h4 class="cart__empty-title">Tu carrito está vacío</h4>
+          <p class="cart__empty-desc">Agregá tus productos favoritos y completá tu compra en pocos pasos.</p>
+          <button class="btn btn--primary cart__empty-btn" onclick="App.closeCart(); App.scrollToProducts();">Seguir comprando</button>
         </div>
       `;
       footerEl.innerHTML = '';
+      if (totalsEl) totalsEl.innerHTML = '';
+      this.hidePromoShippingCrossSell();
       return;
     }
 
-    itemsContainer.innerHTML = items.map(item => `
-      <div class="cart-item" data-id="${item.id}">
-        <img class="cart-item__img" src="${item.imagen}" alt="${item.nombre}"
-             onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2284%22><rect width=%2264%22 height=%2284%22 fill=%22%23eedbd8%22/></svg>'">
-        <div class="cart-item__details">
-          <div class="cart-item__name">${item.nombre}</div>
-          <div class="cart-item__price">${SheetsService.formatPrecioARS(item.precioARS * item.cantidad)}</div>
-          <div class="cart-item__controls">
-            <button class="qty-btn" data-action="minus" data-id="${item.id}" aria-label="Disminuir">−</button>
-            <span class="qty-value">${item.cantidad}</span>
-            <button class="qty-btn" data-action="plus" data-id="${item.id}" aria-label="Aumentar">+</button>
-            <button class="cart-item__remove" data-action="remove" data-id="${item.id}" aria-label="Eliminar ${item.nombre}">✕</button>
-          </div>
-        </div>
-      </div>
-    `).join('');
+    // Render items with premium layout
+    itemsContainer.innerHTML = items.map(item => {
+      const producto = SheetsService.obtenerProducto(item.id);
+      const stock = producto?.stock ?? 99;
+      const lowStock = stock > 0 && stock <= 3;
+      const priceARS = item.precioARS * item.cantidad;
+      const discount = item.descuento || 0;
 
+      return `
+        <article class="cart-item" data-id="${item.id}" role="listitem">
+          <div class="cart-item__media">
+            <img class="cart-item__image" src="${item.imagen}" alt="${item.nombre}"
+                 loading="lazy"
+                 onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2296%22><rect width=%2272%22 height=%2296%22 fill=%22%23eedbd8%22/></svg>'">
+            ${lowStock ? '<span class="cart-item__badge cart-item__badge--low">Pocas unidades</span>' : ''}
+          </div>
+          <div class="cart-item__details">
+            <h4 class="cart-item__name">${item.nombre}</h4>
+            ${item.variante ? `<p class="cart-item__variant">${item.variante}</p>` : ''}
+            <div class="cart-item__price-row">
+              <span class="cart-item__price">${SheetsService.formatPrecioARS(priceARS)}</span>
+              ${discount ? `<span class="cart-item__discount">-${discount}%</span>` : ''}
+            </div>
+            <div class="cart-item__qty">
+              <div class="qty-selector" role="group" aria-label="Cantidad de ${item.nombre}">
+                <button class="qty-btn" data-action="minus" data-id="${item.id}" aria-label="Disminuir cantidad" ${item.cantidad <= 1 ? 'disabled' : ''}>−</button>
+                <input type="number" class="qty-input" data-id="${item.id}" value="${item.cantidad}" min="1" max="${stock}" aria-label="Cantidad" readonly>
+                <button class="qty-btn" data-action="plus" data-id="${item.id}" aria-label="Aumentar cantidad" ${item.cantidad >= stock ? 'disabled' : ''}>+</button>
+              </div>
+              <button class="cart-item__remove" data-action="remove" data-id="${item.id}" aria-label="Eliminar ${item.nombre}" title="Eliminar">
+                <span aria-hidden="true">🗑️</span>
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    // Totals breakdown
+    const subtotal = CartService.getSubtotalARS();
+    const shipping = CartService.getShippingCost() || 0;
+    const discount = CartService.getDiscountAmount() || 0;
     const total = CartService.getTotalARS();
     const count = CartService.getTotalItems();
+    const freeShippingThreshold = 150000; // $150k ARS
+    const progress = Math.min((subtotal / freeShippingThreshold) * 100, 100);
+    const remaining = Math.max(freeShippingThreshold - subtotal, 0);
 
-    footerEl.innerHTML = `
-      <div class="cart__totals">
-        <div class="cart__row"><span>Subtotal (${count} item${count > 1 ? 's' : ''})</span><span>${SheetsService.formatPrecioARS(total)}</span></div>
-        <div class="cart__row cart__row--total"><span>Total</span><span>${SheetsService.formatPrecioARS(total)}</span></div>
-      </div>
-      <div class="cart__actions">
-        <button class="btn btn--primary btn--block" onclick="App.openCheckout()">Finalizar compra</button>
-        <button class="btn btn--whatsapp btn--block" onclick="App.enviarCarritoWhatsApp()">Comprar por WhatsApp</button>
-      </div>
-    `;
+    // Update free shipping progress
+    const freeBarFill = document.getElementById('free-bar-fill');
+    const freeText = document.getElementById('free-text');
+    const freeAmount = document.getElementById('free-amount');
+    if (freeBarFill) freeBarFill.style.width = `${progress}%`;
+    if (freeAmount) freeAmount.textContent = SheetsService.formatPrecioARS(remaining);
+    if (freeText) {
+      if (remaining <= 0) {
+        freeText.innerHTML = `¡Tenés <strong>envío gratis</strong>! 🎉`;
+      } else {
+        freeText.innerHTML = `Agregá <strong>${SheetsService.formatPrecioARS(remaining)}</strong> más para envío gratis`;
+      }
+    }
+
+    // Totals breakdown
+    if (totalsEl) {
+      totalsEl.innerHTML = `
+        <div class="cart__totals-row cart__totals-row--subtotal">
+          <span class="cart__totals-label">Subtotal (<span id="totals-count">${count} item${count !== 1 ? 's' : ''}</span>)</span>
+          <span>${SheetsService.formatPrecioARS(subtotal)}</span>
+        </div>
+        ${discount > 0 ? `
+        <div class="cart__totals-row cart__totals-row--discount">
+          <span class="cart__totals-label">Descuento</span>
+          <span>−${SheetsService.formatPrecioARS(discount)}</span>
+        </div>` : ''}
+        <div class="cart__totals-row cart__totals-row--shipping">
+          <span class="cart__totals-label">
+            Envío
+            <span class="cart__totals-tooltip" title="Calculado en el checkout según tu ubicación">ⓘ</span>
+          </span>
+          <span>${shipping > 0 ? SheetsService.formatPrecioARS(shipping) : 'Calcular'}</span>
+        </div>
+        <div class="cart__totals-row cart__totals-row--total">
+          <span class="cart__totals-label">Total</span>
+          <span>${SheetsService.formatPrecioARS(total)}</span>
+        </div>
+      `;
+    }
+
+    // Cross-sell recommendations
+    this.renderCrossSell();
+
+    // Re-bind quantity inputs (readonly but keyboard accessible)
+    itemsContainer.querySelectorAll('.qty-input').forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      });
+    });
   },
 
   actualizarUI() {
@@ -300,7 +377,135 @@ const App = {
       countEl.textContent = count;
       countEl.style.display = count > 0 ? 'flex' : 'none';
     }
+    const headerCountEl = document.getElementById('cart-header-count');
+    if (headerCountEl) {
+      headerCountEl.textContent = `${count} producto${count !== 1 ? 's' : ''}`;
+    }
     this.renderCartSidebar();
+  },
+
+  /* ---------- CART ADVANCED FEATURES ---------- */
+
+  togglePromo() {
+    const promo = document.getElementById('cart-promo');
+    const form = document.getElementById('promo-form');
+    const toggle = promo?.querySelector('.cart__promo-toggle');
+    if (!promo || !form) return;
+    const open = form.style.display !== 'none';
+    form.style.display = open ? 'none' : 'flex';
+    promo.classList.toggle('cart__promo--open', !open);
+    toggle?.setAttribute('aria-expanded', !open);
+    if (!open) {
+      setTimeout(() => document.getElementById('promo-input')?.focus(), 50);
+    }
+  },
+
+  applyPromo(e) {
+    e.preventDefault();
+    const input = document.getElementById('promo-input');
+    const messageEl = document.getElementById('promo-message');
+    if (!input || !messageEl) return;
+    const code = input.value.trim().toUpperCase();
+    if (!code) return;
+
+    // Simulated promo validation (replace with real API call)
+    const validPromos = {
+      'WELCOME10': { type: 'percent', value: 10, desc: '10% de descuento' },
+      'ENVIOGRATIS': { type: 'shipping', value: 0, desc: 'Envío gratis' },
+      'PRINCESS20': { type: 'percent', value: 20, desc: '20% de descuento' }
+    };
+
+    const promo = validPromos[code];
+    if (promo) {
+      CartService.applyPromo(code, promo);
+      messageEl.textContent = `✓ ${promo.desc} aplicado`;
+      messageEl.className = 'cart__promo-message cart__promo-message--success';
+      input.value = '';
+      this.renderCartSidebar();
+    } else {
+      messageEl.textContent = '✗ Código inválido o expirado';
+      messageEl.className = 'cart__promo-message cart__promo-message--error';
+    }
+  },
+
+  calculateShipping(e) {
+    e.preventDefault();
+    const zip = document.getElementById('shipping-zip')?.value.trim();
+    const city = document.getElementById('shipping-city')?.value.trim();
+    const resultEl = document.getElementById('shipping-result');
+    if (!zip || !city || !resultEl) return;
+
+    // Simulated shipping calculation
+    const envio = CONFIG.envios.find(e => e.id === 'correo_argentino') || CONFIG.envios[3];
+    const cost = envio.precio;
+
+    CartService.setShipping(envio.id, cost);
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+      <strong>Opciones para ${city} (${zip}):</strong>
+      <div style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
+        ${CONFIG.envios.filter(e => e.activo).map(e => `
+          <div class="cart__shipping-option" data-shipping="${e.id}">
+            <div class="cart__shipping-option-label">
+              <span class="cart__shipping-option-name">${e.nombre}</span>
+              <span class="cart__shipping-option-desc">${e.descripcion}</span>
+            </div>
+            <span class="cart__shipping-option-price">${e.precio > 0 ? SheetsService.formatPrecioARS(e.precio) : 'Gratis'}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    this.renderCartSidebar();
+  },
+
+  renderCrossSell() {
+    const grid = document.getElementById('cross-sell-grid');
+    const section = document.getElementById('cart-cross-sell');
+    if (!grid || !section) return;
+
+    const items = CartService.items;
+    const currentIds = new Set(items.map(i => i.id));
+    const allProducts = SheetsService.productos.filter(p => p.stock > 0 && !currentIds.has(p.id));
+    const recommended = allProducts
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 4);
+
+    if (recommended.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    grid.innerHTML = recommended.map(p => {
+      const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
+      return `
+        <button class="cart__cross-sell-item" onclick="CartService.addItem(SheetsService.obtenerProducto('${p.id}')); App.showToast('Agregado: ${p.nombre}');" aria-label="Agregar ${p.nombre} - ${SheetsService.formatPrecioARS(precioARS)}">
+          <img class="cart__cross-sell-img" src="${p.imagen}" alt="" loading="lazy"
+               onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%23eedbd8%22/></svg>'">
+          <div class="cart__cross-sell-info">
+            <span class="cart__cross-sell-name">${p.nombre}</span>
+            <span class="cart__cross-sell-price">${SheetsService.formatPrecioARS(precioARS)}</span>
+          </div>
+        </button>
+      `;
+    }).join('');
+
+    section.style.display = 'block';
+  },
+
+  hidePromoShippingCrossSell() {
+    document.getElementById('cart-promo')?.classList.remove('cart__promo--open');
+    document.getElementById('promo-form')?.style.display = 'none';
+    document.getElementById('promo-message')?.textContent = '';
+    document.getElementById('shipping-result')?.style.display = 'none';
+    document.getElementById('cart-cross-sell')?.style.display = 'none';
+  },
+
+  selectShipping(shippingId) {
+    const envio = CONFIG.envios.find(e => e.id === shippingId);
+    if (envio) {
+      CartService.setShipping(envio.id, envio.precio);
+      this.renderCartSidebar();
+    }
   },
 
   openCart() {
@@ -454,13 +659,32 @@ document.addEventListener('click', (e) => {
 
   /* Cart open/close */
   if (e.target.closest('#cart-btn')) { App.openCart(); return; }
-  if (e.target.id === 'cart-overlay' || e.target.closest('.cart__header .icon-btn')) { App.closeCart(); return; }
+  if (e.target.id === 'cart-overlay' || e.target.closest('.cart__close')) { App.closeCart(); return; }
 
   /* Checkout close */
   if (e.target.id === 'checkout-modal' || e.target.closest('.modal__close')) { App.closeCheckout(); return; }
 
   /* Mobile menu */
   if (e.target.closest('#menu-btn')) { App.openMobileMenu(); return; }
+
+  /* Promo toggle */
+  if (e.target.closest('.cart__promo-toggle')) { App.togglePromo(); return; }
+
+  /* Promo form submit */
+  if (e.target.closest('#promo-form')) { return; } // handled by onsubmit
+
+  /* Shipping form submit */
+  if (e.target.closest('#shipping-form')) { return; } // handled by onsubmit
+
+  /* Shipping option selection */
+  const shippingOpt = e.target.closest('.cart__shipping-option[data-shipping]');
+  if (shippingOpt) {
+    App.selectShipping(shippingOpt.dataset.shipping);
+    return;
+  }
+
+  /* Cross-sell add */
+  if (e.target.closest('.cart__cross-sell-item')) { return; } // handled by onclick
 
   /* Cart qty */
   if (e.target.closest('.qty-btn')) {
@@ -477,7 +701,10 @@ document.addEventListener('click', (e) => {
 
   /* Cart remove */
   if (e.target.closest('.cart-item__remove')) {
-    CartService.removeItem(e.target.closest('.cart-item__remove').dataset.id);
+    const id = e.target.closest('.cart-item__remove').dataset.id;
+    const itemEl = document.querySelector(`.cart-item[data-id="${id}"]`);
+    if (itemEl) itemEl.classList.add('cart-item--removing');
+    setTimeout(() => CartService.removeItem(id), 200);
     return;
   }
 });

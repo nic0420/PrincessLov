@@ -217,13 +217,68 @@
   <div class="cart-overlay" id="cart-overlay" aria-hidden="true" onclick="App.closeCart()"></div>
   <aside class="cart-sidebar" id="cart-sidebar" role="dialog" aria-label="Carrito" aria-modal="true">
     <header class="cart__header">
-      <h3>Tu carrito</h3>
-      <button class="icon-btn" onclick="App.closeCart()" aria-label="Cerrar carrito">
+      <div class="cart__header-title">
+        <div class="cart__header-icon" aria-hidden="true">🛒</div>
+        <div>
+          <h3>Tu carrito</h3>
+          <span class="cart__header-count" id="cart-header-count">0 productos</span>
+        </div>
+      </div>
+      <button class="cart__close" onclick="App.closeCart()" aria-label="Cerrar carrito">
         <span aria-hidden="true">✕</span>
       </button>
     </header>
-    <div class="cart__items" id="cart-items"></div>
-    <footer class="cart__footer" id="cart-footer"></footer>
+
+    <div class="cart__body">
+      <div class="cart__items" id="cart-items" role="list" aria-label="Productos en tu carrito"></div>
+
+      <!-- Promo Code -->
+      <section class="cart__promo" id="cart-promo" aria-label="Código promocional">
+        <button class="cart__promo-toggle" onclick="App.togglePromo()" aria-expanded="false" aria-controls="promo-form">
+          <span>🎁  Código promocional</span>
+          <span class="cart__promo-toggle-icon" aria-hidden="true">▼</span>
+        </button>
+        <form class="cart__promo-form" id="promo-form" style="display:none;" onsubmit="App.applyPromo(event)">
+          <input type="text" class="cart__promo-input" id="promo-input" placeholder="Ingresá tu código" aria-label="Código promocional" autocomplete="off">
+          <button type="submit" class="btn btn--primary cart__promo-btn">Aplicar</button>
+        </form>
+        <p class="cart__promo-message" id="promo-message" aria-live="polite"></p>
+      </section>
+
+      <!-- Shipping Estimator -->
+      <section class="cart__shipping" id="cart-shipping" aria-label="Calcular envío">
+        <h4 class="cart__shipping-title">Calcular envío</h4>
+        <form class="cart__shipping-form" id="shipping-form" onsubmit="App.calculateShipping(event)">
+          <div class="cart__shipping-row">
+            <input type="text" class="cart__shipping-input" id="shipping-zip" placeholder="Código postal" aria-label="Código postal" maxlength="8" pattern="[0-9]*" inputmode="numeric" required>
+            <input type="text" class="cart__shipping-input" id="shipping-city" placeholder="Ciudad" aria-label="Ciudad" required>
+          </div>
+          <button type="submit" class="btn btn--ghost cart__shipping-btn">Calcular</button>
+        </form>
+        <div class="cart__shipping-result" id="shipping-result" style="display:none;"></div>
+        <div class="cart__shipping-free-progress" id="free-shipping-progress">
+          <div class="cart__free-bar"><div class="cart__free-bar-fill" id="free-bar-fill" style="width:0%"></div></div>
+          <p class="cart__free-text" id="free-text">Agregá <strong id="free-amount">$0</strong> más para envío gratis</p>
+        </div>
+      </section>
+
+      <!-- Cross-sell -->
+      <section class="cart__cross-sell" id="cart-cross-sell" aria-label="Productos recomendados" style="display:none;">
+        <h4 class="cart__cross-sell-title">Quizás te interese</h4>
+        <div class="cart__cross-sell-grid" id="cross-sell-grid"></div>
+      </section>
+    </div>
+
+    <footer class="cart__footer">
+      <div class="cart__totals" id="cart-totals"></div>
+      <div class="cart__actions">
+        <button class="btn btn--primary cart__btn-primary" id="cart-checkout-btn" onclick="App.openCheckout()">Finalizar compra</button>
+        <button class="btn btn--whatsapp cart__btn-secondary" onclick="App.enviarCarritoWhatsApp()">Comprar por WhatsApp</button>
+      </div>
+      <p class="cart__secure" aria-hidden="true">
+        <span class="cart__secure-icon">🔒</span> Compra segura · Datos encriptados · Envíos a todo el país
+      </p>
+    </footer>
   </aside>
 
   <!-- CHECKOUT MODAL -->

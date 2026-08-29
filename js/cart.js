@@ -100,14 +100,70 @@ const CartService = {
   },
 
   /**
-   * Obtiene el total en ARS
+   * Obtiene el subtotal (sin envío ni descuentos)
    */
-  getTotalARS() {
-    // Recalcular precios por si cambió la cotización
+  getSubtotalARS() {
     this.items.forEach(item => {
       item.precioARS = SheetsService.calcularPrecioARS(item.precioUSD);
     });
     return this.items.reduce((sum, i) => sum + (i.precioARS * i.cantidad), 0);
+  },
+
+  /**
+   * Obtiene el total en ARS (con envío y descuentos)
+   */
+  getTotalARS() {
+    const subtotal = this.getSubtotalARS();
+    const shipping = this.shippingCost || 0;
+    const discount = this.discountAmount || 0;
+    return subtotal + shipping - discount;
+  },
+
+  /**
+   * Obtiene el costo de envío
+   */
+  getShippingCost() {
+    return this.shippingCost || 0;
+  },
+
+  /**
+   * Obtiene el monto de descuento
+   */
+  getDiscountAmount() {
+    return this.discountAmount || 0;
+  },
+
+  /**
+   * Establece el envío seleccionado
+   */
+  setShipping(shippingId, cost) {
+    this.shippingId = shippingId;
+    this.shippingCost = cost;
+    this.save();
+  },
+
+  /**
+   * Aplica un código promocional
+   */
+  applyPromo(code, promo) {
+    this.promoCode = code;
+    this.promoData = promo;
+    if (promo.type === 'percent') {
+      this.discountAmount = Math.round(this.getSubtotalARS() * promo.value / 100);
+    } else if (promo.type === 'shipping') {
+      this.shippingCost = 0;
+    }
+    this.save();
+  },
+
+  /**
+   * Remueve el código promocional
+   */
+  removePromo() {
+    this.promoCode = null;
+    this.promoData = null;
+    this.discountAmount = 0;
+    this.save();
   },
 
   /**
