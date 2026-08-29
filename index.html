@@ -10,7 +10,7 @@
   <!-- Fonts: Montserrat + The Seasons (serif) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=The+Seasons:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=The+Seasons:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
   <!-- Styles -->
   <link rel="stylesheet" href="css/styles.css">
@@ -29,7 +29,14 @@
   </div>
 
   <!-- ============================================
-       NAVBAR
+       BANNER PROMOCIONAL
+       ============================================ -->
+  <div class="promo-banner">
+    <b>Envíos a todo el país</b>&nbsp;·&nbsp;Precios actualizados en dólar blue
+  </div>
+
+  <!-- ============================================
+       NAVBAR (dos niveles, estilo editorial)
        ============================================ -->
   <nav class="navbar">
     <div class="nav-left">
@@ -38,24 +45,30 @@
         <span class="drawer-nav-text">Filtros</span>
       </button>
       <button class="btn-menu-mobile" onclick="App.openMobileMenu()" aria-label="Menú">☰</button>
-      <a href="#" class="logo">
+      <a href="#inicio" class="logo">
         <img src="assets/logo.jpg" alt="PrincessLov" class="logo-img" onerror="this.src='assets/logo.svg'">
         <span class="logo-text">PrincessLov</span>
       </a>
-      <ul class="nav-links">
-        <li><a href="#inicio" class="active">Inicio</a></li>
-        <li><a href="#productos">Productos</a></li>
-        <li><a href="#contacto">Contacto</a></li>
-      </ul>
+    </div>
+    <div class="header-search" onclick="App.toggleSearch()" role="button" tabindex="0" aria-label="Buscar productos">
+      <span class="icon">🔍</span>
+      <span>Buscar productos...</span>
     </div>
     <div class="nav-right">
-      <button class="nav-icon-btn" onclick="App.openSidebar()" title="Categorías y Filtros">🎛️</button>
-      <button class="nav-icon-btn" onclick="App.toggleSearch()" aria-label="Buscar">🔍</button>
+      <button class="nav-icon-btn btn-mobile-search" onclick="App.toggleSearch()" aria-label="Buscar">🔍</button>
       <button class="nav-icon-btn" onclick="App.openCart()" aria-label="Carrito">
         🛒
         <span id="cart-count" class="cart-badge">0</span>
       </button>
+      <button class="btn-cta-nav" onclick="App.scrollToProducts()">Ver Productos</button>
     </div>
+  </nav>
+
+  <nav class="main-nav">
+    <a href="#inicio" class="active">Inicio</a>
+    <a href="#productos">Productos</a>
+    <a href="#productos" onclick="App.openSidebar(); return false;">Categorías</a>
+    <a href="#contacto">Contacto</a>
   </nav>
 
   <!-- ============================================
@@ -76,6 +89,7 @@
           <span class="subtitle">Sportwears · Pijamas · Lencerías</span>
         </div>
         <h1>Encontrá tu estilo perfecto</h1>
+        <span class="accent-underline"></span>
         <p class="tagline">Indumentaria deportiva y pijamas con los mejores precios. Calidad y comodidad para cada día.</p>
         <div class="hero-actions">
           <button class="btn-hero" onclick="App.scrollToProducts()">
@@ -175,6 +189,9 @@
           <h2 id="productos-title">Todos los Productos</h2>
         </div>
         <span class="productos-count" id="productos-count">Cargando productos...</span>
+      </div>
+      <div id="categories-pills" class="categories-pills">
+        <!-- Se renderiza dinámicamente (App.renderCategoryPills) -->
       </div>
       <div id="productos-grid" class="productos-grid">
         <!-- Se renderiza dinámicamente -->

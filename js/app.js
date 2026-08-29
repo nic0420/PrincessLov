@@ -18,6 +18,7 @@ const App = {
 
       this.renderDolarTicker();
       this.renderSidebarFilters();
+      this.renderCategoryPills();
       this.renderHeroShowcase();
       this.renderProductos(SheetsService.productos);
       this.renderCartSidebar();
@@ -56,6 +57,25 @@ const App = {
           <span><span class="filter-icon">${cat.icon}</span> ${cat.nombre}</span>
           <span class="filter-count">${cat.count}</span>
         </li>
+      `).join('')}
+    `;
+  },
+
+  /* ---------- PÍLDORAS DE CATEGORÍAS (estilo Faire) ---------- */
+  renderCategoryPills() {
+    const container = document.getElementById('categories-pills');
+    if (!container) return;
+
+    const cats = SheetsService.obtenerCategoriasConConteo();
+
+    container.innerHTML = `
+      <button class="cat-pill ${this.categoriaActual === 'todos' ? 'active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos">
+        🏷️ Todos
+      </button>
+      ${cats.map(cat => `
+        <button class="cat-pill ${cat.id === this.categoriaActual ? 'active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}">
+          ${cat.icon} ${cat.nombre}
+        </button>
       `).join('')}
     `;
   },
@@ -119,6 +139,10 @@ const App = {
 
     document.querySelectorAll('#filter-categories .filter-item').forEach(item => {
       item.classList.toggle('active', item.dataset.cat === catId);
+    });
+
+    document.querySelectorAll('.cat-pill').forEach(pill => {
+      pill.classList.toggle('active', pill.dataset.cat === catId);
     });
 
     const titleEl = document.getElementById('productos-title');
