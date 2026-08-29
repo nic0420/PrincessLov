@@ -10,7 +10,7 @@ const CONFIG = {
   negocio: {
     nombre: "PrincessLov",
     descripcion: "Indumentaria deportiva y pijamas para mujeres",
-    whatsapp: "5493757XXXXXX",    // Tu número de WhatsApp con código de país
+    whatsapp: "5493757338837",    // Tu número de WhatsApp con código de país
     email: "princesslov@email.com",
     instagram: "princesslov",
     direccion: "Puerto Iguazú, Misiones, Argentina",

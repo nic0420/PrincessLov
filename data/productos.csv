@@ -2,9 +2,9 @@ ID,Nombre,Categoria,Subcategoria,Descripcion,PrecioUSD,Imagen,Stock,Activo,Tags
 1,Calza Larga Rosa Neon,Calzas,Largas,Calza deportiva de alta compresión en rosa neón. Tela transpirable y secado rápido.,25,https://placehold.co/600x700/F8D0DC/800020?text=Calza+Rosa,15,TRUE,nuevo
 2,Calza Larga Borgoña,Calzas,Largas,Calza deportiva en color borgoña con detalles en rosa. Comodidad total.,23,https://placehold.co/600x700/800020/FDE8EF?text=Calza+Borgoña,10,TRUE,
 3,Calza Corta Black,Calzas,Cortas,Calza corta negra con cintura alta. Perfecta para yoga y pilates.,18,https://placehold.co/600x700/2D1B22/F5B7C5?text=Calza+Corta+Black,20,TRUE,
-4,Catsuit Rosa Pastel,Catsuits,Unicolor,Catsuit ajustado en rosa pastel. Diseño elegante para entrenamiento.,35,https://placehold.co/600x700/F5B7C5/6B0F2A?text=Catsuit+Rosa,8,TRUE,nuevo
-5,Conjunto Deportivo Borgoña,Conjuntos,Deportivo,Conjunto de top y calza en borgoña. Soporte y estilo.,40,https://placehold.co/600x700/6B0F2A/FDE8EF?text=Conjunto+Borgoña,12,TRUE,oferta
-6,Pijama Corta Estampada,Pijamas,Corta,Pijama de dos piezas con estampado floral. Tela suave y fresca.,28,https://placehold.co/600x700/F8D0DC/800020?text=Pijama+Floral,18,TRUE,
+4,Conjunto Lencería Floral,Ropa Interior,,Conjunto de bralette y panty con estampado floral y encaje rosa. Femenino y cómodo.,30,assets/conjunto-flores-rosa.jpg,8,TRUE,nuevo
+5,Conjunto Deportivo Borgoña,Conjuntos,Deportivo,Conjunto de top y calza en borgoña. Soporte y estilo.,40,assets/conjunto-deportivo-borgona.jpg,12,TRUE,oferta
+6,Pijama Corta Corazones,Pijamas,Corta,Pijama de dos piezas con estampado de corazones y encaje negro. Dulce y coqueta.,28,assets/pijama-corazones-negro.jpg,18,TRUE,
 7,Pijama Larga Rayas,Pijamas,Larga,Pijama de invierno con rayas borgoña y rosa. Todo un clásico.,32,https://placehold.co/600x700/800020/F8D0DC?text=Pijama+Rayas,14,TRUE,
 8,Remera Deportiva Blanca,Remeras,,Remera oversize blanca con logo bordado. Algodón premium.,15,https://placehold.co/600x700/FFFFFF/800020?text=Remera+Blanca,25,TRUE,
 9,Buzo Crop Rosa,Buzos,,Buzo crop en rosa claro con cierre. Perfecto para los looks casuales.,38,https://placehold.co/600x700/F5B7C5/6B0F2A?text=Buzo+Rosa,7,TRUE,nuevo
