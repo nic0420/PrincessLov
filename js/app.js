@@ -188,7 +188,7 @@ const App = {
       else if (sinStock) badge = '<span class="badge badge--low">Pocas unidades</span>';
 
       return `
-        <article class="product-card" data-id="${p.id}" role="listitem">
+        <article class="product-card" data-id="${p.id}" role="listitem" tabindex="0" onclick="App.openProductModal('${p.id}')">
           <div class="product-card__media">
             ${badge}
             <img class="product-card__image" src="${p.imagen}" alt="${p.nombre}"
@@ -213,7 +213,7 @@ const App = {
       `;
     }).join('');
 
-    // Delegación quick-add
+    // Delegación quick-add (no abre modal)
     grid.querySelectorAll('.product-card__quick').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -226,6 +226,249 @@ const App = {
         }
       });
     });
+  },
+
+  /* ---------- PRODUCT DETAIL MODAL ---------- */
+  openProductModal(productId) {
+    const producto = SheetsService.obtenerProducto(productId);
+    if (!producto) return;
+
+    const modal = document.getElementById('product-modal');
+    if (!modal) return;
+
+    // Main image
+    const mainImg = document.getElementById('product-modal-main-img');
+    if (mainImg) {
+      mainImg.src = producto.imagen;
+      mainImg.alt = producto.nombre;
+    }
+
+    // Thumbnails
+    const thumbsContainer = document.getElementById('product-modal-thumbs');
+    if (thumbsContainer) {
+      const images = [producto.imagen, ...(producto.galeria || []).map(g => g.url)].filter(Boolean);
+      thumbsContainer.innerHTML = images.map((img, idx) => `
+        <img class="product-modal__thumb ${idx === 0 ? 'active' : ''}" src="${img}" alt="${producto.nombre} - vista ${idx + 1}" 
+             onclick="App.switchProductModalImage(this, '${img.replace(/'/g, "\\'")}')" loading="lazy">
+      `).join('');
+    }
+
+    // Badges
+    const badgesEl = document.getElementById('product-modal-badges');
+    if (badgesEl) {
+      const badges = [];
+      if (producto.tags?.includes('nuevo')) badges.push('<span class="product-modal__badge product-modal__badge--new">Nuevo</span>');
+      if (producto.tags?.includes('oferta')) badges.push('<span class="product-modal__badge product-modal__badge--oferta">Oferta</span>');
+      if (producto.destacado) badges.push('<span class="product-modal__badge product-modal__badge--bestseller">Destacado</span>');
+      badgesEl.innerHTML = badges.join('');
+    }
+
+    // Title
+    const titleEl = document.getElementById('product-modal-title');
+    if (titleEl) titleEl.textContent = producto.nombre;
+
+    // SKU
+    const skuEl = document.getElementById('product-modal-sku');
+    if (skuEl) {
+      if (producto.sku) {
+        skuEl.textContent = `SKU: ${producto.sku}`;
+      } else {
+        skuEl.textContent = '';
+      }
+    }
+
+    // Price
+    const priceRowEl = document.getElementById('product-modal-price-row');
+    if (priceRowEl) {
+      const precioARS = producto.precioARSManual || SheetsService.calcularPrecioARS(producto.precioUSD);
+      let priceHtml = `<span class="product-modal__price">${SheetsService.formatPrecioARS(precioARS)}</span>`;
+      if (producto.precioOferta && producto.precioOferta < precioARS) {
+        priceHtml = `<span class="product-modal__price-old">${SheetsService.formatPrecioARS(precioARS)}</span> <span class="product-modal__price">${SheetsService.formatPrecioARS(producto.precioOferta)}</span> <span class="product-modal__discount-badge">-${Math.round((1 - producto.precioOferta / precioARS) * 100)}%</span>`;
+      }
+      priceRowEl.innerHTML = priceHtml;
+    }
+
+    // Description
+    const descEl = document.getElementById('product-modal-desc');
+    if (descEl) descEl.textContent = producto.descripcion || 'Sin descripción disponible.';
+
+    // Specs
+    const specsEl = document.getElementById('product-modal-specs');
+    const specsGridEl = document.getElementById('product-modal-specs-grid');
+    if (specsEl && specsGridEl && producto.caracteristicas && Object.keys(producto.caracteristicas).length > 0) {
+      specsGridEl.innerHTML = Object.entries(producto.caracteristicas).map(([key, value]) => `
+        <div class="product-modal__spec-item">
+          <span class="product-modal__spec-label">${key}</span>
+          <span class="product-modal__spec-value">${value}</span>
+        </div>
+      `).join('');
+      specsEl.style.display = 'block';
+    } else if (specsEl) {
+      specsEl.style.display = 'none';
+    }
+
+    // Variants
+    const variantsEl = document.getElementById('product-modal-variants');
+    const variantsContainerEl = document.getElementById('product-modal-variants-container');
+    if (variantsEl && variantsContainerEl && producto.variantes && producto.variantes.length > 0) {
+      // Group by color
+      const colors = [...new Set(producto.variantes.map(v => v.color))];
+      let html = '';
+      colors.forEach((color, colorIdx) => {
+        const variantsOfColor = producto.variantes.filter(v => v.color === color);
+        const colorHex = variantsOfColor[0]?.colorHex || '#9c684c';
+        html += `
+          <div class="product-modal__variant-group">
+            <div class="product-modal__variant-label" style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="width:16px;height:16px;border-radius:50%;background:${colorHex};border:1px solid var(--border);"></span>
+              ${color}
+            </div>
+            <div class="product-modal__variant-options">
+              ${variantsOfColor.map(v => `
+                <button class="product-modal__variant-option ${v.stock <= 0 ? 'disabled' : ''}" 
+                        data-color="${color}" data-talle="${v.talle}" data-stock="${v.stock}"
+                        onclick="App.selectProductVariant(this)" ${v.stock <= 0 ? 'disabled' : ''}>
+                  ${v.talle}
+                  ${v.stock > 0 && v.stock <= 5 ? `<span style="font-size:0.65rem;color:#F59E0B;"> (${v.stock})</span>` : ''}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      });
+      variantsContainerEl.innerHTML = html;
+      variantsEl.style.display = 'block';
+    } else if (variantsEl) {
+      variantsEl.style.display = 'none';
+    }
+
+    // Stock info
+    const stockInfoEl = document.getElementById('product-modal-stock-info');
+    if (stockInfoEl) {
+      const totalStock = (producto.variantes && producto.variantes.length > 0) 
+        ? producto.variantes.reduce((s, v) => s + (v.stock || 0), 0) 
+        : producto.stock;
+      
+      let stockClass = 'in-stock';
+      let stockText = `Disponible: ${totalStock} unidades`;
+      if (totalStock <= 0) { stockClass = 'out-stock'; stockText = 'Sin stock disponible'; }
+      else if (totalStock <= 5) { stockClass = 'low-stock'; stockText = `¡Solo ${totalStock} unidades!`; }
+      
+      stockInfoEl.innerHTML = `<span class="product-modal__stock-info ${stockClass}">${stockText}</span>`;
+    }
+
+    // Store current product ID for add to cart
+    modal.dataset.productId = producto.id;
+    modal.dataset.selectedColor = '';
+    modal.dataset.selectedTalle = '';
+
+    // Open modal
+    modal.classList.add('open');
+    document.body.classList.add('no-scroll');
+  },
+
+  closeProductModal() {
+    const modal = document.getElementById('product-modal');
+    if (modal) {
+      modal.classList.remove('open');
+      modal.dataset.productId = '';
+      modal.dataset.selectedColor = '';
+      modal.dataset.selectedTalle = '';
+      document.body.classList.remove('no-scroll');
+    }
+  },
+
+  switchProductModalImage(thumbEl, newSrc) {
+    const mainImg = document.getElementById('product-modal-main-img');
+    if (mainImg) mainImg.src = newSrc;
+    document.querySelectorAll('.product-modal__thumb').forEach(t => t.classList.remove('active'));
+    thumbEl.classList.add('active');
+  },
+
+  selectProductVariant(btn) {
+    if (btn.classList.contains('disabled')) return;
+    
+    document.querySelectorAll('.product-modal__variant-option').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    
+    const modal = document.getElementById('product-modal');
+    modal.dataset.selectedColor = btn.dataset.color;
+    modal.dataset.selectedTalle = btn.dataset.talle;
+    
+    // Update stock info
+    const stock = parseInt(btn.dataset.stock) || 0;
+    const stockInfoEl = document.getElementById('product-modal-stock-info');
+    if (stockInfoEl) {
+      let stockClass = 'in-stock';
+      let stockText = `Stock para esta variante: ${stock} unidades`;
+      if (stock <= 0) { stockClass = 'out-stock'; stockText = 'Esta variante sin stock'; }
+      else if (stock <= 5) { stockClass = 'low-stock'; stockText = `¡Solo ${stock} unidades de esta variante!`; }
+      stockInfoEl.innerHTML = `<span class="product-modal__stock-info ${stockClass}">${stockText}</span>`;
+    }
+  },
+
+  addToCartFromModal() {
+    const modal = document.getElementById('product-modal');
+    const productId = modal?.dataset.productId;
+    const selectedColor = modal?.dataset.selectedColor;
+    const selectedTalle = modal?.dataset.selectedTalle;
+    
+    const producto = SheetsService.obtenerProducto(productId);
+    if (!producto) return;
+
+    // Check if product has variants and one is required
+    if (producto.variantes && producto.variantes.length > 0) {
+      if (!selectedColor || !selectedTalle) {
+        this.showToast('Por favor seleccioná color y talle');
+        return;
+      }
+      
+      const variant = producto.variantes.find(v => v.color === selectedColor && v.talle === selectedTalle);
+      if (!variant || variant.stock <= 0) {
+        this.showToast('Variante sin stock');
+        return;
+      }
+      
+      // Add with variant info
+      const itemWithVariant = { ...producto, _variant: { color: selectedColor, talle: selectedTalle } };
+      CartService.addItem(itemWithVariant);
+      this.showToast(`Agregado: ${producto.nombre} (${selectedColor} / ${selectedTalle})`);
+    } else {
+      // No variants
+      if (producto.stock <= 0) {
+        this.showToast('Sin stock');
+        return;
+      }
+      CartService.addItem(producto);
+      this.showToast(`Agregado: ${producto.nombre}`);
+    }
+    
+    this.closeProductModal();
+  },
+
+  buyViaWhatsAppFromModal() {
+    const modal = document.getElementById('product-modal');
+    const productId = modal?.dataset.productId;
+    const selectedColor = modal?.dataset.selectedColor;
+    const selectedTalle = modal?.dataset.selectedTalle;
+    
+    const producto = SheetsService.obtenerProducto(productId);
+    if (!producto) return;
+
+    let variantText = '';
+    if (producto.variantes && producto.variantes.length > 0) {
+      if (!selectedColor || !selectedTalle) {
+        this.showToast('Por favor seleccioná color y talle');
+        return;
+      }
+      variantText = ` - Color: ${selectedColor}, Talle: ${selectedTalle}`;
+    }
+
+    const precioARS = producto.precioARSManual || SheetsService.calcularPrecioARS(producto.precioUSD);
+    const texto = `Hola! Me interesa: ${producto.nombre}${variantText} - ${SheetsService.formatPrecioARS(precioARS)}`;
+    const url = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent(texto)}`;
+    window.open(url, '_blank');
+    this.closeProductModal();
   },
 
   /* ---------- SIDEBAR DRAWER ---------- */
@@ -577,7 +820,7 @@ const App = {
       resultsEl.innerHTML = results.slice(0, 8).map(p => {
         const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
         return `
-          <button class="search__result" onclick="App.toggleSearch(); document.getElementById('productos')?.scrollIntoView({behavior:'smooth'});" aria-label="${p.nombre} - ${SheetsService.formatPrecioARS(precioARS)}">
+          <button class="search__result" onclick="App.toggleSearch(); App.openProductModal('${p.id}');" aria-label="${p.nombre} - ${SheetsService.formatPrecioARS(precioARS)}">
             <img class="search__result-img" src="${p.imagen}" alt="" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2248%22 height=%2264%22><rect width=%2248%22 height=%2264%22 fill=%22%23eedbd8%22/></svg>'">
             <div>
               <div class="search__result-name">${p.nombre}</div>
@@ -715,6 +958,7 @@ document.addEventListener('keydown', (e) => {
     App.closeCheckout();
     App.closeMobileMenu();
     App.closeSidebar();
+    App.closeProductModal();
     const so = document.getElementById('search-overlay');
     if (so?.classList.contains('search-overlay--open')) App.toggleSearch();
   }

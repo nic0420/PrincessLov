@@ -286,6 +286,51 @@
     <div class="modal" id="checkout-modal-content" role="dialog" aria-modal="true" aria-labelledby="checkout-title"></div>
   </div>
 
+  <!-- PRODUCT DETAIL MODAL -->
+  <div class="product-modal-overlay" id="product-modal" aria-hidden="true" onclick="if(event.target===this) App.closeProductModal()">
+    <div class="product-modal" role="dialog" aria-modal="true" aria-labelledby="product-modal-title">
+      <button class="product-modal__close" onclick="App.closeProductModal()" aria-label="Cerrar detalle">
+        <span aria-hidden="true">✕</span>
+      </button>
+
+      <div class="product-modal__body">
+        <!-- Gallery -->
+        <div class="product-modal__gallery">
+          <img class="product-modal__main-image" id="product-modal-main-img" src="" alt="" loading="eager">
+          <div class="product-modal__thumbs" id="product-modal-thumbs"></div>
+        </div>
+
+        <!-- Info -->
+        <div class="product-modal__info">
+          <div class="product-modal__badges" id="product-modal-badges"></div>
+          <h2 class="product-modal__title" id="product-modal-title"></h2>
+          <div class="product-modal__sku" id="product-modal-sku"></div>
+
+          <div class="product-modal__price-row" id="product-modal-price-row"></div>
+
+          <p class="product-modal__desc" id="product-modal-desc"></p>
+
+          <div class="product-modal__specs" id="product-modal-specs" style="display:none;">
+            <h4 class="product-modal__specs-title">Especificaciones</h4>
+            <div class="product-modal__specs-grid" id="product-modal-specs-grid"></div>
+          </div>
+
+          <div class="product-modal__variants" id="product-modal-variants" style="display:none;">
+            <h4 class="product-modal__variants-title">Elegí tu opción</h4>
+            <div id="product-modal-variants-container"></div>
+          </div>
+
+          <div class="product-modal__stock-info" id="product-modal-stock-info"></div>
+
+          <div class="product-modal__actions">
+            <button class="btn btn--primary product-modal__btn" onclick="App.addToCartFromModal()">🛒 Agregar al carrito</button>
+            <button class="btn btn--whatsapp product-modal__btn" onclick="App.buyViaWhatsAppFromModal()">💬 Comprar por WhatsApp</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SEARCH OVERLAY -->
   <div class="search-overlay" id="search-overlay" aria-hidden="true" onclick="if(event.target===this) App.toggleSearch()">
     <div class="search-box" role="search">
