@@ -24,6 +24,9 @@ const App = {
       this.actualizarUI();
       this.setupWhatsAppLink();
 
+      // Verificar retorno de Mercado Pago (back_url)
+      CheckoutService.checkPaymentReturn?.();
+
       this.hideLoading();
     } catch (error) {
       console.error('[App] Error inicializando:', error);
@@ -58,9 +61,9 @@ const App = {
     `;
   },
 
-  /* ---------- CATEGORY BAR (sticky horizontal) ---------- */
+  /* ---------- CATEGORY PILLS (horizontal scroll) ---------- */
   renderCatBar() {
-    const container = document.getElementById('cat-bar');
+    const container = document.getElementById('cat-pills');
     if (!container) return;
 
     const cats = SheetsService.obtenerCategoriasConConteo();
@@ -74,6 +77,18 @@ const App = {
         </button>
       `).join('')}
     `;
+  },
+
+  /* ---------- IR A TODOS LOS PRODUCTOS ---------- */
+  goAll() {
+    this.filtrarCategoria('todos');
+    this.setStockFilter('all');
+    ComponentReveal.scrollToProducts();
+  },
+
+  /* ---------- SCROLL A PRODUCTOS ---------- */
+  scrollToProducts() {
+    ComponentReveal.scrollToProducts();
   },
 
   /* ---------- FILTRADO Y ORDENAMIENTO ---------- */
@@ -487,10 +502,10 @@ const App = {
   /* ---------- CARRITO ---------- */
   renderCartSidebar() {
     const itemsContainer = document.getElementById('cart-items');
-    const footerEl = document.getElementById('cart-footer');
     const totalsEl = document.getElementById('cart-totals');
     const headerCountEl = document.getElementById('cart-header-count');
-    if (!itemsContainer || !footerEl) return;
+    const footerEl = document.getElementById('cart-footer');
+    if (!itemsContainer) return;
 
     const items = CartService.items;
 
@@ -508,7 +523,7 @@ const App = {
           <button class="btn btn--primary cart__empty-btn" onclick="App.closeCart(); App.scrollToProducts();">Seguir comprando</button>
         </div>
       `;
-      footerEl.innerHTML = '';
+      if (footerEl) footerEl.innerHTML = '';
       if (totalsEl) totalsEl.innerHTML = '';
       this.hidePromoShippingCrossSell();
       return;
@@ -736,11 +751,16 @@ const App = {
   },
 
   hidePromoShippingCrossSell() {
-    document.getElementById('cart-promo')?.classList.remove('cart__promo--open');
-    document.getElementById('promo-form')?.style.display = 'none';
-    document.getElementById('promo-message')?.textContent = '';
-    document.getElementById('shipping-result')?.style.display = 'none';
-    document.getElementById('cart-cross-sell')?.style.display = 'none';
+    const promoForm = document.getElementById('promo-form');
+    const promoMsg = document.getElementById('promo-message');
+    const shippingRes = document.getElementById('shipping-result');
+    const crossSell = document.getElementById('cart-cross-sell');
+    const promo = document.getElementById('cart-promo');
+    if (promo) promo.classList.remove('cart__promo--open');
+    if (promoForm) promoForm.style.display = 'none';
+    if (promoMsg) promoMsg.textContent = '';
+    if (shippingRes) shippingRes.style.display = 'none';
+    if (crossSell) crossSell.style.display = 'none';
   },
 
   selectShipping(shippingId) {
@@ -875,9 +895,52 @@ const App = {
     const btn = document.getElementById('contacto-whatsapp-btn');
     if (btn) btn.href = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent('Hola! Quiero consultar por sus productos.')}`;
     const footerWa = document.getElementById('footer-whatsapp-link');
-    if (footerWa) footerWa.innerHTML = `📱 WhatsApp: <a href="https://wa.me/${CONFIG.negocio.whatsapp}" target="_blank" style="color:var(--pink-300);">Escribinos</a>`;
+    if (footerWa) footerWa.innerHTML = `📱 WhatsApp: <a href="https://wa.me/${CONFIG.negocio.whatsapp}" target="_blank" style="color:var(--primary);">Escribinos</a>`;
     const footerIg = document.getElementById('footer-instagram');
     if (footerIg && CONFIG.negocio.instagram) footerIg.href = `https://instagram.com/${CONFIG.negocio.instagram}`;
+    this.renderFooterCats();
+  },
+
+  /* ---------- FOOTER CATEGORÍAS ---------- */
+  renderFooterCats() {
+    const el = document.getElementById('footer-cats');
+    if (!el) return;
+    const cats = SheetsService.obtenerCategoriasConConteo().slice(0, 6);
+    el.innerHTML = cats.map(cat => `
+      <li><a href="#productos" class="footer__link" onclick="App.filtrarCategoria('${cat.id}'); return false;">${cat.nombre}</a></li>
+    `).join('');
+  },
+
+  /* ---------- NEWSLETTER ---------- */
+  subscribeNewsletter(e) {
+    e.preventDefault();
+    const input = document.getElementById('newsletter-email');
+    const msg = document.getElementById('newsletter-msg');
+    const email = input?.value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (msg) {
+        msg.textContent = 'Ingresá un correo válido.';
+        msg.className = 'newsletter__msg newsletter__msg--error';
+      }
+      return;
+    }
+    // Guardar suscriptores en localStorage (fallback) y en Sheets si está configurado
+    try {
+      const subs = JSON.parse(localStorage.getItem('pl_newsletter') || '[]');
+      if (!subs.includes(email)) {
+        subs.push(email);
+        localStorage.setItem('pl_newsletter', JSON.stringify(subs));
+      }
+      if (SheetsService.postToAppsScript) {
+        SheetsService.postToAppsScript('subscribe_newsletter', { email }).catch(() => {});
+      }
+    } catch (err) { console.warn('Newsletter:', err); }
+
+    if (msg) {
+      msg.textContent = '¡Gracias por suscribirte! Te avisaremos de las novedades. 💕';
+      msg.className = 'newsletter__msg newsletter__msg--success';
+    }
+    if (input) input.value = '';
   },
 };
 

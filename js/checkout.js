@@ -298,7 +298,7 @@ const CheckoutService = {
   },
 
   // Método para verificar estado al volver de MP (llamar en App.init)
-  static async checkPaymentReturn() {
+  async checkPaymentReturn() {
     const urlParams = new URLSearchParams(window.location.search);
     const status = urlParams.get('status');
     const ref = urlParams.get('ref');
@@ -359,7 +359,7 @@ const CheckoutService = {
         }
       }
     }
-  };
+  },
 };
 
 // Inicializar checkout service

@@ -7,10 +7,10 @@
   <meta name="theme-color" content="#9c684c">
   <title>PrincessLov | Sportwears, Pijamas y Lencerías</title>
 
-  <!-- Fonts: Montserrat + The Seasons -->
+  <!-- Fonts: Cormorant Garamond (display serif lujo) + Montserrat (sans) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=The+Seasons:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://sdk.mercadopago.com/js/v2"></script>
@@ -19,13 +19,20 @@
 
   <!-- LOADING -->
   <div id="loading-screen" class="loading-screen" aria-hidden="true">
-    <div class="loading__spinner" aria-hidden="true"></div>
-    <p class="loading__text">Cargando PrincessLov...</p>
+    <div class="loading__mark">
+      <img src="assets/logo.jpg" alt="">
+    </div>
+    <p class="loading__text">PrincessLov</p>
+    <div class="loading__bar"><div class="loading__bar-fill"></div></div>
   </div>
 
   <!-- PROMO BAR -->
   <div class="promo-bar" role="status" aria-live="polite">
-    Envíos gratis en Puerto Iguazú · Precios actualizados en dólar blue · <a href="#contacto">Contactanos por WhatsApp</a>
+    <span class="promo-bar__slide">Envíos gratis en Puerto Iguazú</span>
+    <span class="promo-bar__dot">·</span>
+    <span class="promo-bar__slide">Nueva colección Primavera</span>
+    <span class="promo-bar__dot">·</span>
+    <span class="promo-bar__slide">Precios actualizados en dólar blue</span>
   </div>
 
   <!-- HEADER -->
@@ -34,53 +41,177 @@
       <button class="icon-btn" id="menu-btn" aria-label="Menú" aria-expanded="false" aria-controls="mobile-menu">
         <span aria-hidden="true">☰</span>
       </button>
-      <a href="#" class="logo" aria-label="PrincessLov - Inicio">
-        <img src="assets/logo.jpg" alt="" class="logo__mark" onerror="this.src='assets/logo.svg'">
-        <span class="logo__text">PrincessLov</span>
-      </a>
+
+      <!-- MEGA MENU (desktop nav) -->
+      <nav class="nav" id="main-nav" aria-label="Navegación principal">
+        <ul class="nav__list">
+          <li class="nav__item nav__item--has-menu" data-nav="mujer">
+            <button class="nav__link" aria-haspopup="true">Colección</button>
+            <div class="mega-menu" id="mega-mujer">
+              <div class="mega-menu__col">
+                <h4 class="mega-menu__heading">Indumentaria Deportiva</h4>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('calzas-largas')">Calzas Largas</a>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('calzas-cortas')">Calzas Cortas</a>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('catsuits')">Catsuits</a>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('conjuntos')">Conjuntos</a>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('remeras')">Remeras</a>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('buzos')">Buzos</a>
+              </div>
+              <div class="mega-menu__col">
+                <h4 class="mega-menu__heading">Pijamas</h4>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('pijamas')">Pijamas</a>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('conjuntos-pijama')">Conjuntos Pijama</a>
+                <h4 class="mega-menu__heading" style="margin-top:1rem;">Accesorios</h4>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('ropa-interior')">Ropa Interior</a>
+                <a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('accesorios')">Accesorios</a>
+              </div>
+              <div class="mega-menu__col mega-menu__col--promo">
+                <a href="#productos" class="mega-menu__promo" onclick="App.filtrarCategoria('ofertas')">
+                  <img src="assets/conjunto-deportivo-borgona.jpg" alt="">
+                  <span class="mega-menu__promo-label">Ofertas</span>
+                </a>
+              </div>
+            </div>
+          </li>
+          <li class="nav__item"><a class="nav__link" href="#productos" onclick="App.goAll(); return false;">Novedades</a></li>
+          <li class="nav__item"><a class="nav__link" href="#productos" onclick="App.filtrarCategoria('ofertas'); return false;">Ofertas</a></li>
+          <li class="nav__item"><a class="nav__link" href="#servicios">Servicios</a></li>
+        </ul>
+      </nav>
     </div>
 
-    <div class="header__search" role="search">
-      <form class="search-form" onsubmit="return false;">
-        <span class="search-icon" aria-hidden="true">🔍</span>
-        <input type="search" class="search-input" id="header-search-input" placeholder="Buscar productos, categorías..." autocomplete="off" aria-label="Buscar productos" oninput="App.handleHeaderSearch(this.value)">
-      </form>
-    </div>
+    <a href="#" class="logo" aria-label="PrincessLov - Inicio">
+      <img src="assets/logo.jpg" alt="" class="logo__mark" onerror="this.src='assets/logo.svg'">
+    </a>
 
-    <div class="header__actions">
-      <button class="icon-btn" id="search-btn" aria-label="Buscar" aria-expanded="false" style="display:none;">
-        <span aria-hidden="true">🔍</span>
+    <div class="header__right">
+      <button class="icon-btn" id="search-btn" aria-label="Buscar" aria-expanded="false">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
       <button class="icon-btn icon-btn--cart" id="cart-btn" aria-label="Carrito" aria-expanded="false">
-        <span aria-hidden="true">🛒</span>
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         <span id="cart-count" class="cart-count" aria-live="polite" style="display:none;">0</span>
       </button>
     </div>
   </header>
 
-  <!-- CATEGORY BAR (sticky) -->
-  <nav class="cat-bar" id="cat-bar" aria-label="Categorías" role="navigation">
-    <button class="cat-pill cat-pill--active" data-cat="todos" onclick="App.filtrarCategoria('todos')" aria-pressed="true">Todos</button>
-    <!-- Renderizado dinámicamente -->
+  <!-- MOBILE NAV BAR (bottom tabs) -->
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Navegación móvil">
+    <button class="mobile-nav__item" onclick="App.goAll()">
+      <span class="mobile-nav__icon">🛍️</span>
+      <span>Shop</span>
+    </button>
+    <button class="mobile-nav__item" onclick="App.goAll()">
+      <span class="mobile-nav__icon">✨</span>
+      <span>Novedades</span>
+    </button>
+    <button class="mobile-nav__item" onclick="App.toggleSearch()">
+      <span class="mobile-nav__icon">🔍</span>
+      <span>Buscar</span>
+    </button>
+    <button class="mobile-nav__item" onclick="App.openCart()">
+      <span class="mobile-nav__icon">🛒</span>
+      <span>Carrito</span>
+    </button>
   </nav>
 
-  <!-- HERO PROMO BANNER -->
-  <section class="hero-promo" aria-labelledby="hero-promo-title">
-    <div class="hero-promo__inner">
-      <div class="hero-promo--banner">
-        <img src="assets/conjunto-deportivo-borgona.jpg" alt="" loading="eager">
-        <div class="hero-promo__content">
-          <span class="hero-promo__tag">Nueva colección</span>
-          <h2 id="hero-promo-title" class="hero-promo__title">Deportivo & Confort</h2>
-          <p class="hero-promo__desc">Conjuntos, calzas y buzos diseñados para moverte con estilo. Telas técnicas, cortes favorecedores.</p>
-          <button class="btn btn--ghost hero-promo__cta" onclick="App.filtrarCategoria('conjuntos'); document.getElementById('productos')?.scrollIntoView({behavior:'smooth'});">Ver colección</button>
+  <!-- ============ HERO CAROUSEL ============ -->
+  <section class="hero" id="hero" aria-label="Campaña principal">
+    <div class="hero__track" id="hero-track">
+      <article class="hero__slide is-active" data-slide="0">
+        <div class="hero__media">
+          <img src="assets/conjunto-deportivo-borgona.jpg" alt="Nueva colección deportiva" loading="eager">
         </div>
+        <div class="hero__content">
+          <span class="hero__kicker" data-reveal>Nueva colección Primavera</span>
+          <h1 class="hero__title" data-reveal>Deportivo &amp; Confort</h1>
+          <p class="hero__desc" data-reveal>Telas técnicas, cortes favorecedores y elegancia en cada detalle.</p>
+          <a class="btn btn--light hero__cta" href="#productos" data-reveal onclick="App.filtrarCategoria('conjuntos'); scrollToProducts(); return false;">Descubrir</a>
+        </div>
+      </article>
+      <article class="hero__slide" data-slide="1">
+        <div class="hero__media">
+          <img src="assets/conjunto-flores-rosa.jpg" alt="Lencería floral" loading="eager">
+        </div>
+        <div class="hero__content">
+          <span class="hero__kicker" data-reveal>Encaje &amp; Feminidad</span>
+          <h1 class="hero__title" data-reveal>Lencería Floral</h1>
+          <p class="hero__desc" data-reveal>Bralettes y conjuntos de encaje para cada momento.</p>
+          <a class="btn btn--light hero__cta" href="#productos" data-reveal onclick="App.filtrarCategoria('ropa-interior'); scrollToProducts(); return false;">Explorar</a>
+        </div>
+      </article>
+      <article class="hero__slide" data-slide="2">
+        <div class="hero__media">
+          <img src="assets/pijama-corazones-negro.jpg" alt="Pijama de corazones" loading="eager">
+        </div>
+        <div class="hero__content">
+          <span class="hero__kicker" data-reveal>Descanso con estilo</span>
+          <h1 class="hero__title" data-reveal>Pijamas &amp; Suéteres</h1>
+          <p class="hero__desc" data-reveal>Comodidad absoluta con diseños coquetos y dulces.</p>
+          <a class="btn btn--light hero__cta" href="#productos" data-reveal onclick="App.filtrarCategoria('pijamas'); scrollToProducts(); return false;">Ver pijamas</a>
+        </div>
+      </article>
+    </div>
+
+    <div class="hero__nav">
+      <button class="hero__arrow" id="hero-prev" aria-label="Anterior">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="hero__dots" id="hero-dots">
+        <button class="hero__dot is-active" data-slide="0" aria-label="Ir a slide 1"></button>
+        <button class="hero__dot" data-slide="1" aria-label="Ir a slide 2"></button>
+        <button class="hero__dot" data-slide="2" aria-label="Ir a slide 3"></button>
+      </div>
+      <button class="hero__arrow" id="hero-next" aria-label="Siguiente">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ CATEGORY SHOWCASE (editorial cards) ============ -->
+  <section class="cat-showcase" id="categories">
+    <div class="container">
+      <header class="sec-head sec-head--center" data-reveal>
+        <span class="sec-head__kicker">El universo PrincessLov</span>
+        <h2 class="sec-head__title">Explorá por categoría</h2>
+      </header>
+      <div class="cat-showcase__grid">
+        <a href="#productos" class="cat-card cat-card--large" onclick="App.filtrarCategoria('conjuntos'); ComponentReveal.scrollToProducts(); return false;" data-reveal>
+          <img src="assets/conjunto-deportivo-borgona.jpg" alt="Conjuntos">
+          <div class="cat-card__overlay">
+            <span class="cat-card__icon" aria-hidden="true">👚</span>
+            <h3 class="cat-card__title">Conjuntos</h3>
+            <span class="cat-card__link-under">Comprar →</span>
+          </div>
+        </a>
+        <a href="#productos" class="cat-card" onclick="App.filtrarCategoria('pijamas'); ComponentReveal.scrollToProducts(); return false;" data-reveal>
+          <img src="assets/pijama-corazones-negro.jpg" alt="Pijamas">
+          <div class="cat-card__overlay">
+            <h3 class="cat-card__title">Pijamas</h3>
+            <span class="cat-card__link-under">Comprar →</span>
+          </div>
+        </a>
+        <a href="#productos" class="cat-card" onclick="App.filtrarCategoria('ropa-interior'); ComponentReveal.scrollToProducts(); return false;" data-reveal>
+          <img src="assets/conjunto-flores-rosa.jpg" alt="Lencería">
+          <div class="cat-card__overlay">
+            <h3 class="cat-card__title">Lencería</h3>
+            <span class="cat-card__link-under">Comprar →</span>
+          </div>
+        </a>
+        <a href="#productos" class="cat-card" onclick="App.filtrarCategoria('calzas-largas'); ComponentReveal.scrollToProducts(); return false;" data-reveal>
+          <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='700'><rect width='600' height='700' fill='%23eedbd8'/><text x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239c684c' font-size='20'>Calzas</text></svg>" alt="Calzas">
+          <div class="cat-card__overlay">
+            <h3 class="cat-card__title">Calzas</h3>
+            <span class="cat-card__link-under">Comprar →</span>
+          </div>
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- MAIN CONTENT -->
-  <main class="main" id="productos" role="main">
+  <!-- ============ FEATURED / PRODUCTS ============ -->
+  <main class="main container" id="productos" role="main">
+
     <!-- Drawer overlay -->
     <div class="drawer-overlay" id="sidebar-overlay" aria-hidden="true" onclick="App.closeSidebar()"></div>
 
@@ -136,10 +267,24 @@
     </aside>
 
     <!-- Section header -->
-    <header class="section-head">
-      <h2 class="section-title" id="productos-title">Todos los productos</h2>
-      <span class="section-link" id="productos-count">Cargando…</span>
+    <header class="section-head" data-reveal>
+      <div>
+        <span class="section-head__kicker">La selección</span>
+        <h2 class="section-title" id="productos-title">Todos los productos</h2>
+      </div>
+      <div class="section-head__tools">
+        <button class="filter-trigger" onclick="App.openSidebar()">
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          Filtrar
+        </button>
+        <span class="section-link" id="productos-count">Cargando…</span>
+      </div>
     </header>
+
+    <!-- Category pills row -->
+    <div class="cat-pills" id="cat-pills">
+      <!-- Renderizado dinámico -->
+    </div>
 
     <!-- Product Grid -->
     <div class="product-grid" id="productos-grid" role="list">
@@ -155,8 +300,55 @@
     </div>
   </main>
 
-  <!-- CTA CONTACTO -->
-  <section class="cta" id="contacto" aria-labelledby="cta-title">
+  <!-- ============ SERVICES SECTION (Gucci style) ============ -->
+  <section class="services" id="servicios">
+    <div class="container">
+      <header class="sec-head sec-head--center" data-reveal>
+        <span class="sec-head__kicker">Servicios</span>
+        <h2 class="sec-head__title">Descubrí los servicios PrincessLov</h2>
+      </header>
+      <div class="services__grid">
+        <article class="service-card" data-reveal>
+          <div class="service-card__icon" aria-hidden="true">🚚</div>
+          <h3 class="service-card__title">Envíos a tu medida</h3>
+          <p class="service-card__desc">Envío gratis en Iguazú, Neo Encomienda, Correo Argentino y Flecha/Vía Cargo a todo el país.</p>
+        </article>
+        <article class="service-card" data-reveal>
+          <div class="service-card__icon" aria-hidden="true">💬</div>
+          <h3 class="service-card__title">Asesoría por WhatsApp</h3>
+          <p class="service-card__desc">Te ayudamos con talles, colores y composición de tus looks favoritos.</p>
+        </article>
+        <article class="service-card" data-reveal>
+          <div class="service-card__icon" aria-hidden="true">🎁</div>
+          <h3 class="service-card__title">Embalaje con cariño</h3>
+          <p class="service-card__desc">Cada pedido llega preparado con dedicación y cuidado en los detalles.</p>
+        </article>
+        <article class="service-card" data-reveal>
+          <div class="service-card__icon" aria-hidden="true">🛍️</div>
+          <h3 class="service-card__title">Compra fácil</h3>
+          <p class="service-card__desc">Paga con Mercado Pago o coordina por WhatsApp de forma segura.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROMO BANNER ============ -->
+  <section class="promo-band" data-reveal>
+    <div class="container promo-band__inner">
+      <div class="promo-band__img">
+        <img src="assets/conjunto-flores-rosa.jpg" alt="Oferta especial">
+      </div>
+      <div class="promo-band__content">
+        <span class="promo-band__kicker">Ofertas limitadas</span>
+        <h2 class="promo-band__title">Renová tu guardarropa</h2>
+        <p class="promo-band__desc">Aprovechá precios especiales en conjuntos, pijamas y lencería seleccionada.</p>
+        <a class="btn btn--dark promo-band__cta" href="#productos" onclick="App.filtrarCategoria('ofertas'); scrollToProducts(); return false;">Ver ofertas</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA CONTACTO ============ -->
+  <section class="cta" id="contacto" aria-labelledby="cta-title" data-reveal>
     <img src="assets/logo.jpg" alt="" class="cta__logo" onerror="this.src='assets/logo.svg'">
     <h2 id="cta-title" class="cta__title">¿Tenés dudas?</h2>
     <p class="cta__desc">Escribinos por WhatsApp y te asesoramos sobre talles, stock o entregas.</p>
@@ -165,10 +357,23 @@
     </a>
   </section>
 
+  <!-- ============ NEWSLETTER ============ -->
+  <section class="newsletter" id="newsletter">
+    <div class="container newsletter__inner" data-reveal>
+      <h2 class="newsletter__title">Recibí novedades PrincessLov</h2>
+      <p class="newsletter__desc">Sé la primera en enterarte de nuevas colecciones, promociones y lanzamientos exclusivos.</p>
+      <form class="newsletter__form" onsubmit="App.subscribeNewsletter(event)">
+        <input type="email" id="newsletter-email" class="newsletter__input" placeholder="Tu correo electrónico" required aria-label="Correo electrónico">
+        <button type="submit" class="btn btn--dark newsletter__btn">Suscribirme</button>
+      </form>
+      <p class="newsletter__msg" id="newsletter-msg" aria-live="polite"></p>
+    </div>
+  </section>
+
   <!-- FOOTER -->
   <footer class="footer" role="contentinfo">
-    <div class="footer__inner">
-      <div class="footer__grid">
+    <div class="container">
+      <div class="footer__top">
         <div class="footer__brand">
           <a href="#" class="footer__logo" aria-label="PrincessLov - Inicio">
             <img src="assets/logo.jpg" alt="" class="footer__logo-img" onerror="this.src='assets/logo.svg'">
@@ -176,17 +381,24 @@
           </a>
           <p class="footer__tagline">Sportwears, pijamas y lencerías para mujeres que buscan estilo, comodidad y calidad.</p>
           <div class="footer__social">
-            <a href="#" id="footer-instagram" target="_blank" class="footer__social-link" aria-label="Instagram">📷</a>
-            <a href="#" id="footer-facebook" target="_blank" class="footer__social-link" aria-label="Facebook">📘</a>
+            <a href="#" id="footer-instagram" target="_blank" class="footer__social-link" aria-label="Instagram"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+            <a href="#" id="footer-facebook" target="_blank" class="footer__social-link" aria-label="Facebook"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
           </div>
         </div>
         <div class="footer__col">
           <h4 class="footer__col-title">Navegación</h4>
           <ul class="footer__links">
             <li><a href="#" class="footer__link">Inicio</a></li>
-            <li><a href="#productos" class="footer__link">Productos</a></li>
-            <li><a href="#productos" class="footer__link" onclick="App.openSidebar(); return false;">Categorías</a></li>
+            <li><a href="#productos" class="footer__link" onclick="App.goAll(); return false;">Productos</a></li>
+            <li><a href="#categories" class="footer__link">Categorías</a></li>
+            <li><a href="#servicios" class="footer__link">Servicios</a></li>
             <li><a href="#contacto" class="footer__link">Contacto</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h4 class="footer__col-title">Categorías</h4>
+          <ul class="footer__links" id="footer-cats">
+            <!-- dinámico -->
           </ul>
         </div>
         <div class="footer__col">
@@ -195,9 +407,7 @@
             <li><a href="#" class="footer__link">📍 Puerto Iguazú, Misiones</a></li>
             <li><a href="#" id="footer-whatsapp-link" class="footer__link" target="_blank">📱 WhatsApp: Cargando…</a></li>
           </ul>
-        </div>
-        <div class="footer__col">
-          <h4 class="footer__col-title">Envíos</h4>
+          <h4 class="footer__col-title" style="margin-top:1.5rem;">Envíos</h4>
           <ul class="footer__links">
             <li><a href="#" class="footer__link">Envío gratis en Iguazú</a></li>
             <li><a href="#" class="footer__link">Neo Encomienda (interior)</a></li>
@@ -208,7 +418,7 @@
       </div>
       <div class="footer__bottom">
         <p>© 2026 PrincessLov. Todos los derechos reservados.</p>
-        <p>Hecho con ❤️ en Argentina</p>
+        <p>Hecho con <span aria-hidden="true">♥</span> en Argentina</p>
       </div>
     </div>
   </footer>
@@ -355,8 +565,10 @@
     </div>
     <ul class="mobile-menu__list">
       <li><a href="#" class="mobile-menu__link" onclick="App.closeMobileMenu()">Inicio</a></li>
-      <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.openSidebar();">Categorías & Filtros</a></li>
-      <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu()">Productos</a></li>
+      <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.goAll();">Novedades</a></li>
+      <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.openSidebar();">Categorías &amp; Filtros</a></li>
+      <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.filtrarCategoria('ofertas');">Ofertas</a></li>
+      <li><a href="#servicios" class="mobile-menu__link" onclick="App.closeMobileMenu()">Servicios</a></li>
       <li><a href="#contacto" class="mobile-menu__link" onclick="App.closeMobileMenu()">Contacto</a></li>
     </ul>
   </nav>
@@ -369,6 +581,7 @@
   <script src="js/sheets.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/checkout.js"></script>
+  <script src="js/effects.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
