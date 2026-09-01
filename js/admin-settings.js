@@ -3,76 +3,145 @@
    ============================================ */
 
 const AdminSettings = {
-  async render() {
-    await this.loadForm();
-  },
+  render() {
+    const settings = AdminData.getSettings();
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val == null ? '' : val;
+    };
 
-  async loadForm() {
-    // Cargar desde SheetsService (que lee Apps Script > localStorage)
-    const settings = await SheetsService.obtenerConfig();
-
-    document.getElementById('set-nombre').value = settings.nombre || 'PrincessLov';
-    document.getElementById('set-whatsapp').value = settings.whatsapp || '';
-    document.getElementById('set-email').value = settings.email || '';
-    document.getElementById('set-instagram').value = settings.instagram || '';
-    document.getElementById('set-dolar-manual').value = settings.dolarManual || '';
-    document.getElementById('set-margen').value = settings.margen || '';
+    set('set-nombre', settings.nombre || 'PrincessLov');
+    set('set-whatsapp', settings.whatsapp || '');
+    set('set-email', settings.email || '');
+    set('set-instagram', settings.instagram || '');
+    set('set-dolar-manual', settings.dolarManual || '');
+    set('set-margen', settings.margen || '');
 
     // Gastos fijos
     const gf = settings.gastosFijos || {};
-    document.getElementById('set-gasto-alquiler').value = gf.alquiler || '';
-    document.getElementById('set-gasto-servicios').value = gf.servicios || '';
-    document.getElementById('set-gasto-internet').value = gf.internet || '';
-    document.getElementById('set-gasto-transporte').value = gf.transporte || '';
-    document.getElementById('set-gasto-otros').value = gf.otros || '';
+    set('set-gasto-alquiler', gf.alquiler || '');
+    set('set-gasto-servicios', gf.servicios || '');
+    set('set-gasto-internet', gf.internet || '');
+    set('set-gasto-transporte', gf.transporte || '');
+    set('set-gasto-otros', gf.otros || '');
 
     // Costos variables
     const cv = settings.costosVariables || {};
-    document.getElementById('set-cv-envoltorio').value = cv.envoltorio || '';
-    document.getElementById('set-cv-etiqueta').value = cv.etiqueta || '';
-    document.getElementById('set-cv-comision').value = cv.comisionMP || '';
+    set('set-cv-envoltorio', cv.envoltorio || '');
+    set('set-cv-etiqueta', cv.etiqueta || '');
+    set('set-cv-comision', cv.comisionMP || '');
+
+    // Sync con Sheets si está configurado (asíncrono, no bloquea)
+    if (SheetsService && SheetsService.appsScriptUrl) {
+      SheetsService.obtenerConfig().then(remote => {
+        if (remote && Object.keys(remote).length) {
+          AdminData.saveSettings(this.sanitize(remote));
+          AdminApp.toast('Config sincronizada desde Google Sheets');
+        }
+      }).catch(() => {});
+    }
+  },
+
+  /**
+   * Carga settings a nivel global (CONFIG y ADMIN_CONFIG).
+   * LO NECESITA AdminApp.init() — no eliminar.
+   */
+  load() {
+    const settings = AdminData.getSettings();
+
+    if (settings.dolarManual) CONFIG.cotizacion.cotizacionManual = Number(settings.dolarManual) || CONFIG.cotizacion.cotizacionManual;
+    if (settings.margen) CONFIG.cotizacion.margenGanancia = Number(settings.margen) || CONFIG.cotizacion.margenGanancia;
+    if (settings.whatsapp) CONFIG.negocio.whatsapp = settings.whatsapp;
+    if (settings.nombre) CONFIG.negocio.nombre = settings.nombre;
+    if (settings.email) CONFIG.negocio.email = settings.email;
+    if (settings.instagram) CONFIG.negocio.instagram = settings.instagram;
+
+    // Gastos fijos
+    if (settings.gastosFijos) Object.assign(ADMIN_CONFIG.gastosFijos, settings.gastosFijos);
+    // Costos variables
+    if (settings.costosVariables) Object.assign(ADMIN_CONFIG.costosVariables, settings.costosVariables);
+
+    // Sincronizar también hacia SheetsService (para la tienda)
+    if (SheetsService) {
+      SheetsService.cotizacionDolar = SheetsService.cotizacionDolar || Number(settings.dolarManual) || CONFIG.cotizacion.cotizacionManual;
+    }
+  },
+
+  sanitize(settings) {
+    // Normaliza las settings remote para que coincidan con el formato del admin
+    const s = settings || {};
+    const gastosFijos = s.gastosFijos || {};
+    const costosVariables = s.costosVariables || {};
+    return {
+      nombre: s.nombre || 'PrincessLov',
+      whatsapp: s.whatsapp || '',
+      email: s.email || '',
+      instagram: s.instagram || '',
+      dolarManual: s.dolarManual || 1200,
+      margen: s.margen || 1.30,
+      gastosFijos: {
+        alquiler: gastosFijos.alquiler || 0,
+        servicios: gastosFijos.servicios || 0,
+        internet: gastosFijos.internet || 0,
+        transporte: gastosFijos.transporte || 0,
+        otros: gastosFijos.otros || 0,
+      },
+      costosVariables: {
+        envoltorio: costosVariables.envoltorio || 0,
+        etiqueta: costosVariables.etiqueta || 0,
+        comisionMP: costosVariables.comisionMP || 0.035,
+      },
+    };
   },
 
   save(event) {
     event.preventDefault();
+    const get = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.value : '';
+    };
 
     const settings = {
-      nombre: document.getElementById('set-nombre').value.trim(),
-      whatsapp: document.getElementById('set-whatsapp').value.trim(),
-      email: document.getElementById('set-email').value.trim(),
-      instagram: document.getElementById('set-instagram').value.trim(),
-      dolarManual: parseFloat(document.getElementById('set-dolar-manual').value) || 1200,
-      margen: parseFloat(document.getElementById('set-margen').value) || 1.30,
+      nombre: get('set-nombre').trim(),
+      whatsapp: get('set-whatsapp').trim(),
+      email: get('set-email').trim(),
+      instagram: get('set-instagram').trim(),
+      dolarManual: parseFloat(get('set-dolar-manual')) || 1200,
+      margen: parseFloat(get('set-margen')) || 1.30,
       gastosFijos: {
-        alquiler: parseFloat(document.getElementById('set-gasto-alquiler').value) || 0,
-        servicios: parseFloat(document.getElementById('set-gasto-servicios').value) || 0,
-        internet: parseFloat(document.getElementById('set-gasto-internet').value) || 0,
-        transporte: parseFloat(document.getElementById('set-gasto-transporte').value) || 0,
-        otros: parseFloat(document.getElementById('set-gasto-otros').value) || 0,
+        alquiler: parseFloat(get('set-gasto-alquiler')) || 0,
+        servicios: parseFloat(get('set-gasto-servicios')) || 0,
+        internet: parseFloat(get('set-gasto-internet')) || 0,
+        transporte: parseFloat(get('set-gasto-transporte')) || 0,
+        otros: parseFloat(get('set-gasto-otros')) || 0,
       },
       costosVariables: {
-        envoltorio: parseFloat(document.getElementById('set-cv-envoltorio').value) || 0,
-        etiqueta: parseFloat(document.getElementById('set-cv-etiqueta').value) || 0,
-        comisionMP: parseFloat(document.getElementById('set-cv-comision').value) || 0.035,
+        envoltorio: parseFloat(get('set-cv-envoltorio')) || 0,
+        etiqueta: parseFloat(get('set-cv-etiqueta')) || 0,
+        comisionMP: parseFloat(get('set-cv-comision')) || 0.035,
       },
     };
 
-    // Guardar vía SheetsService (Apps Script > localStorage)
-    SheetsService.guardarConfig(settings).then(result => {
-      if (result.success) {
-        // Aplicar INMEDIATAMENTE a la tienda en vivo
-        this.applyToLiveStore(settings);
-        
-        // Forzar recarga de productos y dólar en tienda
-        if (window.SheetsService) {
-          SheetsService.refrescarTodo();
+    // Guardar local (fuente de verdad del admin)
+    AdminData.saveSettings(settings);
+
+    // Sincronizar a Sheets si está configurado
+    if (SheetsService && SheetsService.appsScriptUrl) {
+      SheetsService.guardarConfig(settings).then(result => {
+        if (result.success) {
+          AdminApp.toast('✅ Configuración guardada y sincronizada a la tienda');
+        } else {
+          AdminApp.toast('⚠️ Guardado local. No se sincronizó a Sheets.', 'error');
         }
-        
-        AdminApp.toast('✅ Configuración guardada y aplicada a la tienda');
-      } else {
-        AdminApp.toast('❌ Error guardando: ' + (result.error || 'desconocido'), 'error');
-      }
-    });
+      }).catch(() => {
+        AdminApp.toast('⚠️ Guardado local. No se sincronizó a Sheets.', 'error');
+      });
+    } else {
+      AdminApp.toast('Configuración guardada');
+    }
+
+    this.load();
+    this.applyToLiveStore(settings);
   },
 
   /**
@@ -80,52 +149,16 @@ const AdminSettings = {
    * Sin necesidad de recargar la página
    */
   applyToLiveStore(settings) {
-    // Negocio
+    if (!window.CONFIG) return;
     if (settings.nombre) CONFIG.negocio.nombre = settings.nombre;
     if (settings.whatsapp) CONFIG.negocio.whatsapp = settings.whatsapp;
     if (settings.email) CONFIG.negocio.email = settings.email;
     if (settings.instagram) CONFIG.negocio.instagram = settings.instagram;
-
-    // Cotización
     CONFIG.cotizacion.cotizacionManual = settings.dolarManual;
     CONFIG.cotizacion.margenGanancia = settings.margen;
 
-    // Actualizar WhatsApp links en la página
-    this.updateWhatsAppLinks(settings.whatsapp);
-    
-    // Actualizar Instagram link
-    this.updateInstagramLink(settings.instagram);
-    
-    // Actualizar título de la página
-    if (settings.nombre) document.title = settings.nombre + ' | Sportwears, Pijamas y Lencerías';
-    
     // Disparar evento personalizado para que otros módulos reaccionen
     window.dispatchEvent(new CustomEvent('config:updated', { detail: settings }));
-    
-    console.log('[AdminSettings] Config aplicada en vivo:', settings);
-  },
-
-  updateWhatsAppLinks(whatsapp) {
-    if (!whatsapp) return;
-    
-    // Botón contacto hero
-    const btn = document.getElementById('contacto-whatsapp-btn');
-    if (btn) btn.href = `https://wa.me/${whatsapp}?text=${encodeURIComponent('Hola! Quiero consultar por sus productos.')}`;
-
-    // Footer
-    const footerWa = document.getElementById('footer-whatsapp-link');
-    if (footerWa) {
-      footerWa.innerHTML = `📱 WhatsApp: <a href="https://wa.me/${whatsapp}" target="_blank" style="color:var(--pink-300);">Escribinos</a>`;
-    }
-
-    // Carrito WhatsApp (se regenera al abrir)
-    // Checkout WhatsApp (se regenera al abrir)
-  },
-
-  updateInstagramLink(instagram) {
-    if (!instagram) return;
-    const footerIg = document.getElementById('footer-instagram');
-    if (footerIg) footerIg.href = `https://instagram.com/${instagram}`;
   },
 };
 
@@ -133,17 +166,14 @@ const AdminSettings = {
    EVENTOS GLOBALES PARA SINCRONÍA
    ============================================ */
 
-// Escuchar cambios de config desde admin y aplicar a tienda
 window.addEventListener('config:updated', (e) => {
   console.log('[LiveStore] Config actualizada:', e.detail);
-  // Aquí podés agregar lógica extra: actualizar precios mostrados, etc.
 });
 
 // Sincronizar dólar cuando cambia en admin
 window.addEventListener('dolar:updated', (e) => {
   if (window.SheetsService) {
     SheetsService.cotizacionDolar = e.detail;
-    // Forzar recálculo de precios visibles
     if (window.App && App.productosFiltrados) {
       App.renderProductos(App.productosFiltrados);
     }
