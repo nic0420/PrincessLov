@@ -82,12 +82,27 @@
       <section id="section-dashboard" class="admin-section active">
         <!-- Period filter tabs -->
         <div class="tab-nav" id="dashboard-tabs">
-          <button class="tab active" data-period="hoy" onclick="AdminDashboard.setPeriod('hoy')">Hoy</button>
+          <button class="tab" data-period="hoy" onclick="AdminDashboard.setPeriod('hoy')">Hoy</button>
           <button class="tab" data-period="semana" onclick="AdminDashboard.setPeriod('semana')">7 días</button>
-          <button class="tab" data-period="mes" onclick="AdminDashboard.setPeriod('mes')">30 días</button>
+          <button class="tab active" data-period="mes" onclick="AdminDashboard.setPeriod('mes')">30 días</button>
           <button class="tab" data-period="trimestre" onclick="AdminDashboard.setPeriod('trimestre')">3 meses</button>
           <button class="tab" data-period="anio" onclick="AdminDashboard.setPeriod('anio')">1 año</button>
           <button class="tab" data-period="all" onclick="AdminDashboard.setPeriod('all')">Todo</button>
+        </div>
+
+        <!-- Guía rápida + acciones -->
+        <div class="chart-card" style="background: linear-gradient(135deg, var(--borgona-500), var(--borgona-300)); color: white; border: none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h3 style="color:white; margin:0 0 0.35rem; font-size:1.05rem;">👋 Bienvenida a tu panel</h3>
+              <p style="margin:0; opacity:0.9; font-size:0.88rem; max-width:520px;">1) Cargá productos → 2) Recibí pedidos de la tienda → 3) Registrá gastos → 4) Mirá tu <strong>ganancia separada por categoría</strong> en Finanzas (cambia el período arriba para ver por mes).</p>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button class="btn btn-sm" style="background:white; color:var(--borgona-400); font-weight:700;" onclick="AdminApp.navigate('products'); setTimeout(()=>AdminProducts.openForm(), 120)">+ Producto</button>
+              <button class="btn btn-sm" style="background:rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="AdminApp.navigate('orders'); setTimeout(()=>AdminOrders.openForm(), 120)">+ Pedido</button>
+              <button class="btn btn-sm" style="background:rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="AdminApp.navigate('financial')">📈 Finanzas</button>
+            </div>
+          </div>
         </div>
 
         <!-- Stats Cards -->
@@ -269,6 +284,24 @@
 
       <!-- ===== FINANCIAL ===== -->
       <section id="section-financial" class="admin-section">
+        <!-- Período compartido con Dashboard -->
+        <div class="tab-nav" id="financial-tabs">
+          <button class="tab" data-period="hoy" onclick="AdminDashboard.setPeriod('hoy')">Hoy</button>
+          <button class="tab" data-period="semana" onclick="AdminDashboard.setPeriod('semana')">7 días</button>
+          <button class="tab active" data-period="mes" onclick="AdminDashboard.setPeriod('mes')">30 días</button>
+          <button class="tab" data-period="trimestre" onclick="AdminDashboard.setPeriod('trimestre')">3 meses</button>
+          <button class="tab" data-period="anio" onclick="AdminDashboard.setPeriod('anio')">1 año</button>
+          <button class="tab" data-period="all" onclick="AdminDashboard.setPeriod('all')">Todo</button>
+        </div>
+
+        <div style="background: var(--borgona-100, #FDE8EF); border: 1px solid var(--borgona-200); border-radius: 10px; padding: 0.9rem 1rem; margin-bottom: 1.1rem; display:flex; gap:0.75rem; align-items:start;">
+          <span style="font-size:1.2rem; line-height:1;">💡</span>
+          <p style="margin:0; font-size:0.88rem; color: var(--texto); line-height:1.45;">
+            <strong>Ganancia separada por categoría:</strong> acá ves cuánto ganaste en <strong>Deportivo</strong>, <strong>Lencería / Pijamas</strong>, etc. de forma separada.
+            Cambiá el período arriba (ej: <em>30 días</em>) para ver solo este mes. El <strong>Total</strong> abajo es la suma de todas las categorías.
+          </p>
+        </div>
+
         <div class="stats-grid" id="financial-stats">
           <!-- Rendered by JS -->
         </div>
@@ -278,13 +311,20 @@
             <canvas id="chart-financial"></canvas>
           </div>
           <div class="chart-card breakeven-card">
-            <h3>🎯 Análisis de Punto de Equilibrio</h3>
+            <h3>🎯 Punto de Equilibrio</h3>
             <div id="financial-breakeven"></div>
           </div>
         </div>
-        <div class="chart-card" style="margin-top:1.5rem;">
-          <h3>📂 Ganancia por Categoría</h3>
-          <div id="financial-groups"></div>
+        <div class="charts-grid" style="margin-top:1.5rem;">
+          <div class="chart-card">
+            <h3>📂 Ganancia por Categoría <span style="font-weight:400; font-size:0.8rem; color:var(--texto-secundario);">— separada como pediste</span></h3>
+            <div id="financial-groups"></div>
+          </div>
+          <div class="chart-card">
+            <h3>🥧 Distribución por Categoría</h3>
+            <canvas id="chart-groups" style="max-height:240px;"></canvas>
+            <p style="font-size:0.78rem; color:var(--texto-secundario); margin-top:0.6rem;">Proporción de ingresos por categoría en el período seleccionado.</p>
+          </div>
         </div>
         <div class="chart-card" style="margin-top:1.5rem;">
           <h3>📋 Historial de Gastos</h3>

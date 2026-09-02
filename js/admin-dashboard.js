@@ -8,15 +8,17 @@ const AdminDashboard = {
 
   setPeriod(period) {
     this.currentPeriod = period;
-    document.querySelectorAll('#dashboard-tabs .tab').forEach(t => {
+    document.querySelectorAll('#dashboard-tabs .tab, #financial-tabs .tab').forEach(t => {
       t.classList.toggle('active', t.dataset.period === period);
     });
-    this.render();
+    // Re-renderiza la sección visible
+    if (AdminApp.currentSection === 'financial') this.renderFinancial();
+    else this.render();
   },
 
   render() {
-    // Sincronizar pestaña de período activa con el estado actual
-    document.querySelectorAll('#dashboard-tabs .tab').forEach(t => {
+    // Sincronizar pestañas de período (dashboard + finanzas comparten período)
+    document.querySelectorAll('#dashboard-tabs .tab, #financial-tabs .tab').forEach(t => {
       t.classList.toggle('active', t.dataset.period === this.currentPeriod);
     });
 
@@ -25,6 +27,8 @@ const AdminDashboard = {
     this.renderBreakEven();
     this.renderTopProducts();
     this.renderStockAlerts();
+    // Si el usuario está en Finanzas, también actualiza esos datos al cambiar período desde Dashboard
+    if (AdminApp.currentSection === 'financial') this.renderFinancial();
   },
 
   renderStats() {
@@ -238,6 +242,10 @@ const AdminDashboard = {
 
   /* ========== FINANCIAL SECTION ========== */
   renderFinancial() {
+    // Sincroniza tabs de período
+    document.querySelectorAll('#dashboard-tabs .tab, #financial-tabs .tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.period === this.currentPeriod);
+    });
     const periodo = this.currentPeriod === 'all' ? null : this.currentPeriod;
     const stats = AdminData.getStats(periodo);
     const totalExpenses = AdminData.getTotalExpenses(periodo);
@@ -272,6 +280,7 @@ const AdminDashboard = {
     this.renderFinancialChart(stats);
     this.renderFinancialBreakEven(be);
     this.renderFinancialGroups(stats);
+    this.renderGroupsChart(stats);
     this.renderFinancialExpenses();
   },
 
@@ -280,31 +289,67 @@ const AdminDashboard = {
     if (!container) return;
     const grupos = stats.gananciaPorGrupo || [];
     if (grupos.length === 0) {
-      container.innerHTML = `<p style="color:var(--texto-light); padding:0.25rem 0;">Aún no hay ventas para mostrar por categoría.</p>`;
+      container.innerHTML = `<p style="color:var(--texto-secundario); padding:0.9rem 0; text-align:center; background:var(--gris-100); border-radius:8px; border:1px dashed var(--gris-200);">Aún no hay ventas en este período.<br><span style="font-size:0.82rem;">Cargá pedidos con productos categorizados y acá verás la ganancia separada por Deportivo, Lencería, Pijamas, etc.</span></p>`;
       return;
     }
-    const max = Math.max(...grupos.map(g => Math.max(g.ingresos, 1)), 1);
+    const maxIngresos = Math.max(...grupos.map(g => Math.max(g.ingresos, 1)), 1);
+    const totalGanancia = grupos.reduce((s,g)=>s+(g.ganancia||0),0);
+    const totalIngresos = grupos.reduce((s,g)=>s+(g.ingresos||0),0);
+    const totalCostos = grupos.reduce((s,g)=>s+(g.costos||0),0);
+    const grupoIcons = { 'Indumentaria Deportiva':'🏃', 'Pijamas':'🌙', 'Accesorios':'🎀', 'Lencería':'🎀', 'Ofertas':'🔥', 'General':'📦' };
+    const periodLabel = stats.periodo === 'total' ? 'Todo' : stats.periodo;
     container.innerHTML = `
-      <div style="margin:0.5rem 0;">
+      <p style="font-size:0.78rem; color:var(--texto-secundario); margin:0 0 0.7rem;">Período: <strong style="color:var(--texto);">${periodLabel}</strong> · ${grupos.length} categoría${grupos.length!==1?'s':''} con ventas</p>
+      <div style="display:flex; flex-direction:column; gap:0.85rem;">
         ${grupos.map(g => {
-          const pct = Math.min((g.ingresos / max) * 100, 100);
+          const pctIngresos = Math.min((g.ingresos / maxIngresos) * 100, 100);
+          const pctTotal = totalIngresos > 0 ? (g.ingresos / totalIngresos * 100) : 0;
           const color = g.ganancia >= 0 ? '#10B981' : '#EF4444';
+          const icon = grupoIcons[g.grupo] || '📦';
           return `
-            <div style="margin-bottom:0.9rem;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
-                <strong>${g.grupo}</strong>
-                <span style="color:${color}; font-weight:700;">${AdminData.formatARS(g.ganancia)}</span>
+            <div style="padding:0.6rem 0; border-bottom:1px solid var(--gris-200);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+                <span style="font-weight:700; font-size:0.93rem;">${icon} ${g.grupo}</span>
+                <span style="color:${color}; font-weight:800; font-size:0.95rem;">${AdminData.formatARS(g.ganancia)}</span>
               </div>
-              <div style="background:var(--gris-200); border-radius:999px; height:8px; overflow:hidden;">
-                <div style="width:${pct}%; height:100%; background:linear-gradient(90deg, var(--borgona-300), var(--borgona-500)); border-radius:999px;"></div>
+              <div style="background:var(--gris-200); border-radius:999px; height:10px; overflow:hidden; position:relative;">
+                <div style="width:${pctIngresos}%; height:100%; background:linear-gradient(90deg, var(--borgona-300), var(--borgona-500)); border-radius:999px; transition:width 0.5s ease;"></div>
               </div>
-              <div style="display:flex; justify-content:space-between; margin-top:0.15rem; font-size:0.78rem; color:var(--texto-light);">
-                <span>Ingresos: ${AdminData.formatARS(g.ingresos)}</span>
-                <span>Costos: ${AdminData.formatARS(g.costos)}</span>
+              <div style="display:flex; justify-content:space-between; margin-top:0.3rem; font-size:0.78rem; color:var(--texto-secundario); flex-wrap:wrap; gap:0.5rem;">
+                <span>Ingresos: <strong style="color:var(--texto);">${AdminData.formatARS(g.ingresos)}</strong> <span style="opacity:0.7;">(${pctTotal.toFixed(1)}% del total)</span></span>
+                <span>Costos: <strong style="color:var(--texto);">${AdminData.formatARS(g.costos)}</strong></span>
               </div>
             </div>`;
         }).join('')}
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 0.9rem; background: var(--borgona-500); color:white; border-radius:10px; margin-top:0.2rem;">
+          <span style="font-weight:700;">Σ Total del período</span>
+          <span style="font-weight:800; font-size:1.05rem;">${AdminData.formatARS(totalGanancia)}</span>
+        </div>
+        <p style="font-size:0.75rem; color:var(--texto-secundario); margin:0;">Ingresos totales: ${AdminData.formatARS(totalIngresos)} · Costos totales: ${AdminData.formatARS(totalCostos)}</p>
       </div>`;
+  },
+
+  renderGroupsChart(stats) {
+    const canvas = document.getElementById('chart-groups');
+    if (!canvas || typeof Chart === 'undefined') return;
+    try {
+      if (this.charts.groups) this.charts.groups.destroy();
+      const grupos = stats.gananciaPorGrupo || [];
+      if (grupos.length === 0) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        return;
+      }
+      const palette = ['#800020','#A05A6E','#C47A8E','#6B0F2A','#4A0A1C','#F5B7C5','#D4A0B0','#8B5CF6'];
+      this.charts.groups = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          labels: grupos.map(g => g.grupo),
+          datasets: [{ data: grupos.map(g => g.ingresos), backgroundColor: grupos.map((_,i)=> palette[i%palette.length]), borderWidth: 0 }],
+        },
+        options: { responsive:true, plugins:{ legend:{ position:'bottom', labels:{ padding:14, font:{size:11} } } }, cutout:'58%' },
+      });
+    } catch(e){ console.error('Error chart grupos', e); }
   },
 
   renderFinancialChart(stats) {
