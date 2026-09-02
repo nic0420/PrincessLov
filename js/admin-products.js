@@ -271,7 +271,7 @@ const AdminProducts = {
         <label>Color *</label>
         <div style="display:flex; gap:0.5rem; align-items:end;">
           <input type="text" class="variant-color-name" placeholder="Nombre (ej: Borgoña)" value="${variant.color || ''}" style="flex:1;">
-          <input type="color" class="variant-color-input" value="${variant.colorHex || '#9c684c'}">
+          <input type="color" class="variant-color-input" value="${variant.colorHex || '#800020'}">
         </div>
       </div>
       <div class="form-group">

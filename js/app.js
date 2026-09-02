@@ -331,7 +331,7 @@ const App = {
       let html = '';
       colors.forEach((color, colorIdx) => {
         const variantsOfColor = producto.variantes.filter(v => v.color === color);
-        const colorHex = variantsOfColor[0]?.colorHex || '#9c684c';
+        const colorHex = variantsOfColor[0]?.colorHex || '#800020';
         html += `
           <div class="product-modal__variant-group">
             <div class="product-modal__variant-label" style="display:flex; align-items:center; gap:0.5rem;">

@@ -53,6 +53,14 @@ const AdminData = {
     return this.getProducts().find(p => p.id === id) || null;
   },
 
+  // Devuelve el grupo de categoría (ej: "Indumentaria Deportiva", "Pijamas")
+  getGrupoProducto(productoId) {
+    const prod = this.getProduct(productoId);
+    if (!prod) return 'General';
+    const cat = (CONFIG.categorias || []).find(c => c.id === prod.categoria);
+    return cat?.grupo || prod.grupo || prod.categoriaOriginal || 'General';
+  },
+
   importProducts(csvData) {
     const existing = this.getProducts();
     const existingIds = new Set(existing.map(p => p.id));
@@ -255,6 +263,34 @@ const AdminData = {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 10);
 
+    // Ganancia por grupo de categoría (deportivo, pijamas, etc.)
+    // Ordena la ganancia de cada pedido por el grupo del producto vendido
+    // y la reparte proporcionalmente al revenue de los items
+    const grupos = {};
+    filtered.forEach(o => {
+      const orderItems = o.items || [];
+      const revenueItems = orderItems.reduce((s, it) => s + ((it.precioUnitario || 0) * (it.cantidad || 1)), 0);
+
+      if (orderItems.length > 0) {
+        // Repartir la ganancia del pedido proporcionalmente al revenue de cada item
+        orderItems.forEach(it => {
+          const g = this.getGrupoProducto(it.productoId);
+          if (!grupos[g]) grupos[g] = { grupo: g, ingresos: 0, costos: 0, ganancia: 0 };
+          const share = revenueItems > 0 ? ((it.precioUnitario || 0) * (it.cantidad || 1)) / revenueItems : 1 / orderItems.length;
+          grupos[g].ingresos += (o.total || 0) * share;
+          grupos[g].costos += (o.costoTotal || 0) * share;
+        });
+      } else {
+        // Pedido sin items: agrupar en "General"
+        const g = 'General';
+        if (!grupos[g]) grupos[g] = { grupo: g, ingresos: 0, costos: 0, ganancia: 0 };
+        grupos[g].ingresos += (o.total || 0);
+        grupos[g].costos += (o.costoTotal || 0);
+      }
+    });
+    Object.values(grupos).forEach(g => { g.ganancia = g.ingresos - g.costos; });
+    const gananciaPorGrupo = Object.values(grupos).sort((a, b) => b.ganancia - a.ganancia);
+
     // Ventas por día (últimos 30 días)
     const ventasPorDia = {};
     for (let i = 29; i >= 0; i--) {
@@ -286,6 +322,7 @@ const AdminData = {
       porEstado,
       topProductos,
       ventasPorDia: Object.values(ventasPorDia),
+      gananciaPorGrupo,
     };
   },
 

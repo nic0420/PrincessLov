@@ -54,8 +54,10 @@ const CartService = {
    * Agrega un producto al carrito (soporta variantes)
    */
   addItem(producto, cantidad = 1, variant = null) {
+    // Soporta variante por parámetro o embebida en el producto (producto._variant)
+    const v = variant || producto._variant || null;
     // Crear clave única: id + variante (color+talle)
-    const variantKey = variant ? `${variant.color}|${variant.talle}` : 'default';
+    const variantKey = v ? `${v.color}|${v.talle}` : 'default';
     const itemKey = `${producto.id}::${variantKey}`;
 
     const existing = this.items.find(i => i.key === itemKey);
@@ -76,14 +78,14 @@ const CartService = {
         precioARS: precioARS,
         cantidad: Math.min(cantidad, producto.stock),
         stock: producto.stock,
-        variante: variant ? `${variant.color} / ${variant.talle}` : null,
-        _variant: variant, // Para referencia interna
+        variante: v ? `${v.color} / ${v.talle}` : null,
+        _variant: v, // Para referencia interna
       };
       this.items.push(item);
     }
 
     this.save();
-    const variantText = variant ? ` (${variant.color} / ${variant.talle})` : '';
+    const variantText = v ? ` (${v.color} / ${v.talle})` : '';
     App.showToast(`Agregado: ${producto.nombre}${variantText}`);
   },
 
@@ -217,10 +219,10 @@ const CartService = {
     const total = this.getTotalARS() + precioEnvio;
 
     let itemsTexto = this.items.map(i => {
-      const line = `• ${i.nombre} x${i.cantidad}`;
-      const variantText = i.variante ? ` (${i.variante})` : '';
+      const base = `• ${i.nombre} x${i.cantidad}`;
+      const variantText = i.variante ? `\n     Talle: ${i._variant?.talle || ''} | Color: ${i._variant?.color || ''}` : '';
       const precioLine = SheetsService.formatPrecioARS(i.precioARS * i.cantidad);
-      return `${line}${variantText} - ${precioLine}`;
+      return `${base} - ${precioLine}${variantText}`;
     }).join('\n');
 
     // Agregar resumen de descuento/envío si aplica

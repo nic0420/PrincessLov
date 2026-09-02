@@ -12,9 +12,10 @@
   --pink-300: #e3bbb1;
   --pink-400: #d2988e;
   --pink-500: #dba180;
-  --burgundy: #9c684c;
-  --burgundy-dark: #7a4e38;
-  --burgundy-deep: #5c3a28;
+  /* Borgoña vino (reemplaza el marrón/chocolate) */
+  --burgundy: #800020;
+  --burgundy-dark: #6B0F2A;
+  --burgundy-deep: #4A0A1C;
   --blanco: #FDF8F6;
   --gris-100: #f9f5f3;
   --gris-200: #f0e8e4;

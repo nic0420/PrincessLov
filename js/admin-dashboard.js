@@ -271,7 +271,40 @@ const AdminDashboard = {
 
     this.renderFinancialChart(stats);
     this.renderFinancialBreakEven(be);
+    this.renderFinancialGroups(stats);
     this.renderFinancialExpenses();
+  },
+
+  renderFinancialGroups(stats) {
+    const container = document.getElementById('financial-groups');
+    if (!container) return;
+    const grupos = stats.gananciaPorGrupo || [];
+    if (grupos.length === 0) {
+      container.innerHTML = `<p style="color:var(--texto-light); padding:0.25rem 0;">Aún no hay ventas para mostrar por categoría.</p>`;
+      return;
+    }
+    const max = Math.max(...grupos.map(g => Math.max(g.ingresos, 1)), 1);
+    container.innerHTML = `
+      <div style="margin:0.5rem 0;">
+        ${grupos.map(g => {
+          const pct = Math.min((g.ingresos / max) * 100, 100);
+          const color = g.ganancia >= 0 ? '#10B981' : '#EF4444';
+          return `
+            <div style="margin-bottom:0.9rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+                <strong>${g.grupo}</strong>
+                <span style="color:${color}; font-weight:700;">${AdminData.formatARS(g.ganancia)}</span>
+              </div>
+              <div style="background:var(--gris-200); border-radius:999px; height:8px; overflow:hidden;">
+                <div style="width:${pct}%; height:100%; background:linear-gradient(90deg, var(--borgona-300), var(--borgona-500)); border-radius:999px;"></div>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-top:0.15rem; font-size:0.78rem; color:var(--texto-light);">
+                <span>Ingresos: ${AdminData.formatARS(g.ingresos)}</span>
+                <span>Costos: ${AdminData.formatARS(g.costos)}</span>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
   },
 
   renderFinancialChart(stats) {
