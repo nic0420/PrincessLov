@@ -345,10 +345,17 @@ const SheetsService = {
       if (p.activo) conteo[p.categoria] = (conteo[p.categoria] || 0) + 1;
     });
 
-    return CONFIG.categorias.map(cat => ({
+    const cats = (typeof AdminData !== 'undefined' && AdminData.getEffectiveCategorias) ? AdminData.getEffectiveCategorias() : (CONFIG.categorias || []);
+    return cats.map(cat => ({
       ...cat,
       count: conteo[cat.id] || 0,
     })).filter(cat => cat.id === 'todos' || cat.count > 0);
+  },
+
+  // Para mega menú / showcase: todas las categorías (sin filtro por conteo)
+  obtenerTodasCategorias() {
+    if (typeof AdminData !== 'undefined' && AdminData.getEffectiveCategorias) return AdminData.getEffectiveCategorias();
+    return CONFIG.categorias || [];
   },
 
   filtrarPorCategoria(categoriaId) {

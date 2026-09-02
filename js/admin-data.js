@@ -12,6 +12,8 @@ const AdminData = {
     expenses: 'pl_admin_expenses',
     settings: 'pl_admin_settings',
     dolarHistory: 'pl_admin_dolar_history',
+    categorias: 'pl_admin_categorias',
+    contenido: 'pl_admin_contenido',
   },
 
   // ==========================================
@@ -57,8 +59,19 @@ const AdminData = {
   getGrupoProducto(productoId) {
     const prod = this.getProduct(productoId);
     if (!prod) return 'General';
-    const cat = (CONFIG.categorias || []).find(c => c.id === prod.categoria);
+    const cats = this.getEffectiveCategorias ? this.getEffectiveCategorias() : (CONFIG.categorias || []);
+    const cat = cats.find(c => c.id === prod.categoria);
     return cat?.grupo || prod.grupo || prod.categoriaOriginal || 'General';
+  },
+
+  // Aplica categorías/contenido guardados a CONFIG (llamar al iniciar tienda y admin)
+  applyCustomToConfig() {
+    try {
+      const cats = this.getCategorias();
+      if (cats) CONFIG.categorias = cats;
+      const cont = this.getContenido();
+      if (cont) CONFIG.contenido = this.getEffectiveContenido();
+    } catch {}
   },
 
   importProducts(csvData) {
@@ -197,6 +210,54 @@ const AdminData = {
 
   getLowStockProducts(threshold = 5) {
     return this.getProducts().filter(p => p.activo && (p.stock || 0) <= threshold);
+  },
+
+  // ==========================================
+  // CATEGORÍAS EDITABLES
+  // ==========================================
+  getCategorias() {
+    const saved = localStorage.getItem(this.KEYS.categorias);
+    if (saved) try { const arr = JSON.parse(saved); if (Array.isArray(arr) && arr.length) return arr; } catch {}
+    return null; // usar CONFIG.categorias por defecto
+  },
+  getEffectiveCategorias() {
+    return this.getCategorias() || CONFIG.categorias || [];
+  },
+  saveCategorias(cats) {
+    localStorage.setItem(this.KEYS.categorias, JSON.stringify(cats));
+    // Aplicar en vivo a CONFIG y notificar a la tienda
+    try { CONFIG.categorias = cats; } catch {}
+    window.dispatchEvent(new CustomEvent('categorias:updated', { detail: cats }));
+  },
+  resetCategorias() {
+    localStorage.removeItem(this.KEYS.categorias);
+    try { CONFIG.categorias = this.getEffectiveCategorias(); } catch {}
+    window.dispatchEvent(new CustomEvent('categorias:updated', { detail: this.getEffectiveCategorias() }));
+  },
+
+  // ==========================================
+  // CONTENIDO EDITABLE (home)
+  // ==========================================
+  getContenido() {
+    const saved = localStorage.getItem(this.KEYS.contenido);
+    if (saved) try { const obj = JSON.parse(saved); if (obj && typeof obj === 'object') return obj; } catch {}
+    return null;
+  },
+  getEffectiveContenido() {
+    const custom = this.getContenido();
+    if (!custom) return CONFIG.contenido || {};
+    // merge shallow: custom sobreescribe defaults
+    return { ...(CONFIG.contenido || {}), ...custom, promoBar: custom.promoBar || CONFIG.contenido?.promoBar, hero: custom.hero || CONFIG.contenido?.hero, showcase: custom.showcase || CONFIG.contenido?.showcase, servicios: custom.servicios || CONFIG.contenido?.servicios, promoBand: custom.promoBand || CONFIG.contenido?.promoBand, cta: custom.cta || CONFIG.contenido?.cta, newsletter: custom.newsletter || CONFIG.contenido?.newsletter, footer: custom.footer || CONFIG.contenido?.footer };
+  },
+  saveContenido(cont) {
+    localStorage.setItem(this.KEYS.contenido, JSON.stringify(cont));
+    try { CONFIG.contenido = this.getEffectiveContenido(); } catch {}
+    window.dispatchEvent(new CustomEvent('contenido:updated', { detail: cont }));
+  },
+  resetContenido() {
+    localStorage.removeItem(this.KEYS.contenido);
+    try { CONFIG.contenido = this.getEffectiveContenido(); } catch {}
+    window.dispatchEvent(new CustomEvent('contenido:updated', { detail: this.getEffectiveContenido() }));
   },
 
   // ==========================================

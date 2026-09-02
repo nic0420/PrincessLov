@@ -8,6 +8,7 @@ const AdminApp = {
 
   async init() {
     await this.loadDolarRate();
+    AdminData.applyCustomToConfig?.();
     AdminSettings.load();
     this.navigate('dashboard');
   },
@@ -31,6 +32,7 @@ const AdminApp = {
       import: ['Importar Excel', 'Carga masiva de productos'],
       expenses: ['Gastos', 'Control de gastos del negocio'],
       financial: ['Finanzas', 'Análisis financiero'],
+      content: ['Contenido', 'Categorías y textos del home'],
       settings: ['Configuración', 'Ajustes del sistema'],
     };
 
@@ -49,6 +51,7 @@ const AdminApp = {
       case 'orders': AdminOrders.render(); break;
       case 'expenses': AdminExpenses.render(); break;
       case 'financial': AdminDashboard.renderFinancial(); break;
+      case 'content': AdminContent.render(); break;
       case 'settings': AdminSettings.render(); break;
     }
   },

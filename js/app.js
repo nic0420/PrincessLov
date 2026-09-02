@@ -10,15 +10,20 @@ const App = {
 
   async init() {
     try {
+      this.applyCustomConfig?.();
       await SheetsService.cargarProductos();
       await SheetsService.obtenerCotizacion();
 
       CartService.init();
       CartService.onChange(() => this.actualizarUI());
 
+      this.renderContenidoCustom?.();
       this.renderDolarTicker();
       this.renderSidebarFilters();
       this.renderCatBar();
+      this.renderMegaMenu?.();
+      this.renderShowcase?.();
+      this.renderServicios?.();
       this.renderProductos(SheetsService.productos);
       this.renderCartSidebar();
       this.actualizarUI();
@@ -942,6 +947,134 @@ const App = {
     }
     if (input) input.value = '';
   },
+
+  /* ---------- CONTENIDO EDITABLE (categorías + frases) ---------- */
+  applyCustomConfig() {
+    try {
+      const cats = localStorage.getItem('pl_admin_categorias');
+      if (cats) { const arr = JSON.parse(cats); if (Array.isArray(arr) && arr.length) CONFIG.categorias = arr; }
+      const contRaw = localStorage.getItem('pl_admin_contenido');
+      if (contRaw) {
+        const obj = JSON.parse(contRaw);
+        if (obj && typeof obj === 'object') {
+          const base = CONFIG.contenido || {};
+          CONFIG.contenido = { ...base, ...obj };
+          // arrays/objetos anidados: si custom trae valor, usa custom, sino base
+          if (obj.promoBar) CONFIG.contenido.promoBar = obj.promoBar;
+          if (obj.hero) CONFIG.contenido.hero = obj.hero;
+          if (obj.showcase) CONFIG.contenido.showcase = obj.showcase;
+          if (obj.servicios) CONFIG.contenido.servicios = obj.servicios;
+          if (obj.promoBand) CONFIG.contenido.promoBand = obj.promoBand;
+          if (obj.cta) CONFIG.contenido.cta = obj.cta;
+          if (obj.newsletter) CONFIG.contenido.newsletter = obj.newsletter;
+          if (obj.footer) CONFIG.contenido.footer = obj.footer;
+        }
+      }
+    } catch (e) { console.warn('[App] custom config', e); }
+  },
+
+  renderContenidoCustom() {
+    const c = CONFIG.contenido; if (!c) return;
+    try {
+      // Promo bar (3 frases)
+      if (c.promoBar && Array.isArray(c.promoBar)) {
+        const slides = document.querySelectorAll('.promo-bar__slide');
+        c.promoBar.forEach((txt, i) => { if (slides[i]) slides[i].textContent = txt; });
+      }
+      // Hero (3 slides)
+      if (c.hero && Array.isArray(c.hero)) {
+        const slides = document.querySelectorAll('.hero__slide');
+        c.hero.forEach((h, i) => {
+          const s = slides[i]; if (!s) return;
+          const kicker = s.querySelector('.hero__kicker'); if (kicker && h.kicker) kicker.textContent = h.kicker;
+          const title = s.querySelector('.hero__title'); if (title && h.title) title.textContent = h.title;
+          const desc = s.querySelector('.hero__desc'); if (desc && h.desc) desc.textContent = h.desc;
+          const cta = s.querySelector('.hero__cta'); if (cta) { if (h.cta) cta.textContent = h.cta; if (h.categoria) cta.setAttribute('onclick', `App.filtrarCategoria('${h.categoria}'); scrollToProducts(); return false;`); }
+          const img = s.querySelector('.hero__media img'); if (img && h.image) img.src = h.image;
+        });
+      }
+      // Showcase
+      if (c.showcase) {
+        const kicker = document.querySelector('.cat-showcase .sec-head__kicker'); if (kicker && c.showcase.kicker) kicker.textContent = c.showcase.kicker;
+        const title = document.querySelector('.cat-showcase .sec-head__title'); if (title && c.showcase.title) title.textContent = c.showcase.title;
+      }
+      // Servicios
+      if (c.servicios) {
+        const sk = document.querySelector('.services .sec-head__kicker'); if (sk && c.servicios.kicker) sk.textContent = c.servicios.kicker;
+        const st = document.querySelector('.services .sec-head__title'); if (st && c.servicios.title) st.textContent = c.servicios.title;
+        if (c.servicios.items) {
+          const cards = document.querySelectorAll('.service-card');
+          c.servicios.items.forEach((it, i) => {
+            const card = cards[i]; if (!card) return;
+            const ic = card.querySelector('.service-card__icon'); if (ic && it.icon) ic.textContent = it.icon;
+            const ti = card.querySelector('.service-card__title'); if (ti && it.title) ti.textContent = it.title;
+            const de = card.querySelector('.service-card__desc'); if (de && it.desc) de.textContent = it.desc;
+          });
+        }
+      }
+      // Promo band
+      if (c.promoBand) {
+        const pk = document.querySelector('.promo-band__kicker'); if (pk && c.promoBand.kicker) pk.textContent = c.promoBand.kicker;
+        const pt = document.querySelector('.promo-band__title'); if (pt && c.promoBand.title) pt.textContent = c.promoBand.title;
+        const pd = document.querySelector('.promo-band__desc'); if (pd && c.promoBand.desc) pd.textContent = c.promoBand.desc;
+        const pc = document.querySelector('.promo-band__cta'); if (pc) { if (c.promoBand.cta) pc.textContent = c.promoBand.cta; if (c.promoBand.categoria) pc.setAttribute('onclick', `App.filtrarCategoria('${c.promoBand.categoria}'); scrollToProducts(); return false;`); }
+        const pi = document.querySelector('.promo-band__img img'); if (pi && c.promoBand.image) pi.src = c.promoBand.image;
+      }
+      // CTA
+      if (c.cta) {
+        const ct = document.querySelector('.cta__title'); if (ct && c.cta.title) ct.textContent = c.cta.title;
+        const cd = document.querySelector('.cta__desc'); if (cd && c.cta.desc) cd.textContent = c.cta.desc;
+        const cb = document.querySelector('.cta__btn'); if (cb) { if (c.cta.btn) cb.lastChild.textContent = ' ' + c.cta.btn; const ic = cb.querySelector('span'); if (ic && c.cta.icon) ic.textContent = c.cta.icon; }
+      }
+      // Newsletter
+      if (c.newsletter) {
+        const nt = document.querySelector('.newsletter__title'); if (nt && c.newsletter.title) nt.textContent = c.newsletter.title;
+        const nd = document.querySelector('.newsletter__desc'); if (nd && c.newsletter.desc) nd.textContent = c.newsletter.desc;
+        const nb = document.querySelector('.newsletter__btn'); if (nb && c.newsletter.btn) nb.textContent = c.newsletter.btn;
+        const ni = document.querySelector('.newsletter__input'); if (ni && c.newsletter.placeholder) ni.placeholder = c.newsletter.placeholder;
+      }
+      // Footer tagline
+      if (c.footer?.tagline) { const ft = document.querySelector('.footer__tagline'); if (ft) ft.textContent = c.footer.tagline; }
+    } catch (e) { console.warn('[App] renderContenidoCustom', e); }
+  },
+
+  renderMegaMenu() {
+    const nav = document.getElementById('mega-mujer'); if (!nav) return;
+    const cats = (typeof AdminData !== 'undefined' && AdminData.getEffectiveCategorias) ? AdminData.getEffectiveCategorias() : (CONFIG.categorias || []);
+    const grouped = {};
+    cats.forEach(c => { if (c.id === 'todos') return; if (!grouped[c.grupo]) grouped[c.grupo] = []; grouped[c.grupo].push(c); });
+    const gruposOrden = Object.keys(grouped);
+    // Construir columnas por grupo (máx 2 columnas + promo)
+    let html = '';
+    gruposOrden.slice(0,2).forEach(grupo => {
+      html += `<div class="mega-menu__col"><h4 class="mega-menu__heading">${grupo}</h4>`;
+      grouped[grupo].forEach(cat => { html += `<a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('${cat.id}')">${cat.icon ? cat.icon + ' ' : ''}${cat.nombre}</a>`; });
+      html += `</div>`;
+    });
+    // Columna promo (ofertas u última)
+    const promoCat = cats.find(c=>c.id==='ofertas') || cats[cats.length-1];
+    html += `<div class="mega-menu__col mega-menu__col--promo"><a href="#productos" class="mega-menu__promo" onclick="App.filtrarCategoria('${promoCat.id}')"><img src="assets/conjunto-deportivo-borgona.jpg" alt=""><span class="mega-menu__promo-label">${promoCat.nombre}</span></a></div>`;
+    nav.innerHTML = html;
+  },
+
+  renderShowcase() {
+    const grid = document.querySelector('.cat-showcase__grid'); if (!grid) return;
+    const cont = CONFIG.contenido?.showcase;
+    const cards = cont?.cards || [];
+    if (!cards.length) return;
+    // Si hay contenido custom, renderizar desde él; sino mantener HTML estático
+    const hasCustom = localStorage.getItem('pl_admin_contenido');
+    if (!hasCustom) return;
+    grid.innerHTML = cards.map((card, idx) => {
+      const large = idx === 0 ? ' cat-card--large' : '';
+      const cat = card.categoria || 'todos';
+      const img = card.image || 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="700"><rect width="600" height="700" fill="#eedbd8"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#9c684c" font-size="20">${card.title}</text></svg>`);
+      const icon = card.icon ? `<span class="cat-card__icon" aria-hidden="true">${card.icon}</span>` : '';
+      return `<a href="#productos" class="cat-card${large}" onclick="App.filtrarCategoria('${cat}'); ComponentReveal.scrollToProducts(); return false;" data-reveal><img src="${img}" alt="${card.title}"><div class="cat-card__overlay">${icon}<h3 class="cat-card__title">${card.title}</h3><span class="cat-card__link-under">Comprar →</span></div></a>`;
+    }).join('');
+  },
+
+  renderServicios() { /* ya manejado en renderContenidoCustom */ },
 };
 
 /* ============================================

@@ -129,6 +129,42 @@ const CONFIG = {
   ],
 
   // ==========================================
+  // CONTENIDO EDITABLE PÁGINA PRINCIPAL
+  // ==========================================
+  contenido: {
+    promoBar: ["Envíos gratis en Puerto Iguazú", "Nueva colección Primavera", "Precios actualizados en dólar blue"],
+    hero: [
+      { kicker: "Nueva colección Primavera", title: "Deportivo & Confort", desc: "Telas técnicas, cortes favorecedores y elegancia en cada detalle.", cta: "Descubrir", image: "assets/conjunto-deportivo-borgona.jpg", categoria: "conjuntos" },
+      { kicker: "Encaje & Feminidad", title: "Lencería Floral", desc: "Bralettes y conjuntos de encaje para cada momento.", cta: "Explorar", image: "assets/conjunto-flores-rosa.jpg", categoria: "ropa-interior" },
+      { kicker: "Descanso con estilo", title: "Pijamas & Suéteres", desc: "Comodidad absoluta con diseños coquetos y dulces.", cta: "Ver pijamas", image: "assets/pijama-corazones-negro.jpg", categoria: "pijamas" },
+    ],
+    showcase: {
+      kicker: "El universo PrincessLov",
+      title: "Explorá por categoría",
+      cards: [
+        { categoria: "conjuntos", title: "Conjuntos", icon: "👚", image: "assets/conjunto-deportivo-borgona.jpg" },
+        { categoria: "pijamas", title: "Pijamas", icon: "", image: "assets/pijama-corazones-negro.jpg" },
+        { categoria: "ropa-interior", title: "Lencería", icon: "", image: "assets/conjunto-flores-rosa.jpg" },
+        { categoria: "calzas-largas", title: "Calzas", icon: "", image: "" },
+      ],
+    },
+    servicios: {
+      kicker: "Servicios",
+      title: "Descubrí los servicios PrincessLov",
+      items: [
+        { icon: "🚚", title: "Envíos a tu medida", desc: "Envío gratis en Iguazú, Neo Encomienda, Correo Argentino y Flecha/Vía Cargo a todo el país." },
+        { icon: "💬", title: "Asesoría por WhatsApp", desc: "Te ayudamos con talles, colores y composición de tus looks favoritos." },
+        { icon: "🎁", title: "Embalaje con cariño", desc: "Cada pedido llega preparado con dedicación y cuidado en los detalles." },
+        { icon: "🛍️", title: "Compra fácil", desc: "Paga con Mercado Pago o coordina por WhatsApp de forma segura." },
+      ],
+    },
+    promoBand: { kicker: "Ofertas limitadas", title: "Renová tu guardarropa", desc: "Aprovechá precios especiales en conjuntos, pijamas y lencería seleccionada.", cta: "Ver ofertas", image: "assets/conjunto-flores-rosa.jpg", categoria: "ofertas" },
+    cta: { title: "¿Tenés dudas?", desc: "Escribinos por WhatsApp y te asesoramos sobre talles, stock o entregas.", btn: "Chatear ahora", icon: "💬" },
+    newsletter: { title: "Recibí novedades PrincessLov", desc: "Sé la primera en enterarte de nuevas colecciones, promociones y lanzamientos exclusivos.", placeholder: "Tu correo electrónico", btn: "Suscribirme" },
+    footer: { tagline: "Sportwears, pijamas y lencerías para mujeres que buscan estilo, comodidad y calidad." },
+  },
+
+  // ==========================================
   // MENSAJE WHATSAPP TEMPLATE
   // ==========================================
   // {total} = total de la compra

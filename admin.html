@@ -46,6 +46,10 @@
         <span class="nav-icon">📈</span>
         <span class="nav-label">Finanzas</span>
       </a>
+      <a href="#" class="nav-item" data-section="content" onclick="AdminApp.navigate('content')">
+        <span class="nav-icon">🎨</span>
+        <span class="nav-label">Contenido</span>
+      </a>
       <a href="#" class="nav-item" data-section="settings" onclick="AdminApp.navigate('settings')">
         <span class="nav-icon">⚙️</span>
         <span class="nav-label">Configuración</span>
@@ -329,6 +333,136 @@
         <div class="chart-card" style="margin-top:1.5rem;">
           <h3>📋 Historial de Gastos</h3>
           <div id="financial-expenses-list"></div>
+        </div>
+      </section>
+
+      <!-- ===== CONTENT (categorías + frases) ===== -->
+      <section id="section-content" class="admin-section">
+        <div class="tab-nav" id="content-tabs">
+          <button class="tab active" data-tab="categorias" onclick="AdminContent.switchTab('categorias')">📦 Categorías</button>
+          <button class="tab" data-tab="frases" onclick="AdminContent.switchTab('frases')">✏️ Textos & Emojis Home</button>
+        </div>
+
+        <!-- Categorías -->
+        <div id="content-panel-categorias" class="active" style="display:block;">
+          <div class="chart-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem;">
+              <div>
+                <h3 style="margin:0;">📦 Categorías de la tienda</h3>
+                <p style="margin:0.25rem 0 0; color:var(--texto-secundario); font-size:0.85rem;">Editá el nombre, emoji y grupo. Se refleja en filtros, pills y menú de la tienda.</p>
+              </div>
+              <button class="btn btn-secondary" onclick="AdminContent.resetCats()">↺ Restaurar</button>
+            </div>
+            <div class="table-container">
+              <table class="products-table" style="min-width:520px;">
+                <thead><tr><th>Emoji</th><th>Nombre</th><th>ID</th><th>Grupo</th><th>Acciones</th></tr></thead>
+                <tbody id="cats-tbody"></tbody>
+              </table>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem; align-items:end;">
+              <div class="form-group" style="flex:1; min-width:160px;"><label>Nueva categoría — Nombre *</label><input type="text" id="new-cat-nombre" placeholder="Ej: Lencería Premium"></div>
+              <div class="form-group" style="width:90px;"><label>Emoji</label><input type="text" id="new-cat-icon" placeholder="🎀" maxlength="4"></div>
+              <div class="form-group" style="flex:1; min-width:160px;"><label>Grupo</label><input type="text" id="new-cat-grupo" placeholder="Ej: Lencería" list="grupos-list"><datalist id="grupos-list"><option value="Indumentaria Deportiva"><option value="Pijamas"><option value="Accesorios"><option value="Ofertas"><option value="General"></datalist></div>
+              <button class="btn btn-primary" onclick="AdminContent.addCat()">+ Agregar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Frases Home -->
+        <div id="content-panel-frases" style="display:none;">
+          <form id="frases-form" onsubmit="AdminContent.saveFrases(event)">
+            <div class="chart-card">
+              <h3>🪧 Barra superior (promo bar)</h3>
+              <p style="color:var(--texto-secundario); font-size:0.85rem;">3 frases que rotan arriba de la tienda.</p>
+              <div class="form-grid">
+                <div class="form-group"><label>Frase 1</label><input type="text" id="fr-promo-1"></div>
+                <div class="form-group"><label>Frase 2</label><input type="text" id="fr-promo-2"></div>
+                <div class="form-group"><label>Frase 3</label><input type="text" id="fr-promo-3"></div>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <h3>🎠 Hero — 3 slides</h3>
+              <div style="display:grid; gap:1.2rem;">
+                <div style="border:1px solid var(--gris-200); border-radius:8px; padding:1rem;">
+                  <strong>Slide 1</strong>
+                  <div class="form-grid">
+                    <div class="form-group"><label>Kicker (arriba)</label><input type="text" id="fr-hero-0-kicker"></div>
+                    <div class="form-group"><label>Título</label><input type="text" id="fr-hero-0-title"></div>
+                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-hero-0-desc"></div>
+                    <div class="form-group"><label>Texto botón</label><input type="text" id="fr-hero-0-cta"></div>
+                    <div class="form-group"><label>Categoría al clickear</label><input type="text" id="fr-hero-0-cat" placeholder="ej: conjuntos"></div>
+                  </div>
+                </div>
+                <div style="border:1px solid var(--gris-200); border-radius:8px; padding:1rem;">
+                  <strong>Slide 2</strong>
+                  <div class="form-grid">
+                    <div class="form-group"><label>Kicker</label><input type="text" id="fr-hero-1-kicker"></div>
+                    <div class="form-group"><label>Título</label><input type="text" id="fr-hero-1-title"></div>
+                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-hero-1-desc"></div>
+                    <div class="form-group"><label>Texto botón</label><input type="text" id="fr-hero-1-cta"></div>
+                    <div class="form-group"><label>Categoría</label><input type="text" id="fr-hero-1-cat"></div>
+                  </div>
+                </div>
+                <div style="border:1px solid var(--gris-200); border-radius:8px; padding:1rem;">
+                  <strong>Slide 3</strong>
+                  <div class="form-grid">
+                    <div class="form-group"><label>Kicker</label><input type="text" id="fr-hero-2-kicker"></div>
+                    <div class="form-group"><label>Título</label><input type="text" id="fr-hero-2-title"></div>
+                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-hero-2-desc"></div>
+                    <div class="form-group"><label>Texto botón</label><input type="text" id="fr-hero-2-cta"></div>
+                    <div class="form-group"><label>Categoría</label><input type="text" id="fr-hero-2-cat"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <h3>🗂️ Showcase “Explorá por categoría”</h3>
+              <div class="form-grid">
+                <div class="form-group"><label>Kicker</label><input type="text" id="fr-show-kicker"></div>
+                <div class="form-group"><label>Título</label><input type="text" id="fr-show-title"></div>
+              </div>
+              <p style="color:var(--texto-secundario); font-size:0.82rem;">Las 4 tarjetas del showcase se generan desde las categorías — el título e icono se editan en la pestaña Categorías.</p>
+            </div>
+
+            <div class="chart-card">
+              <h3>💼 Servicios</h3>
+              <div class="form-grid">
+                <div class="form-group"><label>Kicker servicios</label><input type="text" id="fr-serv-kicker"></div>
+                <div class="form-group"><label>Título servicios</label><input type="text" id="fr-serv-title"></div>
+              </div>
+              <div style="display:grid; gap:0.75rem; margin-top:0.75rem;">
+                <div class="form-grid"><div class="form-group" style="width:70px;"><label>Emoji 1</label><input type="text" id="fr-serv-0-icon"></div><div class="form-group"><label>Título 1</label><input type="text" id="fr-serv-0-title"></div><div class="form-group form-group--full"><label>Desc 1</label><input type="text" id="fr-serv-0-desc"></div></div>
+                <div class="form-grid"><div class="form-group" style="width:70px;"><label>Emoji 2</label><input type="text" id="fr-serv-1-icon"></div><div class="form-group"><label>Título 2</label><input type="text" id="fr-serv-1-title"></div><div class="form-group form-group--full"><label>Desc 2</label><input type="text" id="fr-serv-1-desc"></div></div>
+                <div class="form-grid"><div class="form-group" style="width:70px;"><label>Emoji 3</label><input type="text" id="fr-serv-2-icon"></div><div class="form-group"><label>Título 3</label><input type="text" id="fr-serv-2-title"></div><div class="form-group form-group--full"><label>Desc 3</label><input type="text" id="fr-serv-2-desc"></div></div>
+                <div class="form-grid"><div class="form-group" style="width:70px;"><label>Emoji 4</label><input type="text" id="fr-serv-3-icon"></div><div class="form-group"><label>Título 4</label><input type="text" id="fr-serv-3-title"></div><div class="form-group form-group--full"><label>Desc 4</label><input type="text" id="fr-serv-3-desc"></div></div>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <h3>🔥 Promo band + CTA + Newsletter + Footer</h3>
+              <div class="form-grid">
+                <div class="form-group"><label>Promo kicker</label><input type="text" id="fr-band-kicker"></div>
+                <div class="form-group"><label>Promo título</label><input type="text" id="fr-band-title"></div>
+                <div class="form-group form-group--full"><label>Promo desc</label><input type="text" id="fr-band-desc"></div>
+                <div class="form-group"><label>Promo botón</label><input type="text" id="fr-band-cta"></div>
+                <div class="form-group"><label>CTA título</label><input type="text" id="fr-cta-title"></div>
+                <div class="form-group form-group--full"><label>CTA desc</label><input type="text" id="fr-cta-desc"></div>
+                <div class="form-group"><label>CTA botón</label><input type="text" id="fr-cta-btn"></div>
+                <div class="form-group" style="width:90px;"><label>CTA emoji</label><input type="text" id="fr-cta-icon"></div>
+                <div class="form-group"><label>Newsletter título</label><input type="text" id="fr-nl-title"></div>
+                <div class="form-group form-group--full"><label>Newsletter desc</label><input type="text" id="fr-nl-desc"></div>
+                <div class="form-group"><label>Newsletter botón</label><input type="text" id="fr-nl-btn"></div>
+                <div class="form-group form-group--full"><label>Footer tagline</label><input type="text" id="fr-footer-tagline"></div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:0.75rem; margin-top:0.75rem;">
+              <button type="submit" class="btn btn-primary">💾 Guardar todo</button>
+              <button type="button" class="btn btn-secondary" onclick="AdminContent.resetFrases()">↺ Restaurar</button>
+            </div>
+          </form>
         </div>
       </section>
 
@@ -766,6 +900,7 @@
 <script src="js/admin-orders.js"></script>
 <script src="js/admin-expenses.js"></script>
 <script src="js/admin-import.js"></script>
+<script src="js/admin-content.js"></script>
 <script src="js/admin-settings.js"></script>
 
 </body>
