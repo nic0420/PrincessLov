@@ -222,8 +222,9 @@ const App = {
             <div class="product-card__cat">${p.categoriaOriginal}</div>
             <h3 class="product-card__name">${p.nombre}</h3>
             <div class="product-card__prices">
-              <span class="price price--current">${SheetsService.formatPrecioARS(precioARS)}</span>
-              <span class="price price--usd">USD ${p.precioUSD.toFixed(2)}</span>
+              ${p.precioOferta && p.precioOferta < precioARS
+                ? `<span class="price price--old">${SheetsService.formatPrecioARS(precioARS)}</span><span class="price price--current">${SheetsService.formatPrecioARS(p.precioOferta)}</span>`
+                : `<span class="price price--current">${SheetsService.formatPrecioARS(precioARS)}</span>`}
             </div>
             <div class="product-card__stock ${sinStock ? 'product-card__stock--low' : ''}">
               ${sinStock ? '⚠️ Sin stock' : `Stock: ${p.stock} unidades`}

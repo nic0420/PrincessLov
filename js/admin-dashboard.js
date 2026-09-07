@@ -277,7 +277,7 @@ const AdminDashboard = {
       `;
     }
 
-    this.renderFinancialChart(stats);
+    this.renderFinancialChart(stats, totalExpenses);
     this.renderFinancialBreakEven(be);
     this.renderFinancialGroups(stats);
     this.renderGroupsChart(stats);
@@ -352,18 +352,19 @@ const AdminDashboard = {
     } catch(e){ console.error('Error chart grupos', e); }
   },
 
-  renderFinancialChart(stats) {
+  renderFinancialChart(stats, totalExpenses) {
     const canvas = document.getElementById('chart-financial');
     if (!canvas || typeof Chart === 'undefined') return;
     try {
     if (this.charts.financial) this.charts.financial.destroy();
+    const costosTotales = (stats.costos || 0) + (totalExpenses || 0);
 
     this.charts.financial = new Chart(canvas, {
       type: 'bar',
       data: {
         labels: ['Ingresos', 'Costos', 'Gastos', 'Ganancia'],
         datasets: [{
-          data: [stats.ingresos, stats.costos, AdminData.getTotalExpenses(), stats.ganancia - AdminData.getTotalExpenses()],
+          data: [stats.ingresos, costosTotales, totalExpenses || 0, (stats.ganancia || 0) - (totalExpenses || 0)],
           backgroundColor: ['#10B981', '#EF4444', '#F59E0B', stats.ganancia >= 0 ? '#800020' : '#EF4444'],
           borderRadius: 8,
         }],

@@ -15,9 +15,16 @@ const CheckoutService = {
   },
 
   renderCheckout() {
-    const totalARS = CartService.getTotalARS();
-    const totalEnvio = this.envioSeleccionado ? this.envioSeleccionado.precio : 0;
-    const totalFinal = totalARS + totalEnvio;
+    // Fuente única de verdad para el envío: CartService (seleccionable desde el carrito o acá)
+    this.envioSeleccionado = CartService.shippingId
+      ? (CONFIG.envios.find(e => e.id === CartService.shippingId) || null)
+      : null;
+    const envioSeleccionado = this.envioSeleccionado;
+
+    const subtotalARS = CartService.getSubtotalARS();
+    const descuentoARS = CartService.getDiscountAmount() || 0;
+    const totalEnvio = envioSeleccionado ? envioSeleccionado.precio : 0;
+    const totalFinal = CartService.getTotalARS();
 
     const itemsResumen = CartService.items.map(item => `
       <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--border); font-size:0.85rem;">
@@ -61,11 +68,16 @@ const CheckoutService = {
           ${itemsResumen}
           <div class="cart__totals-row">
             <span>Productos</span>
-            <span>${SheetsService.formatPrecioARS(totalARS)}</span>
+            <span>${SheetsService.formatPrecioARS(subtotalARS)}</span>
           </div>
+          ${descuentoARS > 0 ? `
+          <div class="cart__totals-row">
+            <span>Descuento</span>
+            <span style="color:var(--success, #10B981);">-${SheetsService.formatPrecioARS(descuentoARS)}</span>
+          </div>` : ''}
           <div class="cart__totals-row">
             <span>Envío</span>
-            <span id="checkout-envio-monto">${this.envioSeleccionado ? (this.envioSeleccionado.precio === 0 ? 'GRATIS' : SheetsService.formatPrecioARS(this.envioSeleccionado.precio)) : 'Seleccionar'}</span>
+            <span id="checkout-envio-monto">${envioSeleccionado ? (totalEnvio === 0 ? 'GRATIS' : SheetsService.formatPrecioARS(totalEnvio)) : 'Seleccionar'}</span>
           </div>
           <div class="cart__totals-row cart__totals-row--total">
             <span>Total</span>
@@ -145,7 +157,11 @@ const CheckoutService = {
   },
 
   seleccionarEnvio(envioId) {
-    this.envioSeleccionado = CONFIG.envios.find(e => e.id === envioId);
+    const envio = CONFIG.envios.find(e => e.id === envioId);
+    if (!envio) return;
+    this.envioSeleccionado = envio;
+    // Sincronizar también en el carrito para que el total sea consistente en todos lados
+    CartService.setShipping(envio.id, envio.precio);
     this.renderCheckout();
     // Mantener modal abierto
     document.getElementById('checkout-modal')?.classList.add('modal-overlay--open');
@@ -182,9 +198,6 @@ const CheckoutService = {
       btn.textContent = '⏳ Creando preferencia...';
     }
 
-    const totalARS = CartService.getTotalARS();
-    const envioPrecio = this.envioSeleccionado.precio;
-
     const items = CartService.items.map(item => ({
       title: item.nombre,
       quantity: item.cantidad,
@@ -192,6 +205,7 @@ const CheckoutService = {
       currency_id: 'ARS',
       picture_url: item.imagen,
     }));
+    const envioPrecio = this.envioSeleccionado.precio;
 
     if (envioPrecio > 0) {
       items.push({
@@ -316,34 +330,27 @@ const CheckoutService = {
         if (status === 'success') {
           App.showToast('✅ ¡Pago aprobado! Tu pedido está confirmado.');
           
-          // Crear pedido en Sheets via Apps Script
+          // Crear pedido en Sheets via Apps Script (o localStorage si no está configurado)
           try {
-            await fetch('/api/mercadopago/create-preference', { // Reuse endpoint or create new
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'create_order',
-                order: {
-                  id: ref,
-                  cliente: datos.nombre,
-                  telefono: datos.telefono,
-                  email: datos.email,
-                  direccion: datos.direccion,
-                  localidad: datos.localidad,
-                  provincia: datos.provincia,
-                  estado: 'confirmado',
-                  medioPago: 'Mercado Pago',
-                  metodoEnvio: envio.id,
-                  total: CartService.getTotalARS() + (envio.precio || 0),
-                  costoTotal: CartService.items.reduce((s, i) => s + (i.precioUSD * i.cantidad), 0) * (SheetsService.cotizacionDolar || 1200) * 0.7, // estimado
-                  notas: `Pago MP aprobado. Ref: ${ref}`,
-                  items: items.map(i => ({
-                    productoId: i.id,
-                    cantidad: i.cantidad,
-                    precioUnitario: i.precioARS,
-                  })),
-                },
-              }),
+            await SheetsService.crearPedido({
+              id: ref,
+              cliente: datos.nombre,
+              telefono: datos.telefono,
+              email: datos.email,
+              direccion: datos.direccion,
+              localidad: datos.localidad,
+              provincia: datos.provincia,
+              estado: 'confirmado',
+              medioPago: 'Mercado Pago',
+              metodoEnvio: envio.id,
+              total: CartService.getTotalARS(),
+              costoTotal: CartService.items.reduce((s, i) => s + (i.precioUSD * i.cantidad), 0) * (SheetsService.cotizacionDolar || 1200) * 0.7, // estimado
+              notas: `Pago MP aprobado. Ref: ${ref}`,
+              items: items.map(i => ({
+                productoId: i.id,
+                cantidad: i.cantidad,
+                precioUnitario: i.precioARS,
+              })),
             });
           } catch (e) {
             console.error('Error guardando pedido post-MP:', e);
