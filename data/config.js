@@ -133,7 +133,7 @@ const CONFIG = {
   // CONTENIDO EDITABLE PÁGINA PRINCIPAL
   // ==========================================
   contenido: {
-    promoBar: ["Envíos gratis en Puerto Iguazú", "Nueva colección Primavera", "Precios actualizados en dólar blue"],
+    promoBar: ["Envíos gratis en Puerto Iguazú", "Nueva colección Primavera", "Precios en pesos argentinos"],
     hero: [
       { kicker: "Nueva colección Primavera", title: "Deportivo & Confort", desc: "Telas técnicas, cortes favorecedores y elegancia en cada detalle.", cta: "Descubrir", image: "assets/conjunto-deportivo-borgona.jpg", categoria: "conjuntos" },
       { kicker: "Encaje & Feminidad", title: "Lencería Floral", desc: "Bralettes y conjuntos de encaje para cada momento.", cta: "Explorar", image: "assets/conjunto-flores-rosa.jpg", categoria: "ropa-interior" },

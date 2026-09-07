@@ -47,7 +47,7 @@ const ClubPrince = {
               <span class="club-box__tag">${this.esc(box.tag||'')}</span>
               <h3 class="club-box__name">${this.esc(box.nombre)}</h3>
               <p class="club-box__meta">${this.esc(box.desc||'')}</p>
-              <div class="club-box__price" data-price-usd="${box.precioUSD}">USD ${box.precioUSD}</div>
+              <div class="club-box__price" data-price-usd="${box.precioUSD}">Cargando precio…</div>
               <button class="btn ${btnClass} btn--block" onclick="ClubPrince.addBoxToCart('${this.esc(box.id)}')">Agregar al carrito</button>
             </article>`;
           }).join('');
@@ -60,7 +60,7 @@ const ClubPrince = {
             const metaEl = el.querySelector('.club-box__meta'); if (metaEl) metaEl.textContent = box.desc || '';
             const tagEl = el.querySelector('.club-box__tag'); if (tagEl) tagEl.textContent = box.tag || '';
             const iconEl = el.querySelector('.club-box__icon'); if (iconEl) iconEl.textContent = box.icon || '🎀';
-            const priceEl = el.querySelector('.club-box__price'); if (priceEl) { priceEl.dataset.priceUsd = box.precioUSD; priceEl.textContent = `USD ${box.precioUSD}`; }
+            const priceEl = el.querySelector('.club-box__price'); if (priceEl) { priceEl.dataset.priceUsd = box.precioUSD; priceEl.textContent = 'Cargando precio…'; }
             if (box.destacado) el.classList.add('club-box--featured'); else el.classList.remove('club-box--featured');
           });
         }
@@ -77,8 +77,7 @@ const ClubPrince = {
       try {
         const ars = SheetsService.calcularPrecioARS ? SheetsService.calcularPrecioARS(usd) : Math.round(usd * SheetsService.cotizacionDolar * 1.3);
         const arsTxt = SheetsService.formatPrecioARS ? SheetsService.formatPrecioARS(ars) : `$ ${ars.toLocaleString('es-AR')}`;
-        el.textContent = `${arsTxt} · USD ${usd}`;
-        el.title = `USD ${usd} · ${arsTxt}`;
+        el.textContent = arsTxt;
       } catch {}
     });
   },
