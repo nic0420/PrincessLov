@@ -19,6 +19,7 @@
  * - Hoja "Pedidos": ID, Fecha, Cliente, Telefono, Email, Direccion, Localidad, Provincia, Estado, MedioPago, MetodoEnvio, Total, CostoTotal, Notas, Items (JSON), MP_PaymentID, MP_Status
  * - Hoja "Gastos": ID, Fecha, Concepto, Monto, Categoria, Notas
  * - Hoja "Config": Clave, Valor (para settings globales)
+ * - Hoja "ClubPrince_Leads": ID, Fecha, Nombre, Telefono, Ciudad, Origen, Estado
  * - Hoja "Dolar_Historial": Fecha, Valor
  */
 
@@ -32,6 +33,7 @@ const SHEET_NAMES = {
   GASTOS: 'Gastos',
   CONFIG: 'Config',
   DOLAR: 'Dolar_Historial',
+  CLUBPRINCE: 'ClubPrince_Leads',
 };
 
 const HEADERS = {
@@ -49,6 +51,7 @@ const HEADERS = {
   GASTOS: ['ID', 'Fecha', 'Concepto', 'Monto', 'Categoria', 'Notas'],
   CONFIG: ['Clave', 'Valor'],
   DOLAR: ['Fecha', 'Valor'],
+  CLUBPRINCE: ['ID', 'Fecha', 'Nombre', 'Telefono', 'Ciudad', 'Origen', 'Estado'],
 };
 
 // ============================================
@@ -116,6 +119,9 @@ function doPost(e) {
         break;
       case 'add_dolar_rate':
         result = addDolarRate(data.valor);
+        break;
+      case 'club_prince_lead':
+        result = createClubPrinceLead(data.lead || data);
         break;
       case 'webhook_mp':
         result = processWebhookMP(data);
@@ -374,6 +380,29 @@ function saveConfig(configObj) {
   if (rows.length) sheet.getRange(2, 1, rows.length, 2).setValues(rows);
   
   return { success: true, config: merged };
+}
+
+// ============================================
+// CLUB PRINCE — LEADS
+// ============================================
+
+function createClubPrinceLead(lead) {
+  const nombre = (lead.nombre || lead.Nombre || '').toString().trim();
+  const telefono = (lead.telefono || lead.Telefono || '').toString().trim();
+  const ciudad = (lead.ciudad || lead.Ciudad || '').toString().trim();
+  if (!nombre || !telefono || !ciudad) return { error: 'Faltan campos: Nombre, Teléfono y Ciudad son obligatorios' };
+  const id = lead.id || `club_${Date.now()}`;
+  const rowData = {
+    ID: id,
+    Fecha: new Date().toISOString(),
+    Nombre: nombre,
+    Telefono: telefono,
+    Ciudad: ciudad,
+    Origen: lead.origen || lead.Origen || 'Club Prince Web',
+    Estado: lead.estado || 'nuevo',
+  };
+  writeRow(SHEET_NAMES.CLUBPRINCE, rowData, id);
+  return { success: true, id };
 }
 
 // ============================================

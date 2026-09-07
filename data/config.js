@@ -114,6 +114,7 @@ const CONFIG = {
   // CATEGORÍAS CON ICONOS
   // ==========================================
   categorias: [
+    { id: "club-prince",       nombre: "Club Prince",       icon: "👑", grupo: "Club Prince" },
     { id: "calzas-largas",     nombre: "Calzas Largas",     icon: "👖", grupo: "Indumentaria Deportiva" },
     { id: "calzas-cortas",     nombre: "Calzas Cortas",     icon: "🩳", grupo: "Indumentaria Deportiva" },
     { id: "catsuits",          nombre: "Catsuits",          icon: "🐱", grupo: "Indumentaria Deportiva" },
@@ -162,6 +163,22 @@ const CONFIG = {
     cta: { title: "¿Tenés dudas?", desc: "Escribinos por WhatsApp y te asesoramos sobre talles, stock o entregas.", btn: "Chatear ahora", icon: "💬" },
     newsletter: { title: "Recibí novedades PrincessLov", desc: "Sé la primera en enterarte de nuevas colecciones, promociones y lanzamientos exclusivos.", placeholder: "Tu correo electrónico", btn: "Suscribirme" },
     footer: { tagline: "Sportwears, pijamas y lencerías para mujeres que buscan estilo, comodidad y calidad." },
+    clubPrince: {
+      badge: "✨ Nuevo",
+      title: "Forma parte del",
+      titleAccent: "Club Prince",
+      subtitle: "Infaltables en tu cajón",
+      desc: "Recibí cada mes una cajita curada con lencería, accesorios y sorpresas PrincessLov. Elegí tu plan y sumate al club más querido.",
+      heroImage: "assets/club-prince-hero.jpg",
+      boxes: [
+        { id: "box-esencial", nombre: "Caja Esencial", precioUSD: 25, desc: "1 conjunto + sorpresa", icon: "🎀", destacado: false, tag: "Más elegida" },
+        { id: "box-premium", nombre: "Caja Premium", precioUSD: 38, desc: "2 conjuntos + accesorio + sorpresa", icon: "👑", destacado: true, tag: "Premium" },
+        { id: "box-deluxe", nombre: "Caja Deluxe", precioUSD: 52, desc: "3 conjuntos + 2 accesorios + sorpresa VIP", icon: "💎", destacado: false, tag: "Deluxe" },
+      ],
+      benefits: ["Envío gratis +$90000", "20% off transferencias", "3 cuotas sin interés"],
+      formTitle: "Quiero sumarme al Club",
+      formDesc: "Dejanos tus datos y te contactamos para activar tu suscripción.",
+    },
   },
 
   // ==========================================

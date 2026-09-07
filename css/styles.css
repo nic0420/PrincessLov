@@ -432,6 +432,47 @@ input, select { font-family: inherit; font-size: inherit; }
 }
 
 /* ============================================================
+   CLUB PRINCE — Cajas suscripción + Lead Gen
+   Inspirado Sophie Club: rosa, rayas, cajitas infaltables
+   ============================================================ */
+.club-prince { background: #FFF5F7; border-top: 1px solid var(--pink-200); border-bottom: 1px solid var(--pink-200); }
+.club-prince__head { text-align: center; padding: var(--sp-10) var(--sp-4) var(--sp-6); max-width: 860px; margin: 0 auto; }
+.club-prince__badge { display: inline-block; background: var(--burgundy); color: #fff; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; font-weight: 600; }
+.club-prince__title { font-family: var(--font-serif); font-size: clamp(32px, 5vw, 54px); line-height: 0.95; font-weight: 400; margin: var(--sp-4) 0 var(--sp-2); color: var(--texto); }
+.club-prince__title span { display: block; font-size: 0.55em; letter-spacing: -0.02em; font-weight: 300; color: var(--texto-light); }
+.club-prince__title em { font-style: italic; color: var(--burgundy); }
+.club-prince__subtitle { font-family: var(--font-serif); font-size: clamp(18px, 2.2vw, 26px); color: var(--texto); margin-bottom: var(--sp-3); }
+.club-prince__desc { color: var(--texto-light); max-width: 620px; margin: 0 auto var(--sp-4); line-height: 1.6; }
+.club-prince__benefits { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; color: var(--burgundy); font-size: 0.82rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.club-prince__benefits .dot { opacity: 0.35; }
+.club-prince__boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); margin: var(--sp-6) 0 var(--sp-8); }
+@media (max-width: 900px) { .club-prince__boxes { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; } }
+.club-box { background: #fff; border: 1px solid var(--pink-200); border-radius: 18px; padding: var(--sp-6) var(--sp-4); text-align: center; position: relative; overflow: hidden; box-shadow: var(--shadow-card); transition: transform var(--base), box-shadow var(--base); }
+.club-box:hover { transform: translateY(-4px); box-shadow: var(--shadow-soft); }
+.club-box--featured { border-color: var(--burgundy); transform: scale(1.03); box-shadow: 0 16px 40px -16px rgba(128,0,32,0.22); }
+.club-box--featured:hover { transform: scale(1.03) translateY(-4px); }
+.club-box__stripe { height: 8px; margin: -24px -16px 18px; background: repeating-linear-gradient(90deg, #F5B7C5 0 14px, #fff 14px 28px); border-radius: 18px 18px 0 0; }
+.club-box--featured .club-box__stripe { background: repeating-linear-gradient(90deg, var(--burgundy) 0 14px, #F8D0DC 14px 28px); }
+.club-box__icon { font-size: 28px; margin-bottom: 6px; }
+.club-box__tag { display: inline-block; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; background: var(--pink-100); color: var(--burgundy); padding: 4px 10px; border-radius: 999px; font-weight: 700; margin-bottom: 10px; }
+.club-box--featured .club-box__tag { background: var(--burgundy); color: #fff; }
+.club-box__name { font-family: var(--font-serif); font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+.club-box__meta { font-size: 0.84rem; color: var(--texto-light); margin-bottom: 14px; }
+.club-box__price { font-weight: 700; color: var(--burgundy); margin-bottom: 16px; font-size: 1.05rem; }
+.club-prince__form-wrap { background: #fff; border: 1px solid var(--pink-200); border-radius: 18px; padding: var(--sp-6); max-width: 720px; margin: 0 auto var(--sp-10); box-shadow: var(--shadow-card); }
+.club-prince__form-head h3 { font-family: var(--font-serif); font-size: 22px; font-weight: 500; margin-bottom: 6px; }
+.club-prince__form-head p { color: var(--texto-light); font-size: 0.9rem; margin-bottom: var(--sp-4); }
+.club-prince__form .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+@media (max-width: 700px) { .club-prince__form .form-grid { grid-template-columns: 1fr; } }
+.club-prince__form .form-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; color: var(--texto); }
+.club-prince__form .form-group input { width: 100%; padding: 12px 14px; border: 1px solid var(--gris-200); border-radius: 10px; font-size: 0.95rem; background: var(--gris-100); transition: border-color var(--fast); }
+.club-prince__form .form-group input:focus { outline: none; border-color: var(--burgundy); background: #fff; }
+.club-prince__form-msg { min-height: 22px; font-size: 0.88rem; margin-top: 10px; font-weight: 600; }
+.club-prince__form-msg--ok { color: #10B981; }
+.club-prince__form-msg--err { color: #EF4444; }
+.club-prince__form-hint { font-size: 0.75rem; color: var(--texto-light); margin-top: 8px; text-align: center; }
+
+/* ============================================================
    CATEGORY SHOWCASE (editorial cards)
    ============================================================ */
 .cat-showcase { padding: var(--sp-10) var(--sp-4); }

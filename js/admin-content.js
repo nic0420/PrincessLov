@@ -17,7 +17,7 @@ const AdminContent = {
     if (a) { a.classList.toggle('active', which === 'categorias'); a.style.display = which === 'categorias' ? 'block' : 'none'; }
     if (b) { b.classList.toggle('active', which === 'frases'); b.style.display = which === 'frases' ? 'block' : 'none'; }
     if (which === 'categorias') this.renderCategorias();
-    else this.renderFrases();
+    else { this.renderFrases(); setTimeout(()=> this.renderClubLeads(), 120); }
   },
 
   /* ---------- CATEGORÍAS ---------- */
@@ -139,6 +139,26 @@ const AdminContent = {
     if (q('fr-nl-desc')) q('fr-nl-desc').value = cont.newsletter?.desc || '';
     if (q('fr-nl-btn')) q('fr-nl-btn').value = cont.newsletter?.btn || '';
     if (q('fr-footer-tagline')) q('fr-footer-tagline').value = cont.footer?.tagline || '';
+    // Club Prince
+    const cp = cont.clubPrince || CONFIG.contenido?.clubPrince || {};
+    if (q('fr-club-badge')) q('fr-club-badge').value = cp.badge || '';
+    if (q('fr-club-title')) q('fr-club-title').value = cp.title || '';
+    if (q('fr-club-title-accent')) q('fr-club-title-accent').value = cp.titleAccent || '';
+    if (q('fr-club-subtitle')) q('fr-club-subtitle').value = cp.subtitle || '';
+    if (q('fr-club-desc')) q('fr-club-desc').value = cp.desc || '';
+    if (q('fr-club-benefit-0')) q('fr-club-benefit-0').value = cp.benefits?.[0] || '';
+    if (q('fr-club-benefit-1')) q('fr-club-benefit-1').value = cp.benefits?.[1] || '';
+    if (q('fr-club-benefit-2')) q('fr-club-benefit-2').value = cp.benefits?.[2] || '';
+    if (q('fr-club-form-title')) q('fr-club-form-title').value = cp.formTitle || '';
+    if (q('fr-club-form-desc')) q('fr-club-form-desc').value = cp.formDesc || '';
+    for (let i=0;i<3;i++){
+      const b = cp.boxes?.[i] || {};
+      if (q('fr-club-box-'+i+'-nombre')) q('fr-club-box-'+i+'-nombre').value = b.nombre || '';
+      if (q('fr-club-box-'+i+'-desc')) q('fr-club-box-'+i+'-desc').value = b.desc || '';
+      if (q('fr-club-box-'+i+'-precio')) q('fr-club-box-'+i+'-precio').value = b.precioUSD || '';
+      if (q('fr-club-box-'+i+'-icon')) q('fr-club-box-'+i+'-icon').value = b.icon || '';
+      if (q('fr-club-box-'+i+'-tag')) q('fr-club-box-'+i+'-tag').value = b.tag || '';
+    }
   },
 
   saveFrases(e) {
@@ -166,6 +186,30 @@ const AdminContent = {
       cta: { ...cont.cta, title: get('fr-cta-title'), desc: get('fr-cta-desc'), btn: get('fr-cta-btn'), icon: get('fr-cta-icon') },
       newsletter: { ...cont.newsletter, title: get('fr-nl-title'), desc: get('fr-nl-desc'), btn: get('fr-nl-btn'), placeholder: cont.newsletter?.placeholder || 'Tu correo electrónico' },
       footer: { tagline: get('fr-footer-tagline') },
+      clubPrince: {
+        ...(cont.clubPrince || CONFIG.contenido?.clubPrince || {}),
+        badge: get('fr-club-badge') || (cont.clubPrince?.badge || CONFIG.contenido?.clubPrince?.badge),
+        title: get('fr-club-title') || (cont.clubPrince?.title || CONFIG.contenido?.clubPrince?.title),
+        titleAccent: get('fr-club-title-accent') || (cont.clubPrince?.titleAccent || CONFIG.contenido?.clubPrince?.titleAccent),
+        subtitle: get('fr-club-subtitle') || (cont.clubPrince?.subtitle || CONFIG.contenido?.clubPrince?.subtitle),
+        desc: get('fr-club-desc') || (cont.clubPrince?.desc || CONFIG.contenido?.clubPrince?.desc),
+        benefits: [get('fr-club-benefit-0'), get('fr-club-benefit-1'), get('fr-club-benefit-2')].filter(Boolean),
+        formTitle: get('fr-club-form-title') || (cont.clubPrince?.formTitle),
+        formDesc: get('fr-club-form-desc') || (cont.clubPrince?.formDesc),
+        boxes: [0,1,2].map(i=> {
+          const base = (cont.clubPrince?.boxes?.[i] || CONFIG.contenido?.clubPrince?.boxes?.[i] || {});
+          return {
+            ...base,
+            id: base.id || `box-${i}`,
+            nombre: get('fr-club-box-'+i+'-nombre') || base.nombre,
+            desc: get('fr-club-box-'+i+'-desc') || base.desc,
+            precioUSD: parseFloat(get('fr-club-box-'+i+'-precio')) || base.precioUSD || 0,
+            icon: get('fr-club-box-'+i+'-icon') || base.icon,
+            tag: get('fr-club-box-'+i+'-tag') || base.tag,
+            destacado: base.destacado || i===1,
+          };
+        }),
+      },
     };
     AdminData.saveContenido(next);
     AdminApp.toast('Contenido guardado — se refleja al recargar la tienda');
@@ -176,6 +220,14 @@ const AdminContent = {
     AdminData.resetContenido();
     this.renderFrases();
     AdminApp.toast('Textos restaurados');
+  },
+
+  renderClubLeads(){
+    const el = document.getElementById('club-leads-list'); if(!el) return;
+    let leads = [];
+    try { leads = JSON.parse(localStorage.getItem('pl_clubprince_leads')||'[]').reverse().slice(0,20); } catch {}
+    if (!leads.length) { el.innerHTML = '<p style="color:var(--texto-secundario); font-size:0.85rem; background:var(--gris-100); padding:0.8rem; border-radius:8px;">Aún no hay leads. Probá el formulario del Club en la tienda.</p>'; return; }
+    el.innerHTML = `<div class="table-container"><table class="products-table" style="font-size:0.85rem;"><thead><tr><th>Fecha</th><th>Nombre</th><th>Teléfono</th><th>Ciudad</th></tr></thead><tbody>${leads.map(l=> `<tr><td>${this.esc(new Date(l.fecha).toLocaleDateString('es-AR'))}</td><td>${this.esc(l.nombre)}</td><td>${this.esc(l.telefono)}</td><td>${this.esc(l.ciudad)}</td></tr>`).join('')}</tbody></table></div>`;
   },
 
   esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }

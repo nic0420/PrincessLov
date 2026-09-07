@@ -73,6 +73,7 @@
               </div>
             </div>
           </li>
+          <li class="nav__item"><a class="nav__link" href="#club-prince">Club Prince 👑</a></li>
           <li class="nav__item"><a class="nav__link" href="#productos" onclick="App.goAll(); return false;">Novedades</a></li>
           <li class="nav__item"><a class="nav__link" href="#productos" onclick="App.filtrarCategoria('ofertas'); return false;">Ofertas</a></li>
           <li class="nav__item"><a class="nav__link" href="#servicios">Servicios</a></li>
@@ -165,6 +166,79 @@
       <button class="hero__arrow" id="hero-next" aria-label="Siguiente">
         <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
+    </div>
+  </section>
+
+  <!-- ============ CLUB PRINCE — Cajas suscripción mensual ============ -->
+  <section class="club-prince" id="club-prince" aria-labelledby="club-title">
+    <div class="club-prince__head">
+      <span class="club-prince__badge" id="club-badge">✨ Nuevo</span>
+      <h2 class="club-prince__title" id="club-title"><span>Forma parte del</span> <em id="club-title-accent">Club Prince</em></h2>
+      <p class="club-prince__subtitle" id="club-subtitle">Infaltables en tu cajón</p>
+      <p class="club-prince__desc" id="club-desc">Recibí cada mes una cajita curada con lencería, accesorios y sorpresas PrincessLov. Elegí tu plan y sumate al club más querido.</p>
+      <div class="club-prince__benefits" id="club-benefits">
+        <span>Envío gratis +$90000</span><span class="dot">·</span><span>20% off transferencias</span><span class="dot">·</span><span>3 cuotas sin interés</span>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="club-prince__boxes" id="club-boxes">
+        <!-- Render dinámico desde CONFIG.contenido.clubPrince.boxes; fallback estático -->
+        <article class="club-box" data-box="box-esencial">
+          <div class="club-box__stripe" aria-hidden="true"></div>
+          <div class="club-box__icon">🎀</div>
+          <span class="club-box__tag">Más elegida</span>
+          <h3 class="club-box__name">Caja Esencial</h3>
+          <p class="club-box__meta">1 conjunto + sorpresa</p>
+          <div class="club-box__price" data-price-usd="25">USD 25</div>
+          <button class="btn btn--dark btn--block" onclick="ClubPrince.addBoxToCart('box-esencial')">Agregar al carrito</button>
+        </article>
+        <article class="club-box club-box--featured" data-box="box-premium">
+          <div class="club-box__stripe" aria-hidden="true"></div>
+          <div class="club-box__icon">👑</div>
+          <span class="club-box__tag">Premium</span>
+          <h3 class="club-box__name">Caja Premium</h3>
+          <p class="club-box__meta">2 conjuntos + accesorio + sorpresa</p>
+          <div class="club-box__price" data-price-usd="38">USD 38</div>
+          <button class="btn btn--primary btn--block" onclick="ClubPrince.addBoxToCart('box-premium')">Agregar al carrito</button>
+        </article>
+        <article class="club-box" data-box="box-deluxe">
+          <div class="club-box__stripe" aria-hidden="true"></div>
+          <div class="club-box__icon">💎</div>
+          <span class="club-box__tag">Deluxe</span>
+          <h3 class="club-box__name">Caja Deluxe</h3>
+          <p class="club-box__meta">3 conjuntos + 2 accesorios + sorpresa VIP</p>
+          <div class="club-box__price" data-price-usd="52">USD 52</div>
+          <button class="btn btn--dark btn--block" onclick="ClubPrince.addBoxToCart('box-deluxe')">Agregar al carrito</button>
+        </article>
+      </div>
+
+      <!-- Formulario Lead Gen -->
+      <div class="club-prince__form-wrap" id="club-form-wrap">
+        <div class="club-prince__form-head">
+          <h3 id="club-form-title">Quiero sumarme al Club</h3>
+          <p id="club-form-desc">Dejanos tus datos y te contactamos para activar tu suscripción.</p>
+        </div>
+        <form id="club-prince-form" class="club-prince__form" novalidate>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="club-nombre">Nombre *</label>
+              <input type="text" id="club-nombre" name="nombre" required autocomplete="name" placeholder="Tu nombre">
+            </div>
+            <div class="form-group">
+              <label for="club-telefono">Teléfono *</label>
+              <input type="tel" id="club-telefono" name="telefono" required autocomplete="tel" placeholder="Ej: 3757 123456" inputmode="numeric">
+            </div>
+            <div class="form-group">
+              <label for="club-ciudad">Ciudad *</label>
+              <input type="text" id="club-ciudad" name="ciudad" required autocomplete="address-level2" placeholder="Ej: Puerto Iguazú">
+            </div>
+          </div>
+          <button type="submit" class="btn btn--primary btn--block" id="club-submit-btn">✨ Quiero ser parte</button>
+          <p class="club-prince__form-msg" id="club-form-msg" aria-live="polite"></p>
+          <p class="club-prince__form-hint">Tus datos se guardan en nuestra base del Club Prince. No compartimos tu info.</p>
+        </form>
+      </div>
     </div>
   </section>
 
@@ -564,6 +638,7 @@
       </button>
     </div>
     <ul class="mobile-menu__list">
+      <li><a href="#club-prince" class="mobile-menu__link" onclick="App.closeMobileMenu()">👑 Club Prince</a></li>
       <li><a href="#" class="mobile-menu__link" onclick="App.closeMobileMenu()">Inicio</a></li>
       <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.goAll();">Novedades</a></li>
       <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.openSidebar();">Categorías &amp; Filtros</a></li>
@@ -582,6 +657,7 @@
   <script src="js/cart.js"></script>
   <script src="js/checkout.js"></script>
   <script src="js/effects.js"></script>
+  <script src="js/club-prince.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

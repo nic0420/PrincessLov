@@ -458,11 +458,66 @@
               </div>
             </div>
 
+            <div class="chart-card" style="border: 1px solid var(--borgona-200);">
+              <h3>👑 Club Prince — Landing + Cajas</h3>
+              <p style="color:var(--texto-secundario); font-size:0.83rem; margin-bottom:0.75rem;">Editá el título “Forma parte del Club”, beneficios y las 3 cajas de suscripción. Los cambios se reflejan en <code>#club-prince</code> de la tienda.</p>
+              <div class="form-grid">
+                <div class="form-group"><label>Badge (ej: ✨ Nuevo)</label><input type="text" id="fr-club-badge"></div>
+                <div class="form-group"><label>Título (línea 1)</label><input type="text" id="fr-club-title" placeholder="Forma parte del"></div>
+                <div class="form-group"><label>Título acento (rosa)</label><input type="text" id="fr-club-title-accent" placeholder="Club Prince"></div>
+                <div class="form-group"><label>Subtítulo</label><input type="text" id="fr-club-subtitle"></div>
+                <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-club-desc"></div>
+                <div class="form-group"><label>Beneficio 1</label><input type="text" id="fr-club-benefit-0"></div>
+                <div class="form-group"><label>Beneficio 2</label><input type="text" id="fr-club-benefit-1"></div>
+                <div class="form-group"><label>Beneficio 3</label><input type="text" id="fr-club-benefit-2"></div>
+                <div class="form-group"><label>Form título</label><input type="text" id="fr-club-form-title"></div>
+                <div class="form-group form-group--full"><label>Form descripción</label><input type="text" id="fr-club-form-desc"></div>
+              </div>
+              <div style="display:grid; gap:0.9rem; margin-top:0.75rem;">
+                <div style="border:1px solid var(--gris-200); border-radius:8px; padding:0.9rem;">
+                  <strong>Caja 1 — Esencial</strong>
+                  <div class="form-grid">
+                    <div class="form-group"><label>Nombre</label><input type="text" id="fr-club-box-0-nombre"></div>
+                    <div class="form-group"><label>Emoji</label><input type="text" id="fr-club-box-0-icon" style="width:70px;"></div>
+                    <div class="form-group"><label>Tag</label><input type="text" id="fr-club-box-0-tag"></div>
+                    <div class="form-group"><label>Precio USD</label><input type="number" step="0.01" id="fr-club-box-0-precio"></div>
+                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-club-box-0-desc"></div>
+                  </div>
+                </div>
+                <div style="border:1px solid var(--borgona-200); border-radius:8px; padding:0.9rem; background:var(--gris-100);">
+                  <strong>Caja 2 — Premium (destacada)</strong>
+                  <div class="form-grid">
+                    <div class="form-group"><label>Nombre</label><input type="text" id="fr-club-box-1-nombre"></div>
+                    <div class="form-group"><label>Emoji</label><input type="text" id="fr-club-box-1-icon" style="width:70px;"></div>
+                    <div class="form-group"><label>Tag</label><input type="text" id="fr-club-box-1-tag"></div>
+                    <div class="form-group"><label>Precio USD</label><input type="number" step="0.01" id="fr-club-box-1-precio"></div>
+                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-club-box-1-desc"></div>
+                  </div>
+                </div>
+                <div style="border:1px solid var(--gris-200); border-radius:8px; padding:0.9rem;">
+                  <strong>Caja 3 — Deluxe</strong>
+                  <div class="form-grid">
+                    <div class="form-group"><label>Nombre</label><input type="text" id="fr-club-box-2-nombre"></div>
+                    <div class="form-group"><label>Emoji</label><input type="text" id="fr-club-box-2-icon" style="width:70px;"></div>
+                    <div class="form-group"><label>Tag</label><input type="text" id="fr-club-box-2-tag"></div>
+                    <div class="form-group"><label>Precio USD</label><input type="number" step="0.01" id="fr-club-box-2-precio"></div>
+                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-club-box-2-desc"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div style="display:flex; gap:0.75rem; margin-top:0.75rem;">
               <button type="submit" class="btn btn-primary">💾 Guardar todo</button>
               <button type="button" class="btn btn-secondary" onclick="AdminContent.resetFrases()">↺ Restaurar</button>
             </div>
           </form>
+          <div class="chart-card" style="margin-top:1rem;">
+            <h3>👑 Leads Club Prince (últimos)</h3>
+            <p style="color:var(--texto-secundario); font-size:0.83rem;">Se guardan en pestaña <code>ClubPrince_Leads</code> del Google Sheet (o local si aún no configuraste el Apps Script).</p>
+            <div id="club-leads-list" style="margin-top:0.75rem;"></div>
+            <button class="btn btn-sm btn-secondary" style="margin-top:0.5rem;" onclick="AdminContent.renderClubLeads()">↻ Actualizar</button>
+          </div>
         </div>
       </section>
 

@@ -78,6 +78,8 @@ const CartService = {
         precioARS: precioARS,
         cantidad: Math.min(cantidad, producto.stock),
         stock: producto.stock,
+        categoria: producto.categoria || producto.categoriaOriginal || null,
+        isClubPrince: !!(producto.isClubPrince || producto.categoria === 'club-prince'),
         variante: v ? `${v.color} / ${v.talle}` : null,
         _variant: v, // Para referencia interna
       };
@@ -214,6 +216,19 @@ const CartService = {
   /**
    * Genera el texto para WhatsApp (completo con variantes)
    */
+  /**
+   * Detecta si el carrito contiene al menos un producto VIP del Club Prince
+   * @returns {boolean}
+   */
+  _hasClubPrinceItem() {
+    return this.items.some(i => {
+      const prod = (typeof SheetsService !== 'undefined' && SheetsService.obtenerProducto) ? SheetsService.obtenerProducto(i.id) : null;
+      const catMatch = (prod?.categoria === 'club-prince') || (i.categoria === 'club-prince') || (i.isClubPrince === true) || (prod?.isClubPrince === true);
+      const tagMatch = Array.isArray(prod?.tags) && prod.tags.some(t => String(t).toLowerCase().includes('club'));
+      return catMatch || tagMatch;
+    });
+  },
+
   generarMensajeWhatsApp(envioSeleccionado, datosCliente) {
     const precioEnvio = envioSeleccionado ? envioSeleccionado.precio : 0;
     const total = this.getTotalARS() + precioEnvio;
@@ -251,12 +266,22 @@ const CartService = {
 
     const pagoTexto = datosCliente?.medioPago || 'A coordinar';
 
-    const mensaje = CONFIG.whatsappTemplate
-      .replace('{items}', itemsTexto)
-      .replace('{total}', SheetsService.formatPrecioARS(this.getTotalARS() + (envioSeleccionado?.precio || 0)))
-      .replace('{envio}', envioSeleccionado ? `${envioSeleccionado.nombre}${envioSeleccionado.precio > 0 ? ' (' + SheetsService.formatPrecioARS(envioSeleccionado.precio) + ')' : ' (GRATIS)'}` : 'No seleccionado')
-      .replace('{pago}', datosCliente?.medioPago || 'A coordinar')
-      .replace('{datos}', `${datosTexto}\n\n💰 *Subtotal:* ${SheetsService.formatPrecioARS(this.getSubtotalARS())}\n🚚 *Envío:* ${envioTexto}\n💳 *Total:* ${SheetsService.formatPrecioARS(this.getTotalARS() + (envioSeleccionado?.precio || 0))}`);
+    // Lógica condicional Club Prince (crítico): si hay al menos un VIP, el saludo cambia obligatoriamente
+    const isClubPrince = this._hasClubPrinceItem();
+
+    let mensaje;
+    if (isClubPrince) {
+      // Saludo exacto exigido, ignora whatsappTemplate estándar
+      const detallePedido = `${itemsTexto}\n\n💰 *Subtotal:* ${SheetsService.formatPrecioARS(this.getSubtotalARS())}\n🚚 *Envío:* ${envioTexto}\n💳 *Total:* ${SheetsService.formatPrecioARS(this.getTotalARS() + (envioSeleccionado?.precio || 0))}\n*Medio de pago:* ${pagoTexto}\n\n${datosTexto}`;
+      mensaje = `Yanela del club Prince quiero esto\n\n${detallePedido}`;
+    } else {
+      mensaje = CONFIG.whatsappTemplate
+        .replace('{items}', itemsTexto)
+        .replace('{total}', SheetsService.formatPrecioARS(this.getTotalARS() + (envioSeleccionado?.precio || 0)))
+        .replace('{envio}', envioSeleccionado ? `${envioSeleccionado.nombre}${envioSeleccionado.precio > 0 ? ' (' + SheetsService.formatPrecioARS(envioSeleccionado.precio) + ')' : ' (GRATIS)'}` : 'No seleccionado')
+        .replace('{pago}', datosCliente?.medioPago || 'A coordinar')
+        .replace('{datos}', `${datosTexto}\n\n💰 *Subtotal:* ${SheetsService.formatPrecioARS(this.getSubtotalARS())}\n🚚 *Envío:* ${envioTexto}\n💳 *Total:* ${SheetsService.formatPrecioARS(this.getTotalARS() + (envioSeleccionado?.precio || 0))}`);
+    }
 
     return mensaje;
   },
@@ -275,9 +300,26 @@ const CartService = {
    * Genera mensaje simplificado para un solo producto (quick WhatsApp)
    */
   generarMensajeProducto(producto, cantidad = 1, variant = null) {
+    const isClub = (producto.categoria === 'club-prince' || producto.isClubPrince || (Array.isArray(producto.tags) && producto.tags.some(t => String(t).toLowerCase().includes('club'))));
     const precioARS = SheetsService.calcularPrecioARS(producto.precioUSD, producto);
     const variantText = variant ? `\n${variant.color} / ${variant.talle}` : '';
+    if (isClub) {
+      return `Yanela del club Prince quiero esto\n\n• ${producto.nombre}${variantText} x${cantidad} - ${SheetsService.formatPrecioARS(precioARS * cantidad)}`;
+    }
     const texto = `Hola! Me interesa: ${producto.nombre}${variantText}\nCantidad: ${cantidad}\nPrecio: ${SheetsService.formatPrecioARS(precioARS * cantidad)}`;
     return texto;
+  },
+
+  /**
+   * Versión tipada del generador de URL de WhatsApp (if/else VIP) — para uso directo / tests
+   * @param {Array<{id:string,categoria?:string,isClubPrince?:boolean}>} items
+   * @param {string} detallePedido - string ya formado con items y totales
+   * @returns {string} url wa.me con encodeURIComponent
+   */
+  buildWhatsAppUrl(items, detallePedido) {
+    const hasVip = (items || []).some(it => it.categoria === 'club-prince' || it.categoria === 'Club Prince' || it.isClubPrince === true);
+    const header = hasVip ? 'Yanela del club Prince quiero esto' : `Hola! Quiero hacer un pedido en ${CONFIG.negocio?.nombre || 'PrincessLov'} 🛍️`;
+    const mensaje = `${header}\n\n${detallePedido}`;
+    return `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent(mensaje)}`;
   },
 };
