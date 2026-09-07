@@ -28,10 +28,14 @@ const CheckoutService = {
 
     const itemsResumen = CartService.items.map(item => `
       <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--border); font-size:0.85rem;">
-        <span>${item.nombre} x${item.cantidad}</span>
+        <span>${escHtml(item.nombre)} x${item.cantidad}${item.variante ? ` <small style="color:var(--text-muted);">(${escHtml(item.variante)})</small>` : ''}</span>
         <span style="font-weight:600;">${SheetsService.formatPrecioARS(item.precioARS * item.cantidad)}</span>
       </div>
     `).join('');
+
+    const sinStockWarn = CartService.items.some(i => i.sinStock)
+      ? `<div style="background:#FEF3C7; border:1px solid #F59E0B; color:#92400E; padding:0.5rem 0.75rem; border-radius:var(--radius-sm); font-size:0.8rem; margin-bottom:0.75rem;">Algunos productos de tu carrito quedaron sin stock. Quitálos o esperá el reabastecimiento para finalizar la compra.</div>`
+      : '';
 
     const enviosHtml = CONFIG.envios
       .filter(e => e.activo)
@@ -66,6 +70,7 @@ const CheckoutService = {
         <div class="checkout-resumen mb-2">
           <h4 style="font-size:0.9rem; font-weight:700; color:var(--primary); margin-bottom:0.75rem;">Resumen del pedido</h4>
           ${itemsResumen}
+          ${sinStockWarn}
           <div class="cart__totals-row">
             <span>Productos</span>
             <span>${SheetsService.formatPrecioARS(subtotalARS)}</span>
@@ -191,6 +196,10 @@ const CheckoutService = {
       App.showToast('Seleccioná un método de envío');
       return;
     }
+    if (CartService.items.some(i => i.sinStock)) {
+      App.showToast('Uno de los productos quedó sin stock. Revisá tu carrito.');
+      return;
+    }
 
     const btn = document.getElementById('btn-mp-pay');
     if (btn) {
@@ -304,6 +313,10 @@ const CheckoutService = {
     }
     if (!this.envioSeleccionado) {
       App.showToast('Seleccioná un método de envío');
+      return;
+    }
+    if (CartService.items.some(i => i.sinStock)) {
+      App.showToast('Uno de los productos quedó sin stock. Revisá tu carrito.');
       return;
     }
 

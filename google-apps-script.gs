@@ -34,6 +34,7 @@ const SHEET_NAMES = {
   CONFIG: 'Config',
   DOLAR: 'Dolar_Historial',
   CLUBPRINCE: 'ClubPrince_Leads',
+  NEWSLETTER: 'Newsletter',
 };
 
 const HEADERS = {
@@ -52,6 +53,7 @@ const HEADERS = {
   CONFIG: ['Clave', 'Valor'],
   DOLAR: ['Fecha', 'Valor'],
   CLUBPRINCE: ['ID', 'Fecha', 'Nombre', 'Telefono', 'Ciudad', 'Origen', 'Estado'],
+  NEWSLETTER: ['ID', 'Fecha', 'Email'],
 };
 
 // ============================================
@@ -122,6 +124,9 @@ function doPost(e) {
         break;
       case 'club_prince_lead':
         result = createClubPrinceLead(data.lead || data);
+        break;
+      case 'subscribe_newsletter':
+        result = subscribeNewsletter(data.email || data.subscriber);
         break;
       case 'webhook_mp':
         result = processWebhookMP(data);
@@ -402,6 +407,28 @@ function createClubPrinceLead(lead) {
     Estado: lead.estado || 'nuevo',
   };
   writeRow(SHEET_NAMES.CLUBPRINCE, rowData, id);
+  return { success: true, id };
+}
+
+/**
+ * Newsletter: guarda el email en la hoja Newsletter
+ */
+function subscribeNewsletter(email) {
+  const emailStr = (email || '').toString().trim().toLowerCase();
+  if (!emailStr || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
+    return { error: 'Email inválido' };
+  }
+  const sheet = getSheet(SHEET_NAMES.NEWSLETTER);
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const existing = sheet.getRange(2, 3, lastRow - 1, 1).getValues().map(r => String(r[0]).toLowerCase());
+    if (existing.indexOf(emailStr) !== -1) {
+      return { success: true, duplicate: true };
+    }
+  }
+  const id = `news_${Date.now()}`;
+  const rowData = { ID: id, Fecha: new Date().toISOString(), Email: emailStr };
+  writeRow(SHEET_NAMES.NEWSLETTER, rowData, id);
   return { success: true, id };
 }
 

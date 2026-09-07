@@ -365,25 +365,30 @@ const AdminImport = {
         <th>Producto</th>
         <th>Categoría</th>
         <th>Precio USD</th>
+        <th>Precio ARS (~)</th>
         <th>Stock</th>
         <th>Observaciones</th>
         <th>Estado</th>
       </tr>
     `;
 
-    body.innerHTML = data.slice(0, 100).map(p => `
+    body.innerHTML = data.slice(0, 100).map(p => {
+      const precioARS = AdminApp.dolarRate ? Math.round(p.precioUSD * AdminApp.dolarRate * (CONFIG?.cotizacion?.margenGanancia || 1.3)) : 0;
+      return `
       <tr>
         <td><strong>${p.nombre}</strong></td>
         <td>${p.categoriaOriginal || p.categoria}</td>
         <td>${AdminData.formatUSD(p.precioUSD)}</td>
+        <td>${AdminData.formatARS(precioARS)}</td>
         <td>${p.stock}</td>
         <td style="font-size:0.8rem; color:var(--texto-secundario);">${p.observaciones || '-'}</td>
         <td><span class="badge ${p.activo ? 'badge-active' : 'badge-inactive'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     if (data.length > 100) {
-      body.innerHTML += `<tr><td colspan="6" style="text-align:center; color:var(--texto-secundario); padding:1rem;">... y ${data.length - 100} productos más</td></tr>`;
+      body.innerHTML += `<tr><td colspan="7" style="text-align:center; color:var(--texto-secundario); padding:1rem;">... y ${data.length - 100} productos más</td></tr>`;
     }
 
     section.style.display = 'block';

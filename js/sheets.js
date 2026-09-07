@@ -3,12 +3,18 @@
    Con cache, fallback local, y sincronía bidireccional
    ============================================ */
 
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const SheetsService = {
   productos: [],
   cotizacionDolar: null,
   lastFetch: null,
   cache: null,
   cacheExpiry: 5 * 60 * 1000, // 5 min cache
+  dolarCacheAt: null,
+  dolarFetching: null,
   
   // URL del Google Apps Script Web App (configurar en Vercel env o data/config.js)
   appsScriptUrl: null,
@@ -265,6 +271,21 @@ const SheetsService = {
       return this.cotizacionDolar;
     }
 
+    // Cache de 5 min: evitar llamadas repetidas a la API por render
+    const now = Date.now();
+    if (this.cotizacionDolar && this.dolarCacheAt && (now - this.dolarCacheAt) < this.cacheExpiry) {
+      return this.cotizacionDolar;
+    }
+    // Si ya hay una búsqueda en vuelo, reutilizarla
+    if (this.dolarFetching) {
+      return this.dolarFetching;
+    }
+
+    this.dolarFetching = this._fetchCotizacion().finally(() => { this.dolarFetching = null; });
+    return this.dolarFetching;
+  },
+
+  async _fetchCotizacion() {
     // 1. Apps Script (si tiene historial propio)
     if (this.appsScriptUrl) {
       try {
@@ -272,6 +293,7 @@ const SheetsService = {
         if (data && data.length > 0) {
           const latest = data[data.length - 1];
           this.cotizacionDolar = parseFloat(latest.Valor) || CONFIG.cotizacion.cotizacionManual;
+          this.dolarCacheAt = Date.now();
           console.log('[Dólar] Apps Script: $' + this.cotizacionDolar);
           return this.cotizacionDolar;
         }
@@ -285,6 +307,7 @@ const SheetsService = {
       const response = await fetch(CONFIG.sheets.dolarUrl);
       const data = await response.json();
       this.cotizacionDolar = data.oficial?.ask || data.blue?.ask || CONFIG.cotizacion.cotizacionManual;
+      this.dolarCacheAt = Date.now();
       console.log('[Dólar] CriptoYa: $' + this.cotizacionDolar);
       return this.cotizacionDolar;
     } catch (error) {
@@ -293,6 +316,7 @@ const SheetsService = {
 
     // 3. Manual
     this.cotizacionDolar = CONFIG.cotizacion.cotizacionManual;
+    this.dolarCacheAt = Date.now();
     console.log('[Dólar] Manual: $' + this.cotizacionDolar);
     return this.cotizacionDolar;
   },

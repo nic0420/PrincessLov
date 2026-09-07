@@ -59,7 +59,7 @@ const App = {
       </button>
       ${cats.map(cat => `
         <button class="filter-btn ${cat.id === this.categoriaActual ? 'filter-btn--active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}">
-          <span>${cat.icon} ${cat.nombre}</span>
+          <span><span aria-hidden="true">${cat.icon}</span> ${escHtml(cat.nombre)}</span>
           <span class="filter-btn__count">${cat.count}</span>
         </button>
       `).join('')}
@@ -78,7 +78,7 @@ const App = {
       <button class="cat-pill ${this.categoriaActual === 'todos' ? 'cat-pill--active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos" aria-pressed="${this.categoriaActual === 'todos'}">Todos</button>
       ${cats.map(cat => `
         <button class="cat-pill ${cat.id === this.categoriaActual ? 'cat-pill--active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}" aria-pressed="${cat.id === this.categoriaActual}">
-          ${cat.icon} ${cat.nombre}
+          <span aria-hidden="true">${cat.icon}</span> ${escHtml(cat.nombre)}
         </button>
       `).join('')}
     `;
@@ -211,16 +211,16 @@ const App = {
         <article class="product-card" data-id="${p.id}" role="listitem" tabindex="0" onclick="App.openProductModal('${p.id}')">
           <div class="product-card__media">
             ${badge}
-            <img class="product-card__image" src="${p.imagen}" alt="${p.nombre}"
+            <img class="product-card__image" src="${escHtml(p.imagen)}" alt="${escHtml(p.nombre)}"
                  loading="lazy"
                  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22><rect width=%22300%22 height=%22400%22 fill=%22%23eedbd8%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239c684c%22 font-size=%2216%22>PrincessLov</text></svg>'">
-            <button class="product-card__quick" data-id="${p.id}" aria-label="Agregar ${p.nombre} al carrito" ${sinStock ? 'disabled' : ''}>
+            <button class="product-card__quick" data-id="${p.id}" aria-label="Agregar ${escHtml(p.nombre)} al carrito" ${sinStock ? 'disabled' : ''}>
               <span aria-hidden="true">🛒</span>
             </button>
           </div>
           <div class="product-card__info">
-            <div class="product-card__cat">${p.categoriaOriginal}</div>
-            <h3 class="product-card__name">${p.nombre}</h3>
+            <div class="product-card__cat">${escHtml(p.categoriaOriginal)}</div>
+            <h3 class="product-card__name">${escHtml(p.nombre)}</h3>
             <div class="product-card__prices">
               ${p.precioOferta && p.precioOferta < precioARS
                 ? `<span class="price price--old">${SheetsService.formatPrecioARS(precioARS)}</span><span class="price price--current">${SheetsService.formatPrecioARS(p.precioOferta)}</span>`
@@ -241,7 +241,14 @@ const App = {
         if (btn.disabled) return;
         const id = btn.dataset.id;
         const producto = SheetsService.obtenerProducto(id);
-        if (producto && producto.stock > 0) {
+        if (!producto) return;
+        if (producto.variantes && producto.variantes.length > 0) {
+          // Producto con variantes: pedir que elija color/talle desde la ficha
+          this.showToast('Elegí color y talle desde la ficha del producto');
+          this.openProductModal(id);
+          return;
+        }
+        if (producto.stock > 0) {
           CartService.addItem(producto);
           this.showToast(`Agregado: ${producto.nombre}`);
         }
@@ -269,8 +276,8 @@ const App = {
     if (thumbsContainer) {
       const images = [producto.imagen, ...(producto.galeria || []).map(g => g.url)].filter(Boolean);
       thumbsContainer.innerHTML = images.map((img, idx) => `
-        <img class="product-modal__thumb ${idx === 0 ? 'active' : ''}" src="${img}" alt="${producto.nombre} - vista ${idx + 1}" 
-             onclick="App.switchProductModalImage(this, '${img.replace(/'/g, "\\'")}')" loading="lazy">
+        <img class="product-modal__thumb ${idx === 0 ? 'active' : ''}" src="${escHtml(img)}" alt="${escHtml(producto.nombre)} - vista ${idx + 1}" 
+             onclick="App.switchProductModalImage(this)" loading="lazy">
       `).join('');
     }
 
@@ -319,8 +326,8 @@ const App = {
     if (specsEl && specsGridEl && producto.caracteristicas && Object.keys(producto.caracteristicas).length > 0) {
       specsGridEl.innerHTML = Object.entries(producto.caracteristicas).map(([key, value]) => `
         <div class="product-modal__spec-item">
-          <span class="product-modal__spec-label">${key}</span>
-          <span class="product-modal__spec-value">${value}</span>
+          <span class="product-modal__spec-label">${escHtml(key)}</span>
+          <span class="product-modal__spec-value">${escHtml(value)}</span>
         </div>
       `).join('');
       specsEl.style.display = 'block';
@@ -341,15 +348,15 @@ const App = {
         html += `
           <div class="product-modal__variant-group">
             <div class="product-modal__variant-label" style="display:flex; align-items:center; gap:0.5rem;">
-              <span style="width:16px;height:16px;border-radius:50%;background:${colorHex};border:1px solid var(--border);"></span>
-              ${color}
+              <span style="width:16px;height:16px;border-radius:50%;background:${escHtml(colorHex)};border:1px solid var(--border);"></span>
+              ${escHtml(color)}
             </div>
             <div class="product-modal__variant-options">
               ${variantsOfColor.map(v => `
                 <button class="product-modal__variant-option ${v.stock <= 0 ? 'disabled' : ''}" 
-                        data-color="${color}" data-talle="${v.talle}" data-stock="${v.stock}"
+                        data-color="${escHtml(color)}" data-talle="${escHtml(v.talle)}" data-stock="${v.stock}"
                         onclick="App.selectProductVariant(this)" ${v.stock <= 0 ? 'disabled' : ''}>
-                  ${v.talle}
+                  ${escHtml(v.talle)}
                   ${v.stock > 0 && v.stock <= 5 ? `<span style="font-size:0.65rem;color:#F59E0B;"> (${v.stock})</span>` : ''}
                 </button>
               `).join('')}
@@ -399,9 +406,9 @@ const App = {
     }
   },
 
-  switchProductModalImage(thumbEl, newSrc) {
+  switchProductModalImage(thumbEl) {
     const mainImg = document.getElementById('product-modal-main-img');
-    if (mainImg) mainImg.src = newSrc;
+    if (mainImg && thumbEl) mainImg.src = thumbEl.src;
     document.querySelectorAll('.product-modal__thumb').forEach(t => t.classList.remove('active'));
     thumbEl.classList.add('active');
   },
@@ -433,7 +440,7 @@ const App = {
     const productId = modal?.dataset.productId;
     const selectedColor = modal?.dataset.selectedColor;
     const selectedTalle = modal?.dataset.selectedTalle;
-    
+
     const producto = SheetsService.obtenerProducto(productId);
     if (!producto) return;
 
@@ -465,6 +472,24 @@ const App = {
     }
     
     this.closeProductModal();
+  },
+
+  /**
+   * Quick-add universal: si el producto tiene variantes, pide elegir desde la ficha
+   */
+  quickAdd(productId) {
+    const producto = SheetsService.obtenerProducto(productId);
+    if (!producto) return;
+    if (producto.variantes && producto.variantes.length > 0) {
+      this.showToast('Elegí color y talle desde la ficha del producto');
+      this.openProductModal(productId);
+      return;
+    }
+    if (producto.stock <= 0) {
+      this.showToast('Sin stock en este momento');
+      return;
+    }
+    CartService.addItem(producto);
   },
 
   buyViaWhatsAppFromModal() {
@@ -515,6 +540,9 @@ const App = {
 
     const items = CartService.items;
 
+    // Sincroniza stock/cantidades con datos actuales (avisos entre sesiones)
+    CartService.sincronizarStock();
+
     // Header count
     if (headerCountEl) {
       headerCountEl.textContent = `${items.length} producto${items.length !== 1 ? 's' : ''}`;
@@ -537,8 +565,7 @@ const App = {
 
     // Render items with premium layout
     itemsContainer.innerHTML = items.map(item => {
-      const producto = SheetsService.obtenerProducto(item.id);
-      const stock = producto?.stock ?? 99;
+      const stock = CartService.getItemStock(item);
       const lowStock = stock > 0 && stock <= 3;
       const priceARS = item.precioARS * item.cantidad;
       const discount = item.descuento || 0;
@@ -546,25 +573,28 @@ const App = {
       return `
         <article class="cart-item" data-id="${item.id}" role="listitem">
           <div class="cart-item__media">
-            <img class="cart-item__image" src="${item.imagen}" alt="${item.nombre}"
+            <img class="cart-item__image" src="${escHtml(item.imagen)}" alt="${escHtml(item.nombre)}"
                  loading="lazy"
                  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2296%22><rect width=%2272%22 height=%2296%22 fill=%22%23eedbd8%22/></svg>'">
             ${lowStock ? '<span class="cart-item__badge cart-item__badge--low">Pocas unidades</span>' : ''}
+            ${item.sinStock ? '<span class="cart-item__badge cart-item__badge--out">Sin stock</span>' : ''}
           </div>
           <div class="cart-item__details">
-            <h4 class="cart-item__name">${item.nombre}</h4>
-            ${item.variante ? `<p class="cart-item__variant">${item.variante}</p>` : ''}
+            <h4 class="cart-item__name">${escHtml(item.nombre)}</h4>
+            ${item.variante ? `<p class="cart-item__variant">${escHtml(item.variante)}</p>` : ''}
+            ${item.sinStock ? '<p class="cart-item__variant cart-item__status-warn">Sin stock en este momento. Elegí otra opción o esperá el reabastecimiento.</p>' : ''}
+            ${item.stockAjustado ? `<p class="cart-item__variant cart-item__status-warn">Stock ajustado a ${item.cantidad} u. disponibles.</p>` : ''}
             <div class="cart-item__price-row">
               <span class="cart-item__price">${SheetsService.formatPrecioARS(priceARS)}</span>
               ${discount ? `<span class="cart-item__discount">-${discount}%</span>` : ''}
             </div>
             <div class="cart-item__qty">
-              <div class="qty-selector" role="group" aria-label="Cantidad de ${item.nombre}">
+              <div class="qty-selector" role="group" aria-label="Cantidad de ${escHtml(item.nombre)}">
                 <button class="qty-btn" data-action="minus" data-id="${item.id}" aria-label="Disminuir cantidad" ${item.cantidad <= 1 ? 'disabled' : ''}>−</button>
-                <input type="number" class="qty-input" data-id="${item.id}" value="${item.cantidad}" min="1" max="${stock}" aria-label="Cantidad" readonly>
-                <button class="qty-btn" data-action="plus" data-id="${item.id}" aria-label="Aumentar cantidad" ${item.cantidad >= stock ? 'disabled' : ''}>+</button>
+                <input type="number" class="qty-input" data-id="${item.id}" value="${item.cantidad}" min="1" max="${Math.max(stock, 1)}" aria-label="Cantidad" readonly>
+                <button class="qty-btn" data-action="plus" data-id="${item.id}" aria-label="Aumentar cantidad" ${stock <= 0 || item.cantidad >= stock ? 'disabled' : ''}>+</button>
               </div>
-              <button class="cart-item__remove" data-action="remove" data-id="${item.id}" aria-label="Eliminar ${item.nombre}" title="Eliminar">
+              <button class="cart-item__remove" data-action="remove" data-id="${item.id}" aria-label="Eliminar ${escHtml(item.nombre)}" title="Eliminar">
                 <span aria-hidden="true">🗑️</span>
               </button>
             </div>
@@ -579,7 +609,7 @@ const App = {
     const discount = CartService.getDiscountAmount() || 0;
     const total = CartService.getTotalARS();
     const count = CartService.getTotalItems();
-    const freeShippingThreshold = 150000; // $150k ARS
+    const freeShippingThreshold = CONFIG?.promos?.envioGratisUmbralARS || 150000; // $150k ARS
     const progress = Math.min((subtotal / freeShippingThreshold) * 100, 100);
     const remaining = Math.max(freeShippingThreshold - subtotal, 0);
 
@@ -742,11 +772,11 @@ const App = {
     grid.innerHTML = recommended.map(p => {
       const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
       return `
-        <button class="cart__cross-sell-item" onclick="CartService.addItem(SheetsService.obtenerProducto('${p.id}')); App.showToast('Agregado: ${p.nombre}');" aria-label="Agregar ${p.nombre} - ${SheetsService.formatPrecioARS(precioARS)}">
-          <img class="cart__cross-sell-img" src="${p.imagen}" alt="" loading="lazy"
+        <button class="cart__cross-sell-item" onclick="App.quickAdd('${p.id}')" aria-label="Agregar ${escHtml(p.nombre)} - ${SheetsService.formatPrecioARS(precioARS)}">
+          <img class="cart__cross-sell-img" src="${escHtml(p.imagen)}" alt="" loading="lazy"
                onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%23eedbd8%22/></svg>'">
           <div class="cart__cross-sell-info">
-            <span class="cart__cross-sell-name">${p.nombre}</span>
+            <span class="cart__cross-sell-name">${escHtml(p.nombre)}</span>
             <span class="cart__cross-sell-price">${SheetsService.formatPrecioARS(precioARS)}</span>
           </div>
         </button>
@@ -846,10 +876,10 @@ const App = {
       resultsEl.innerHTML = results.slice(0, 8).map(p => {
         const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
         return `
-          <button class="search__result" onclick="App.toggleSearch(); App.openProductModal('${p.id}');" aria-label="${p.nombre} - ${SheetsService.formatPrecioARS(precioARS)}">
-            <img class="search__result-img" src="${p.imagen}" alt="" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2248%22 height=%2264%22><rect width=%2248%22 height=%2264%22 fill=%22%23eedbd8%22/></svg>'">
+          <button class="search__result" onclick="App.toggleSearch(); App.openProductModal('${p.id}');" aria-label="${escHtml(p.nombre)} - ${SheetsService.formatPrecioARS(precioARS)}">
+            <img class="search__result-img" src="${escHtml(p.imagen)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2248%22 height=%2264%22><rect width=%2248%22 height=%2264%22 fill=%22%23eedbd8%22/></svg>'">
             <div>
-              <div class="search__result-name">${p.nombre}</div>
+              <div class="search__result-name">${escHtml(p.nombre)}</div>
               <div class="search__result-price">${SheetsService.formatPrecioARS(precioARS)}</div>
             </div>
           </button>
@@ -1088,12 +1118,7 @@ document.addEventListener('click', (e) => {
   const quickBtn = e.target.closest('.product-card__quick');
   if (quickBtn) {
     if (quickBtn.disabled) return;
-    const id = quickBtn.dataset.id;
-    const producto = SheetsService.obtenerProducto(id);
-    if (producto && producto.stock > 0) {
-      CartService.addItem(producto);
-      App.showToast(`Agregado: ${producto.nombre}`);
-    }
+    App.quickAdd(quickBtn.dataset.id);
     return;
   }
 

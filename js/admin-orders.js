@@ -173,7 +173,7 @@ const AdminOrders = {
           <option value="">Producto...</option>
           ${products.map(p => {
             const precioARS = AdminApp.dolarRate ? Math.round(p.precioUSD * AdminApp.dolarRate * (CONFIG?.cotizacion?.margenGanancia || 1.3)) : 0;
-            return `<option value="${p.id}" data-price="${precioARS}" ${item && item.productoId === p.id ? 'selected' : ''}>${p.nombre} (${AdminData.formatUSD(p.precioUSD)})</option>`;
+            return `<option value="${p.id}" data-price="${precioARS}" ${item && item.productoId === p.id ? 'selected' : ''}>${p.nombre} (${AdminData.formatUSD(p.precioUSD)} / ~${AdminData.formatARS(precioARS)})</option>`;
           }).join('')}
         </select>
       </div>

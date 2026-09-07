@@ -62,12 +62,19 @@ const CartService = {
 
     const existing = this.items.find(i => i.key === itemKey);
 
+    // Límite de stock: si hay variante, usar el stock de esa variante
+    const stockLimite = v
+      ? (Array.isArray(producto.variantes)
+        ? (producto.variantes.find(vv => vv.color === v.color && vv.talle === v.talle)?.stock ?? producto.stock)
+        : producto.stock)
+      : producto.stock;
+
     // Calcular precio ARS del producto (considera precio manual, oferta, margen)
     const precioARS = SheetsService.calcularPrecioARS(producto.precioUSD, producto);
     const precioUSD = producto.precioUSD;
 
     if (existing) {
-      existing.cantidad = Math.min(existing.cantidad + cantidad, producto.stock);
+      existing.cantidad = Math.min(existing.cantidad + cantidad, stockLimite);
     } else {
       const item = {
         key: itemKey,
@@ -76,8 +83,8 @@ const CartService = {
         imagen: producto.imagen,
         precioUSD: precioUSD,
         precioARS: precioARS,
-        cantidad: Math.min(cantidad, producto.stock),
-        stock: producto.stock,
+        cantidad: Math.min(cantidad, stockLimite),
+        stock: stockLimite,
         categoria: producto.categoria || producto.categoriaOriginal || null,
         isClubPrince: !!(producto.isClubPrince || producto.categoria === 'club-prince'),
         variante: v ? `${v.color} / ${v.talle}` : null,
@@ -109,10 +116,52 @@ const CartService = {
       if (newQty <= 0) {
         this.removeItem(productId);
       } else {
-        item.cantidad = Math.min(newQty, item.stock);
+        item.cantidad = Math.min(newQty, this.getItemStock(item));
         this.save();
       }
     }
+  },
+
+  /**
+   * Devuelve el stock disponible real para un item (respeta la variante)
+   */
+  getItemStock(item) {
+    const producto = SheetsService.obtenerProducto(item.id);
+    if (item._variant && producto && Array.isArray(producto.variantes) && producto.variantes.length) {
+      const v = producto.variantes.find(vv => vv.color === item._variant.color && vv.talle === item._variant.talle);
+      if (v) return v.stock || 0;
+    }
+    return producto ? (producto.stock || 0) : (item.stock ?? 99);
+  },
+
+  /**
+   * Sincroniza stock/cantidades del carrito con los datos actuales y marca
+   * items sin stock o con cantidad ajustada (avisos entre sesiones)
+   */
+  sincronizarStock() {
+    if (!Array.isArray(this.items) || this.items.length === 0) return 0;
+    let cambios = 0;
+    this.items.forEach(item => {
+      if (item.isClubPrince) return;
+      const stock = this.getItemStock(item);
+      if (stock <= 0) {
+        const yaMarcado = item.sinStock;
+        item.sinStock = true;
+        item.stockAjustado = false;
+        if (!yaMarcado) cambios++;
+      } else if (item.cantidad > stock) {
+        const yaAjustado = item.stockAjustado;
+        item.cantidad = stock;
+        item.stockAjustado = true;
+        item.sinStock = false;
+        if (!yaAjustado) cambios++;
+      } else {
+        item.sinStock = false;
+        item.stockAjustado = false;
+      }
+    });
+    if (cambios > 0) this.save();
+    return cambios;
   },
 
   /**

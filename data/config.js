@@ -111,8 +111,13 @@ const CONFIG = {
   ],
 
   // ==========================================
-  // CATEGORÍAS CON ICONOS
+  // PROMOCIONES Y CATEGORÍAS CON ICONOS
   // ==========================================
+  promos: {
+    // Umbral en ARS para envío gratis del carrito (>= este monto = envío sin cargo)
+    envioGratisUmbralARS: 150000,
+  },
+
   categorias: [
     { id: "club-prince",       nombre: "Club Prince",       icon: "👑", grupo: "Club Prince" },
     { id: "calzas-largas",     nombre: "Calzas Largas",     icon: "👖", grupo: "Indumentaria Deportiva" },
@@ -175,7 +180,7 @@ const CONFIG = {
         { id: "box-premium", nombre: "Caja Premium", precioUSD: 38, desc: "2 conjuntos + accesorio + sorpresa", icon: "👑", destacado: true, tag: "Premium" },
         { id: "box-deluxe", nombre: "Caja Deluxe", precioUSD: 52, desc: "3 conjuntos + 2 accesorios + sorpresa VIP", icon: "💎", destacado: false, tag: "Deluxe" },
       ],
-      benefits: ["Envío gratis +$90000", "20% off transferencias", "3 cuotas sin interés"],
+      benefits: ["Envío gratis en todas las cajas", "20% off transferencias", "3 cuotas sin interés"],
       formTitle: "Quiero sumarme al Club",
       formDesc: "Dejanos tus datos y te contactamos para activar tu suscripción.",
     },
