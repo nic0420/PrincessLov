@@ -10,14 +10,16 @@ const AdminContent = {
   },
 
   switchTab(which) {
+    if (!['categorias', 'frases', 'club'].includes(which)) which = 'categorias';
     this.tab = which;
     document.querySelectorAll('#content-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
-    const a = document.getElementById('content-panel-categorias');
-    const b = document.getElementById('content-panel-frases');
-    if (a) { a.classList.toggle('active', which === 'categorias'); a.style.display = which === 'categorias' ? 'block' : 'none'; }
-    if (b) { b.classList.toggle('active', which === 'frases'); b.style.display = which === 'frases' ? 'block' : 'none'; }
+    const panels = { categorias: 'content-panel-categorias', frases: 'content-panel-frases', club: 'content-panel-club' };
+    Object.entries(panels).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (el) { el.classList.toggle('active', key === which); el.style.display = key === which ? 'block' : 'none'; }
+    });
     if (which === 'categorias') this.renderCategorias();
-    else { this.renderFrases(); setTimeout(()=> this.renderClubLeads(), 120); }
+    else { this.renderFrases(); setTimeout(() => this.renderClubLeads(), 120); }
   },
 
   /* ---------- CATEGORÍAS ---------- */

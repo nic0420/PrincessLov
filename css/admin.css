@@ -317,6 +317,14 @@ body {
   padding: 1.5rem 2rem 2rem;
 }
 
+/* ---------- Secciones: solo visible la activa ---------- */
+.admin-section {
+  display: none;
+}
+.admin-section.active {
+  display: block;
+}
+
 /* ---------- Dashboard Stats ---------- */
 .stats-grid {
   display: grid;

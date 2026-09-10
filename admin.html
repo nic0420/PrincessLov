@@ -22,35 +22,35 @@
       <span class="logo-badge">Admin</span>
     </div>
     <nav class="admin-nav">
-      <a href="#" class="nav-item active" data-section="dashboard" onclick="AdminApp.navigate('dashboard')">
+      <a href="#" class="nav-item active" data-section="dashboard" onclick="return AdminApp.navigate('dashboard')">
         <span class="nav-icon">📊</span>
         <span class="nav-label">Dashboard</span>
       </a>
-      <a href="#" class="nav-item" data-section="products" onclick="AdminApp.navigate('products')">
+      <a href="#" class="nav-item" data-section="products" onclick="return AdminApp.navigate('products')">
         <span class="nav-icon">📦</span>
         <span class="nav-label">Productos</span>
       </a>
-      <a href="#" class="nav-item" data-section="orders" onclick="AdminApp.navigate('orders')">
+      <a href="#" class="nav-item" data-section="orders" onclick="return AdminApp.navigate('orders')">
         <span class="nav-icon">🛒</span>
         <span class="nav-label">Pedidos</span>
       </a>
-      <a href="#" class="nav-item" data-section="import" onclick="AdminApp.navigate('import')">
+      <a href="#" class="nav-item" data-section="import" onclick="return AdminApp.navigate('import')">
         <span class="nav-icon">📥</span>
         <span class="nav-label">Importar Excel</span>
       </a>
-      <a href="#" class="nav-item" data-section="expenses" onclick="AdminApp.navigate('expenses')">
+      <a href="#" class="nav-item" data-section="expenses" onclick="return AdminApp.navigate('expenses')">
         <span class="nav-icon">💰</span>
         <span class="nav-label">Gastos</span>
       </a>
-      <a href="#" class="nav-item" data-section="financial" onclick="AdminApp.navigate('financial')">
+      <a href="#" class="nav-item" data-section="financial" onclick="return AdminApp.navigate('financial')">
         <span class="nav-icon">📈</span>
         <span class="nav-label">Finanzas</span>
       </a>
-      <a href="#" class="nav-item" data-section="content" onclick="AdminApp.navigate('content')">
+      <a href="#" class="nav-item" data-section="content" onclick="return AdminApp.navigate('content')">
         <span class="nav-icon">🎨</span>
         <span class="nav-label">Contenido</span>
       </a>
-      <a href="#" class="nav-item" data-section="settings" onclick="AdminApp.navigate('settings')">
+      <a href="#" class="nav-item" data-section="settings" onclick="return AdminApp.navigate('settings')">
         <span class="nav-icon">⚙️</span>
         <span class="nav-label">Configuración</span>
       </a>
@@ -102,9 +102,9 @@
               <p style="margin:0; opacity:0.9; font-size:0.88rem; max-width:520px;">1) Cargá productos → 2) Recibí pedidos de la tienda → 3) Registrá gastos → 4) Mirá tu <strong>ganancia separada por categoría</strong> en Finanzas (cambia el período arriba para ver por mes).</p>
             </div>
             <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-              <button class="btn btn-sm" style="background:white; color:var(--borgona-400); font-weight:700;" onclick="AdminApp.navigate('products'); setTimeout(()=>AdminProducts.openForm(), 120)">+ Producto</button>
-              <button class="btn btn-sm" style="background:rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="AdminApp.navigate('orders'); setTimeout(()=>AdminOrders.openForm(), 120)">+ Pedido</button>
-              <button class="btn btn-sm" style="background:rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="AdminApp.navigate('financial')">📈 Finanzas</button>
+              <button class="btn btn-sm" style="background:white; color:var(--borgona-400); font-weight:700;" onclick="AdminApp.navigate('products'); setTimeout(()=>AdminProducts.openForm(), 120); return false;">+ Producto</button>
+              <button class="btn btn-sm" style="background:rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="AdminApp.navigate('orders'); setTimeout(()=>AdminOrders.openForm(), 120); return false;">+ Pedido</button>
+              <button class="btn btn-sm" style="background:rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="return AdminApp.navigate('financial')">📈 Finanzas</button>
             </div>
           </div>
         </div>
@@ -341,6 +341,7 @@
         <div class="tab-nav" id="content-tabs">
           <button class="tab active" data-tab="categorias" onclick="AdminContent.switchTab('categorias')">📦 Categorías</button>
           <button class="tab" data-tab="frases" onclick="AdminContent.switchTab('frases')">✏️ Textos & Emojis Home</button>
+          <button class="tab" data-tab="club" onclick="AdminContent.switchTab('club')">👑 Club Prince</button>
         </div>
 
         <!-- Categorías -->
@@ -458,6 +459,16 @@
               </div>
             </div>
 
+            <div style="display:flex; gap:0.75rem; margin-top:0.75rem;">
+              <button type="submit" class="btn btn-primary">💾 Guardar todo</button>
+              <button type="button" class="btn btn-secondary" onclick="AdminContent.resetFrases()">↺ Restaurar</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Club Prince (panel propio) -->
+        <div id="content-panel-club" style="display:none;">
+          <form id="club-form" onsubmit="AdminContent.saveFrases(event)">
             <div class="chart-card" style="border: 1px solid var(--borgona-200);">
               <h3>👑 Club Prince — Landing + Cajas</h3>
               <p style="color:var(--texto-secundario); font-size:0.83rem; margin-bottom:0.75rem;">Editá el título “Forma parte del Club”, beneficios y las 3 cajas de suscripción. Los cambios se reflejan en <code>#club-prince</code> de la tienda.</p>
@@ -514,16 +525,16 @@
             </div>
 
             <div style="display:flex; gap:0.75rem; margin-top:0.75rem;">
-              <button type="submit" class="btn btn-primary">💾 Guardar todo</button>
+              <button type="submit" class="btn btn-primary">💾 Guardar Club Prince</button>
               <button type="button" class="btn btn-secondary" onclick="AdminContent.resetFrases()">↺ Restaurar</button>
             </div>
-          </form>
           <div class="chart-card" style="margin-top:1rem;">
             <h3>👑 Leads Club Prince (últimos)</h3>
             <p style="color:var(--texto-secundario); font-size:0.83rem;">Se guardan en pestaña <code>ClubPrince_Leads</code> del Google Sheet (o local si aún no configuraste el Apps Script).</p>
             <div id="club-leads-list" style="margin-top:0.75rem;"></div>
-            <button class="btn btn-sm btn-secondary" style="margin-top:0.5rem;" onclick="AdminContent.renderClubLeads()">↻ Actualizar</button>
+            <button type="button" class="btn btn-sm btn-secondary" style="margin-top:0.5rem;" onclick="AdminContent.renderClubLeads()">↻ Actualizar</button>
           </div>
+          </form>
         </div>
       </section>
 
@@ -627,12 +638,12 @@
 
         <!-- TABS NAVIGATION -->
         <div class="form-tabs" role="tablist" aria-label="Secciones del producto">
-          <button class="form-tab active" role="tab" data-tab="basico" aria-selected="true">📝 Básico</button>
-          <button class="form-tab" role="tab" data-tab="precios" aria-selected="false">💰 Precios & Stock</button>
-          <button class="form-tab" role="tab" data-tab="variantes" aria-selected="false">🎨 Variantes (Color/Talle)</button>
-          <button class="form-tab" role="tab" data-tab="imagenes" aria-selected="false">🖼️ Imágenes</button>
-          <button class="form-tab" role="tab" data-tab="caracteristicas" aria-selected="false">📋 Características</button>
-          <button class="form-tab" role="tab" data-tab="seo" aria-selected="false">🔍 SEO & Visibilidad</button>
+          <button type="button" class="form-tab active" role="tab" data-tab="basico" aria-selected="true">📝 Básico</button>
+          <button type="button" class="form-tab" role="tab" data-tab="precios" aria-selected="false">💰 Precios & Stock</button>
+          <button type="button" class="form-tab" role="tab" data-tab="variantes" aria-selected="false">🎨 Variantes (Color/Talle)</button>
+          <button type="button" class="form-tab" role="tab" data-tab="imagenes" aria-selected="false">🖼️ Imágenes</button>
+          <button type="button" class="form-tab" role="tab" data-tab="caracteristicas" aria-selected="false">📋 Características</button>
+          <button type="button" class="form-tab" role="tab" data-tab="seo" aria-selected="false">🔍 SEO & Visibilidad</button>
         </div>
 
         <!-- TAB 1: BÁSICO -->

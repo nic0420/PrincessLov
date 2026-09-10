@@ -40,8 +40,9 @@ const AdminProducts = {
     const tabs = document.querySelectorAll('#product-modal .form-tab');
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
+        tabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
         tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
         const tabId = tab.dataset.tab;
         document.querySelectorAll('.form-tab-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('tab-' + tabId).classList.add('active');
@@ -177,9 +178,10 @@ const AdminProducts = {
     }
 
     // Reset to first tab
-    document.querySelectorAll('.form-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.form-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
     document.querySelectorAll('.form-tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelector('.form-tab[data-tab="basico"]').classList.add('active');
+    document.querySelector('.form-tab[data-tab="basico"]').setAttribute('aria-selected', 'true');
     document.getElementById('tab-basico').classList.add('active');
 
     modal.classList.add('open');
