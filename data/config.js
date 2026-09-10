@@ -176,9 +176,9 @@ const CONFIG = {
       desc: "Recibí cada mes una cajita curada con lencería, accesorios y sorpresas PrincessLov. Elegí tu plan y sumate al club más querido.",
       heroImage: "assets/club-prince-hero.jpg",
       boxes: [
-        { id: "box-esencial", nombre: "Caja Esencial", precioUSD: 25, desc: "1 conjunto + sorpresa", icon: "🎀", destacado: false, tag: "Más elegida" },
-        { id: "box-premium", nombre: "Caja Premium", precioUSD: 38, desc: "2 conjuntos + accesorio + sorpresa", icon: "👑", destacado: true, tag: "Premium" },
-        { id: "box-deluxe", nombre: "Caja Deluxe", precioUSD: 52, desc: "3 conjuntos + 2 accesorios + sorpresa VIP", icon: "💎", destacado: false, tag: "Deluxe" },
+        { id: "box-esencial", nombre: "Caja Esencial", descripcionCorta: "1 conjunto + sorpresa", detalleCompleto: "1 conjunto a elección (deportivo o lencería)\n1 sorpresa PrincessLov", precioUSD: 25, imagenUrl: "", desc: "1 conjunto + sorpresa", icon: "🎀", destacado: false, tag: "Más elegida" },
+        { id: "box-premium", nombre: "Caja Premium", descripcionCorta: "2 conjuntos + accesorio + sorpresa", detalleCompleto: "2 conjuntos a elección\n1 accesorio\n1 sorpresa PrincessLov", precioUSD: 38, imagenUrl: "", desc: "2 conjuntos + accesorio + sorpresa", icon: "👑", destacado: true, tag: "Premium" },
+        { id: "box-deluxe", nombre: "Caja Deluxe", descripcionCorta: "3 conjuntos + 2 accesorios + sorpresa VIP", detalleCompleto: "3 conjuntos a elección\n2 accesorios\n1 sorpresa VIP + envío prioritario", precioUSD: 52, imagenUrl: "", desc: "3 conjuntos + 2 accesorios + sorpresa VIP", icon: "💎", destacado: false, tag: "Deluxe" },
       ],
       benefits: ["Envío gratis en todas las cajas", "20% off transferencias", "3 cuotas sin interés"],
       formTitle: "Quiero sumarme al Club",

@@ -154,7 +154,9 @@ const AdminContent = {
     for (let i=0;i<3;i++){
       const b = cp.boxes?.[i] || {};
       if (q('fr-club-box-'+i+'-nombre')) q('fr-club-box-'+i+'-nombre').value = b.nombre || '';
-      if (q('fr-club-box-'+i+'-desc')) q('fr-club-box-'+i+'-desc').value = b.desc || '';
+      if (q('fr-club-box-'+i+'-desc')) q('fr-club-box-'+i+'-desc').value = b.descripcionCorta || b.desc || '';
+      if (q('fr-club-box-'+i+'-detalle')) q('fr-club-box-'+i+'-detalle').value = b.detalleCompleto || '';
+      if (q('fr-club-box-'+i+'-imagen')) q('fr-club-box-'+i+'-imagen').value = b.imagenUrl || b.imagen || '';
       if (q('fr-club-box-'+i+'-precio')) q('fr-club-box-'+i+'-precio').value = b.precioUSD || '';
       if (q('fr-club-box-'+i+'-icon')) q('fr-club-box-'+i+'-icon').value = b.icon || '';
       if (q('fr-club-box-'+i+'-tag')) q('fr-club-box-'+i+'-tag').value = b.tag || '';
@@ -198,11 +200,15 @@ const AdminContent = {
         formDesc: get('fr-club-form-desc') || (cont.clubPrince?.formDesc),
         boxes: [0,1,2].map(i=> {
           const base = (cont.clubPrince?.boxes?.[i] || CONFIG.contenido?.clubPrince?.boxes?.[i] || {});
+          const corta = get('fr-club-box-'+i+'-desc') || base.descripcionCorta || base.desc;
           return {
             ...base,
             id: base.id || `box-${i}`,
             nombre: get('fr-club-box-'+i+'-nombre') || base.nombre,
-            desc: get('fr-club-box-'+i+'-desc') || base.desc,
+            descripcionCorta: corta,
+            desc: corta, // alias histórico
+            detalleCompleto: get('fr-club-box-'+i+'-detalle') || base.detalleCompleto || '',
+            imagenUrl: get('fr-club-box-'+i+'-imagen') || base.imagenUrl || base.imagen || '',
             precioUSD: parseFloat(get('fr-club-box-'+i+'-precio')) || base.precioUSD || 0,
             icon: get('fr-club-box-'+i+'-icon') || base.icon,
             tag: get('fr-club-box-'+i+'-tag') || base.tag,
@@ -212,6 +218,13 @@ const AdminContent = {
       },
     };
     AdminData.saveContenido(next);
+    // Push CMS a Google Sheets (clave `clubPrince_boxes`) si hay backend configurado
+    try {
+      const url = (typeof CONFIG !== 'undefined' && CONFIG.sheets?.appsScriptUrl) ? CONFIG.sheets.appsScriptUrl : null;
+      if (url && !url.includes('TU_SCRIPT_ID') && typeof SheetsService !== 'undefined' && SheetsService.postToAppsScript) {
+        SheetsService.postToAppsScript('save_config', { config: { clubPrince_boxes: JSON.stringify(next.clubPrince.boxes) } }).catch(() => {});
+      }
+    } catch {}
     AdminApp.toast('Contenido guardado — se refleja al recargar la tienda');
   },
 
@@ -227,7 +240,7 @@ const AdminContent = {
     let leads = [];
     try { leads = JSON.parse(localStorage.getItem('pl_clubprince_leads')||'[]').reverse().slice(0,20); } catch {}
     if (!leads.length) { el.innerHTML = '<p style="color:var(--texto-secundario); font-size:0.85rem; background:var(--gris-100); padding:0.8rem; border-radius:8px;">Aún no hay leads. Probá el formulario del Club en la tienda.</p>'; return; }
-    el.innerHTML = `<div class="table-container"><table class="products-table" style="font-size:0.85rem;"><thead><tr><th>Fecha</th><th>Nombre</th><th>Teléfono</th><th>Ciudad</th></tr></thead><tbody>${leads.map(l=> `<tr><td>${this.esc(new Date(l.fecha).toLocaleDateString('es-AR'))}</td><td>${this.esc(l.nombre)}</td><td>${this.esc(l.telefono)}</td><td>${this.esc(l.ciudad)}</td></tr>`).join('')}</tbody></table></div>`;
+    el.innerHTML = `<div class="table-container"><table class="products-table" style="font-size:0.85rem;"><thead><tr><th>Fecha</th><th>Nombre</th><th>Teléfono</th><th>Ciudad</th><th>Plan</th></tr></thead><tbody>${leads.map(l=> `<tr><td>${this.esc(new Date(l.fecha).toLocaleDateString('es-AR'))}</td><td>${this.esc(l.nombre)}</td><td>${this.esc(l.telefono)}</td><td>${this.esc(l.ciudad)}</td><td>${this.esc(l.plan || '-')}</td></tr>`).join('')}</tbody></table></div>`;
   },
 
   esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }

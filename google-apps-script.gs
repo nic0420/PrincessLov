@@ -52,7 +52,7 @@ const HEADERS = {
   GASTOS: ['ID', 'Fecha', 'Concepto', 'Monto', 'Categoria', 'Notas'],
   CONFIG: ['Clave', 'Valor'],
   DOLAR: ['Fecha', 'Valor'],
-  CLUBPRINCE: ['ID', 'Fecha', 'Nombre', 'Telefono', 'Ciudad', 'Origen', 'Estado'],
+  CLUBPRINCE: ['ID', 'Fecha', 'Nombre', 'Telefono', 'Ciudad', 'Origen', 'Estado', 'Plan'],
   NEWSLETTER: ['ID', 'Fecha', 'Email'],
 };
 
@@ -405,6 +405,7 @@ function createClubPrinceLead(lead) {
     Ciudad: ciudad,
     Origen: lead.origen || lead.Origen || 'Club Prince Web',
     Estado: lead.estado || 'nuevo',
+    Plan: lead.plan || lead.Plan || '',
   };
   writeRow(SHEET_NAMES.CLUBPRINCE, rowData, id);
   return { success: true, id };

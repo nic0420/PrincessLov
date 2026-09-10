@@ -467,10 +467,30 @@ input, select { font-family: inherit; font-size: inherit; }
 .club-prince__form .form-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; color: var(--texto); }
 .club-prince__form .form-group input { width: 100%; padding: 12px 14px; border: 1px solid var(--gris-200); border-radius: 10px; font-size: 0.95rem; background: var(--gris-100); transition: border-color var(--fast); }
 .club-prince__form .form-group input:focus { outline: none; border-color: var(--burgundy); background: #fff; }
+.club-prince__form .form-group select { width: 100%; padding: 12px 14px; border: 1px solid var(--gris-200); border-radius: 10px; font-size: 0.95rem; background: var(--gris-100); color: var(--texto); font-family: inherit; }
+.club-prince__form .form-group select:focus { outline: none; border-color: var(--burgundy); background: #fff; }
 .club-prince__form-msg { min-height: 22px; font-size: 0.88rem; margin-top: 10px; font-weight: 600; }
 .club-prince__form-msg--ok { color: #10B981; }
 .club-prince__form-msg--err { color: #EF4444; }
 .club-prince__form-hint { font-size: 0.75rem; color: var(--texto-light); margin-top: 8px; text-align: center; }
+
+/* ---------- CLUB PRINCE BOX MODAL (vista detalle CMS) ---------- */
+.club-modal-overlay { position: fixed; inset: 0; z-index: 2800; background: rgba(61,43,36,0.5); opacity: 0; visibility: hidden; transition: opacity var(--base), visibility var(--base); backdrop-filter: blur(3px); }
+.club-modal-overlay.open { opacity: 1; visibility: visible; }
+.club-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(100% - 32px); max-width: 760px; max-height: 90vh; z-index: 2900; background: #fff; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: transform var(--base), opacity var(--base); box-shadow: 0 24px 64px -24px rgba(128,0,32,0.35); }
+.club-modal-overlay.open .club-modal { opacity: 1; visibility: visible; }
+.club-modal__close { position: absolute; top: 12px; right: 12px; z-index: 10; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--texto); background: #fff; border-radius: 50%; box-shadow: var(--shadow-card); }
+.club-modal__body { display: grid; grid-template-columns: 1fr 1.2fr; overflow-y: auto; }
+.club-modal__media { background: linear-gradient(135deg, var(--pink-100), #fff); min-height: 280px; display: flex; align-items: center; justify-content: center; }
+.club-modal__image { width: 100%; height: 100%; max-height: 70vh; object-fit: cover; }
+.club-modal__placeholder { width: 100%; min-height: 280px; align-items: center; justify-content: center; font-size: 96px; background: repeating-linear-gradient(45deg, var(--pink-100) 0 18px, #fff 18px 36px); }
+.club-modal__info { padding: var(--sp-6); display: flex; flex-direction: column; gap: 10px; }
+.club-modal__title { font-family: var(--font-serif); font-size: 28px; font-weight: 500; color: var(--texto); line-height: 1.1; }
+.club-modal__short { font-size: 0.9rem; color: var(--texto-light); }
+.club-modal__detail { font-size: 0.9rem; line-height: 1.7; color: var(--texto); background: var(--gris-100); border: 1px solid var(--pink-200); border-radius: 12px; padding: 12px 14px; white-space: normal; }
+.club-modal__price { font-size: 24px; font-weight: 700; color: var(--burgundy); }
+.club-modal__actions { margin-top: auto; padding-top: 8px; }
+@media (max-width: 700px) { .club-modal__body { grid-template-columns: 1fr; } .club-modal__media { min-height: 200px; } .club-modal__placeholder { min-height: 200px; font-size: 72px; } }
 
 /* ============================================================
    CATEGORY SHOWCASE (editorial cards)

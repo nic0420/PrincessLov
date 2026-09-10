@@ -183,33 +183,30 @@
 
     <div class="container">
       <div class="club-prince__boxes" id="club-boxes">
-        <!-- Render dinámico desde CONFIG.contenido.clubPrince.boxes; fallback estático -->
+        <!-- Render dinámico CMS (ClubPrince.fetchBoxes); fallback estático -->
         <article class="club-box" data-box="box-esencial">
           <div class="club-box__stripe" aria-hidden="true"></div>
-          <div class="club-box__icon">🎀</div>
+          <div class="club-box__icon" aria-hidden="true">🎀</div>
           <span class="club-box__tag">Más elegida</span>
           <h3 class="club-box__name">Caja Esencial</h3>
           <p class="club-box__meta">1 conjunto + sorpresa</p>
-          <div class="club-box__price" data-price-usd="25">Cargando precio…</div>
-          <button class="btn btn--dark btn--block" onclick="ClubPrince.addBoxToCart('box-esencial')">Agregar al carrito</button>
+          <button class="btn btn--dark btn--block" onclick="ClubPrince.openBoxModal('box-esencial')">Ver más</button>
         </article>
         <article class="club-box club-box--featured" data-box="box-premium">
           <div class="club-box__stripe" aria-hidden="true"></div>
-          <div class="club-box__icon">👑</div>
+          <div class="club-box__icon" aria-hidden="true">👑</div>
           <span class="club-box__tag">Premium</span>
           <h3 class="club-box__name">Caja Premium</h3>
           <p class="club-box__meta">2 conjuntos + accesorio + sorpresa</p>
-          <div class="club-box__price" data-price-usd="38">Cargando precio…</div>
-          <button class="btn btn--primary btn--block" onclick="ClubPrince.addBoxToCart('box-premium')">Agregar al carrito</button>
+          <button class="btn btn--primary btn--block" onclick="ClubPrince.openBoxModal('box-premium')">Ver más</button>
         </article>
         <article class="club-box" data-box="box-deluxe">
           <div class="club-box__stripe" aria-hidden="true"></div>
-          <div class="club-box__icon">💎</div>
+          <div class="club-box__icon" aria-hidden="true">💎</div>
           <span class="club-box__tag">Deluxe</span>
           <h3 class="club-box__name">Caja Deluxe</h3>
           <p class="club-box__meta">3 conjuntos + 2 accesorios + sorpresa VIP</p>
-          <div class="club-box__price" data-price-usd="52">Cargando precio…</div>
-          <button class="btn btn--dark btn--block" onclick="ClubPrince.addBoxToCart('box-deluxe')">Agregar al carrito</button>
+          <button class="btn btn--dark btn--block" onclick="ClubPrince.openBoxModal('box-deluxe')">Ver más</button>
         </article>
       </div>
 
@@ -232,6 +229,12 @@
             <div class="form-group">
               <label for="club-ciudad">Ciudad *</label>
               <input type="text" id="club-ciudad" name="ciudad" required autocomplete="address-level2" placeholder="Ej: Puerto Iguazú">
+            </div>
+            <div class="form-group">
+              <label for="club-plan">Plan de interés</label>
+              <select id="club-plan" name="plan" aria-label="Plan de interés">
+                <option value="">Cargando planes…</option>
+              </select>
             </div>
           </div>
           <button type="submit" class="btn btn--primary btn--block" id="club-submit-btn">✨ Quiero ser parte</button>
@@ -609,6 +612,31 @@
           <div class="product-modal__actions">
             <button class="btn btn--primary product-modal__btn" onclick="App.addToCartFromModal()">🛒 Agregar al carrito</button>
             <button class="btn btn--whatsapp product-modal__btn" onclick="App.buyViaWhatsAppFromModal()">💬 Comprar por WhatsApp</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLUB PRINCE BOX MODAL (vista detalle CMS) -->
+  <div class="club-modal-overlay" id="club-modal" aria-hidden="true" onclick="if(event.target===this) ClubPrince.closeBoxModal()">
+    <div class="club-modal" role="dialog" aria-modal="true" aria-labelledby="club-modal-name">
+      <button class="club-modal__close" onclick="ClubPrince.closeBoxModal()" aria-label="Cerrar detalle">
+        <span aria-hidden="true">✕</span>
+      </button>
+      <div class="club-modal__body">
+        <div class="club-modal__media">
+          <img class="club-modal__image" id="club-modal-img" src="" alt="" loading="lazy" style="display:none;">
+          <div class="club-modal__placeholder" id="club-modal-placeholder" aria-hidden="true" style="display:none;"></div>
+        </div>
+        <div class="club-modal__info">
+          <span class="club-box__tag" id="club-modal-tag" style="display:none;"></span>
+          <h2 class="club-modal__title" id="club-modal-name"></h2>
+          <p class="club-modal__short" id="club-modal-short"></p>
+          <div class="club-modal__detail" id="club-modal-detail"></div>
+          <div class="club-modal__price" id="club-modal-price"></div>
+          <div class="club-modal__actions">
+            <button class="btn btn--primary btn--block" onclick="ClubPrince.addBoxFromModal()">🛒 Agregar al carrito</button>
           </div>
         </div>
       </div>
