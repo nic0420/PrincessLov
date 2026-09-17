@@ -14,6 +14,7 @@ const AdminData = {
     dolarHistory: 'pl_admin_dolar_history',
     categorias: 'pl_admin_categorias',
     contenido: 'pl_admin_contenido',
+    promos: 'pl_admin_promos',
   },
 
   // ==========================================
@@ -261,6 +262,28 @@ const AdminData = {
   },
 
   // ==========================================
+  // PROMOS (motor de promociones, Fase 2)
+  // ==========================================
+  getPromos() {
+    const saved = localStorage.getItem(this.KEYS.promos);
+    if (saved) try { const obj = JSON.parse(saved); if (obj && typeof obj === 'object') return obj; } catch {}
+    return null;
+  },
+  getEffectivePromos() {
+    const custom = this.getPromos();
+    const base = CONFIG?.promos || {};
+    return custom ? { ...base, ...custom, cupones: custom.cupones ?? base.cupones, flashSales: custom.flashSales ?? base.flashSales, combos: custom.combos ?? base.combos, dosPorUno: custom.dosPorUno ?? base.dosPorUno, preventas: custom.preventas ?? base.preventas } : base;
+  },
+  savePromos(promos) {
+    localStorage.setItem(this.KEYS.promos, JSON.stringify(promos));
+    window.dispatchEvent(new CustomEvent('promos:updated', { detail: promos }));
+  },
+  resetPromos() {
+    localStorage.removeItem(this.KEYS.promos);
+    window.dispatchEvent(new CustomEvent('promos:updated', { detail: this.getEffectivePromos() }));
+  },
+
+  // ==========================================
   // CONFIGURACIÓN
   // ==========================================
   getSettings() {
@@ -424,7 +447,7 @@ const AdminData = {
   // UTILIDADES
   // ==========================================
   generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   },
 
   isInPeriod(fecha, periodo) {

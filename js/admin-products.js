@@ -10,6 +10,8 @@ const AdminProducts = {
   specRowId: 0,
   currentEditId: null,
 
+  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
+
   render() {
     this.populateCategories();
     this.initTabs();
@@ -114,19 +116,19 @@ const AdminProducts = {
       return `
         <tr>
           <td>
-            <img class="product-thumb" src="${p.imagen || ''}" alt="${p.nombre}"
+            <img class="product-thumb" src="${this.esc(p.imagen || '')}" alt="${this.esc(p.nombre)}"
                  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><rect width=%2250%22 height=%2250%22 fill=%22%23F8D0DC%22/></svg>'">
           </td>
           <td>
             <div class="product-name-cell">
-              <div class="product-name">${p.nombre}</div>
-              ${p.sku ? `<div class="product-sku">SKU: ${p.sku}</div>` : ''}
+              <div class="product-name">${this.esc(p.nombre)}</div>
+              ${p.sku ? `<div class="product-sku">SKU: ${this.esc(p.sku)}</div>` : ''}
             </div>
             ${p.tags && p.tags.includes('nuevo') ? ' <span class="badge badge-new">Nuevo</span>' : ''}
             ${p.tags && p.tags.includes('oferta') ? ' <span class="badge" style="background:#F59E0B;color:white;">Oferta</span>' : ''}
             ${p.destacado ? ' <span class="badge badge-active">⭐ Destacado</span>' : ''}
           </td>
-          <td>${p.categoriaOriginal || p.categoria || '-'}</td>
+          <td>${this.esc(p.categoriaOriginal || p.categoria || '-')}</td>
           <td>${AdminData.formatUSD(p.precioUSD)}</td>
           <td>${p.precioARSManual ? AdminData.formatARS(p.precioARSManual) : AdminData.formatARS(precioARS)}${p.precioOferta ? ` <span class="badge" style="background:#F59E0B;color:white;">Oferta: ${AdminData.formatARS(p.precioOferta)}</span>` : ''}</td>
           <td>

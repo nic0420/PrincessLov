@@ -10,6 +10,7 @@ const CartService = {
   discountAmount: 0,
   promoCode: null,
   promoData: null,
+  _autoLines: [],
 
   /**
    * Inicializa el carrito desde localStorage
@@ -69,8 +70,10 @@ const CartService = {
         : producto.stock)
       : producto.stock;
 
-    // Calcular precio ARS del producto (considera precio manual, oferta, margen)
-    const precioARS = SheetsService.calcularPrecioARS(producto.precioUSD, producto);
+    // Calcular precio ARS del producto (precio manual, oferta, preventa, flash y margen)
+    const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioCompraARS)
+      ? PromoEngine.precioCompraARS(producto)
+      : SheetsService.calcularPrecioARS(producto.precioUSD, producto);
     const precioUSD = producto.precioUSD;
 
     if (existing) {
@@ -94,8 +97,6 @@ const CartService = {
     }
 
     this.save();
-    const variantText = v ? ` (${v.color} / ${v.talle})` : '';
-    App.showToast(`Agregado: ${producto.nombre}${variantText}`);
   },
 
   /**
@@ -172,27 +173,54 @@ const CartService = {
   },
 
   /**
-   * Obtiene el subtotal (sin envío ni descuentos)
+   * Total "bruto" de líneas (sin restar 2x1/combos ni cupón)
    */
-  getSubtotalARS() {
+  getLineasSubtotalARS() {
     this.items.forEach(item => {
-      // Recalcular por si cambió el dólar
+      // Recalcular por si cambió el dólar o expiró una promo
       const producto = SheetsService.obtenerProducto(item.id);
       if (producto) {
-        item.precioARS = SheetsService.calcularPrecioARS(producto.precioUSD, producto);
+        item.precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioCompraARS)
+          ? PromoEngine.precioCompraARS(producto)
+          : SheetsService.calcularPrecioARS(producto.precioUSD, producto);
       }
     });
     return this.items.reduce((sum, i) => sum + (i.precioARS * i.cantidad), 0);
   },
 
   /**
-   * Obtiene el total en ARS (con envío y descuentos)
+   * Descuentos automáticos (2x1 y combos) del carrito actual
+   */
+  calcAutoDiscount() {
+    this._autoLines = [];
+    if (typeof PromoEngine === 'undefined') return 0;
+    const byId = (id) => SheetsService.obtenerProducto(id);
+    const lines = PromoEngine.descuentosAutomaticos(this.items, byId);
+    this._autoLines = lines;
+    return lines.reduce((s, l) => s + l.monto, 0);
+  },
+
+  getAutoDiscountLines() {
+    return this._autoLines || [];
+  },
+
+  /**
+   * Obtiene el subtotal en ARS (líneas - descuentos automáticos 2x1/combos)
+   */
+  getSubtotalARS() {
+    const lineas = this.getLineasSubtotalARS();
+    return Math.max(0, lineas - this.calcAutoDiscount());
+  },
+
+  /**
+   * Obtiene el total en ARS (líneas - descuentos automáticos - cupón + envío)
    */
   getTotalARS() {
-    const subtotal = this.getSubtotalARS();
+    const lineas = this.getLineasSubtotalARS();
+    const auto = this.calcAutoDiscount();
     const shipping = this.shippingCost || 0;
-    const discount = this.discountAmount || 0;
-    return subtotal + shipping - discount;
+    const coupon = this.discountAmount || 0;
+    return lineas + shipping - auto - coupon;
   },
 
   /**
@@ -203,10 +231,11 @@ const CartService = {
   },
 
   /**
-   * Obtiene el monto de descuento
+   * Obtiene el monto total de descuento (cupón + promos automáticas)
    */
   getDiscountAmount() {
-    return this.discountAmount || 0;
+    const auto = this.calcAutoDiscount();
+    return (this.discountAmount || 0) + auto;
   },
 
   /**
@@ -224,9 +253,13 @@ const CartService = {
   applyPromo(code, promo) {
     this.promoCode = code;
     this.promoData = promo;
-    if (promo.type === 'percent') {
-      this.discountAmount = Math.round(this.getSubtotalARS() * promo.value / 100);
-    } else if (promo.type === 'shipping') {
+    const type = promo.type || promo.tipo;
+    const value = promo.value != null ? promo.value : promo.valor;
+    if (type === 'percent') {
+      this.discountAmount = Math.round(this.getLineasSubtotalARS() * value / 100);
+    } else if (type === 'fijo') {
+      this.discountAmount = Math.min(value, this.getLineasSubtotalARS());
+    } else if (type === 'shipping') {
       this.shippingCost = 0;
     }
     this.save();
@@ -259,6 +292,7 @@ const CartService = {
     this.discountAmount = 0;
     this.promoCode = null;
     this.promoData = null;
+    this._autoLines = [];
     this.save();
   },
 
@@ -287,10 +321,14 @@ const CartService = {
     }).join('\n');
 
     // Agregar resumen de descuento/envío si aplica
-    const subtotal = this.getSubtotalARS();
-    if (this.discountAmount > 0) {
+    const subtotal = this.getLineasSubtotalARS();
+    if (this.discountAmount > 0 && this.promoCode) {
       itemsTexto += `\n• Descuento (${this.promoCode}): -${SheetsService.formatPrecioARS(this.discountAmount)}`;
     }
+    const autoLines = this.getAutoDiscountLines();
+    autoLines.forEach(l => {
+      itemsTexto += `\n• ${l.label}: -${SheetsService.formatPrecioARS(l.monto)}`;
+    });
     if (this.shippingCost > 0) {
       itemsTexto += `\n• Envío: ${SheetsService.formatPrecioARS(this.shippingCost)}`;
     }

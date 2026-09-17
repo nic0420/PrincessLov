@@ -7,6 +7,8 @@ const AdminImport = {
   pendingData: null,
   workbook: null,
 
+  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
+
   init() {
     const zone = document.getElementById('upload-zone');
     const input = document.getElementById('file-input');
@@ -150,11 +152,19 @@ const AdminImport = {
     head.innerHTML = '';
     stats.innerHTML = `<span style="font-size:0.85rem; color:var(--texto-secundario);">El archivo tiene ${sheetNames.length} hojas. Seleccioná cuál importar:</span>`;
 
-    body.innerHTML = sheetNames.map(name => `
-      <tr style="cursor:pointer;" onclick="AdminImport.processSheet('${name.replace(/'/g, "\\'")}', '${filename}')">
-        <td style="font-weight:600; font-size:1rem; padding:1rem;">📄 ${name}</td>
+    body.innerHTML = sheetNames.map((name, idx) => `
+      <tr style="cursor:pointer;" data-sheet-idx="${idx}" data-filename="${this.esc(filename)}">
+        <td style="font-weight:600; font-size:1rem; padding:1rem;">📄 ${this.esc(name)}</td>
       </tr>
     `).join('');
+
+    // Bind click handlers safely
+    body.querySelectorAll('tr[data-sheet-idx]').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const idx = parseInt(tr.getAttribute('data-sheet-idx'));
+        this.processSheet(sheetNames[idx], filename);
+      });
+    });
 
     preview.style.display = 'block';
     preview.scrollIntoView({ behavior: 'smooth' });

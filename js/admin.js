@@ -33,6 +33,7 @@ const AdminApp = {
       expenses: ['Gastos', 'Control de gastos del negocio'],
       financial: ['Finanzas', 'Análisis financiero'],
       content: ['Contenido', 'Categorías y textos del home'],
+      promos: ['Promociones', 'Motor de promociones'],
       settings: ['Configuración', 'Ajustes del sistema'],
     };
 
@@ -52,6 +53,7 @@ const AdminApp = {
       case 'expenses': AdminExpenses.render(); break;
       case 'financial': AdminDashboard.renderFinancial(); break;
       case 'content': AdminContent.render(); break;
+      case 'promos': AdminPromos.render(); break;
       case 'settings': AdminSettings.render(); break;
     }
   },

@@ -59,7 +59,8 @@ const AdminContent = {
     if (!id) { AdminApp.toast('Nombre inválido', 'error'); return; }
     const cats = AdminData.getEffectiveCategorias();
     if (cats.some(c=>c.id===id)) { AdminApp.toast('Ya existe una categoría con ese ID', 'error'); return; }
-    cats.splice(cats.length-1, 0, { id, nombre, icon, grupo }); // antes de "todos"
+    const todosIdx = cats.findIndex(c => c.id === 'todos');
+    if (todosIdx >= 0) cats.splice(todosIdx, 0, { id, nombre, icon, grupo }); else cats.push({ id, nombre, icon, grupo });
     AdminData.saveCategorias(cats);
     document.getElementById('new-cat-nombre').value = '';
     document.getElementById('new-cat-icon').value = '';

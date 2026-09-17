@@ -658,6 +658,29 @@ input, select { font-family: inherit; font-size: inherit; }
 .badge--new { background: var(--text); color: var(--surface); }
 .badge--sale { background: var(--primary); color: #fff; }
 .badge--low { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+.badge--flash { background: #e11d48; color: #fff; }
+.badge--preventa { background: #7c3aed; color: #fff; }
+.badge--combo { background: #b45309; color: #fff; }
+.badge--2x1 { background: #047857; color: #fff; }
+
+.promo-countdown {
+  position: absolute; top: var(--sp-3); right: var(--sp-3); z-index: 2;
+  padding: 4px 10px;
+  font-size: 11px; font-weight: 600;
+  color: #e11d48; background: #fff;
+  border: 1px solid #e11d48; border-radius: var(--radius-sm);
+}
+
+.promos-banner {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2);
+  margin: var(--sp-4) 0;
+  padding: var(--sp-3);
+  background: linear-gradient(90deg, #e11d48, #be123c);
+  color: #fff; border-radius: var(--radius);
+  align-items: center; justify-content: center;
+}
+.promo-banner__chip { font-weight: 600; font-size: 13px; }
+.promo-banner__chip b { margin-left: 4px; font-variant-numeric: tabular-nums; }
 
 .product-card__info { padding: var(--sp-4) var(--sp-2) var(--sp-2); text-align: left; }
 .product-card__cat {
@@ -1076,6 +1099,15 @@ input, select { font-family: inherit; font-size: inherit; }
 .product-modal__badge--new { background: var(--text); color: var(--surface); }
 .product-modal__badge--oferta { background: var(--primary); color: #fff; }
 .product-modal__badge--bestseller { background: var(--pink-500); color: #fff; }
+.product-modal__badge--flash { background: #e11d48; color: #fff; }
+.product-modal__badge--preventa { background: #7c3aed; color: #fff; }
+.product-modal__badge--combo { background: #b45309; color: #fff; }
+.product-modal__badge--2x1 { background: #047857; color: #fff; }
+
+.product-modal__preventa-note {
+  display: inline-block; margin-top: var(--sp-2);
+  font-size: 12px; color: #7c3aed; font-weight: 600;
+}
 .product-modal__title { font-family: var(--font-serif); font-size: 30px; font-weight: 500; line-height: 1.1; margin-bottom: var(--sp-2); }
 .product-modal__sku { font-size: 11px; color: var(--text-muted); margin-bottom: var(--sp-4); }
 .product-modal__price-row { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); }

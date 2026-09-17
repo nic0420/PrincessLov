@@ -50,6 +50,10 @@
         <span class="nav-icon">🎨</span>
         <span class="nav-label">Contenido</span>
       </a>
+      <a href="#" class="nav-item" data-section="promos" onclick="return AdminApp.navigate('promos')">
+        <span class="nav-icon">🚀</span>
+        <span class="nav-label">Promociones</span>
+      </a>
       <a href="#" class="nav-item" data-section="settings" onclick="return AdminApp.navigate('settings')">
         <span class="nav-icon">⚙️</span>
         <span class="nav-label">Configuración</span>
@@ -538,6 +542,15 @@
         </div>
       </section>
 
+      <!-- ===== PROMOS ===== -->
+      <section id="section-promos" class="admin-section">
+        <div class="admin-section-head">
+          <h2 class="admin-section-title">🚀 Motor de Promociones</h2>
+          <p class="admin-section-sub" style="color:var(--texto-secundario); font-size:0.85rem;">Combos, 2x1, códigos de descuento, flash sales con cuenta regresiva y preventas. Los cambios se aplican a la tienda al instante.</p>
+        </div>
+        <div id="promos-root"></div>
+      </section>
+
       <!-- ===== SETTINGS ===== -->
       <section id="section-settings" class="admin-section">
         <div class="chart-card">
@@ -973,6 +986,8 @@
 <script src="js/admin-expenses.js"></script>
 <script src="js/admin-import.js"></script>
 <script src="js/admin-content.js"></script>
+<script src="js/promos.js"></script>
+<script src="js/admin-promos.js"></script>
 <script src="js/admin-settings.js"></script>
 
 </body>

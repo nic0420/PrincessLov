@@ -116,6 +116,24 @@ const CONFIG = {
   promos: {
     // Umbral en ARS para envío gratis del carrito (>= este monto = envío sin cargo)
     envioGratisUmbralARS: 150000,
+
+    // ---- MOTOR DE PROMOCIONES (Fase 2) ----
+    // Se editan desde el panel admin (⚠️ Promociones). Si no hay overrides,
+    // la tienda usa estos defaults. Estructura:
+    // cupones:   { id, codigo, tipo: 'percent'|'fijo'|'shipping', valor, usosMax, activo, desc }
+    // flashSales:{ id, nombre, descuento (%), desde, hasta (ISO), categorias[] (vacío = todas), activo }
+    // combos:    { id, nombre, descripcion, productoIds[], precioUSD, activo }
+    // dosPorUno: { id, nombre, categorias[] (vacío = todas), activo }
+    // preventas: { id, productoId, precioUSD, fechaLanzamiento (ISO), activo }
+    cupones: [
+      { id: 'cup-welcome10', codigo: 'WELCOME10', tipo: 'percent', valor: 10, usosMax: 1000, activo: true, desc: '10% de descuento' },
+      { id: 'cup-princess20', codigo: 'PRINCESS20', tipo: 'percent', valor: 20, usosMax: 1000, activo: true, desc: '20% de descuento' },
+      { id: 'cup-enviogratis', codigo: 'ENVIOGRATIS', tipo: 'shipping', valor: 0, usosMax: 1000, activo: true, desc: 'Envío gratis' },
+    ],
+    flashSales: [],
+    combos: [],
+    dosPorUno: [],
+    preventas: [],
   },
 
   categorias: [

@@ -3,6 +3,8 @@
    ============================================ */
 
 const AdminExpenses = {
+  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
+
   render() {
     this.renderList();
   },
@@ -37,10 +39,10 @@ const AdminExpenses = {
           <div style="display:flex; align-items:center; gap:1rem; padding:0.75rem 0; border-bottom:1px solid var(--gris-200);">
             <span style="font-size:1.2rem;">${this.getCatIcon(e.categoria)}</span>
             <div style="flex:1;">
-              <div style="font-weight:600; font-size:0.9rem;">${e.concepto}</div>
+              <div style="font-weight:600; font-size:0.9rem;">${this.esc(e.concepto)}</div>
               <div style="font-size:0.8rem; color:var(--texto-secundario);">
-                ${AdminApp.formatDate(e.fecha)} · <span class="badge" style="font-size:0.7rem;">${e.categoria}</span>
-                ${e.notas ? ' · ' + e.notas : ''}
+                ${AdminApp.formatDate(e.fecha)} · <span class="badge" style="font-size:0.7rem;">${this.esc(e.categoria)}</span>
+                ${e.notas ? ' · ' + this.esc(e.notas) : ''}
               </div>
             </div>
             <strong style="color:#EF4444; font-size:0.95rem;">-${AdminData.formatARS(e.monto)}</strong>

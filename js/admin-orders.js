@@ -6,6 +6,8 @@ const AdminOrders = {
   searchQuery: '',
   filterStatus: '',
 
+  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
+
   render() {
     this.populateFilters();
     this.renderList();
@@ -82,14 +84,14 @@ const AdminOrders = {
       const estado = ADMIN_CONFIG.estadosPedido.find(ep => ep.id === o.estado) || ADMIN_CONFIG.estadosPedido[0];
       const items = (o.items || []).map(i => {
         const prod = AdminData.getProduct(i.productoId);
-        return `${prod?.nombre || i.productoId} x${i.cantidad}`;
+        return `${this.esc(prod?.nombre || i.productoId)} x${i.cantidad}`;
       }).join(', ');
 
       return `
         <div class="order-card" style="border-left:4px solid ${estado.color};">
           <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.75rem;">
             <div>
-              <strong style="font-size:1rem;">${o.cliente || 'Sin cliente'}</strong>
+              <strong style="font-size:1rem;">${this.esc(o.cliente || 'Sin cliente')}</strong>
               <span style="font-size:0.8rem; color:var(--texto-secundario); margin-left:0.5rem;">#${o.id?.slice(-6).toUpperCase()}</span>
             </div>
             <span class="badge" style="background:${estado.color}; color:white;">${estado.icon} ${estado.label}</span>

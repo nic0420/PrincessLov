@@ -326,7 +326,10 @@ const ClubPrince = {
     };
     if (typeof CartService !== 'undefined') {
       CartService.addItem(producto);
-      if (typeof App !== 'undefined' && App.openCart) App.openCart();
+      if (typeof App !== 'undefined') {
+        App.showToast?.(`Agregado: ${producto.nombre}`);
+        if (App.openCart) App.openCart();
+      }
     }
   },
 

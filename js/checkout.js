@@ -21,7 +21,7 @@ const CheckoutService = {
       : null;
     const envioSeleccionado = this.envioSeleccionado;
 
-    const subtotalARS = CartService.getSubtotalARS();
+    const subtotalARS = CartService.getLineasSubtotalARS();
     const descuentoARS = CartService.getDiscountAmount() || 0;
     const totalEnvio = envioSeleccionado ? envioSeleccionado.precio : 0;
     const totalFinal = CartService.getTotalARS();

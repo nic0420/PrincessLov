@@ -3182,3 +3182,80 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================
+   PROMOS (Motor de promociones)
+   ========================================== */
+.promos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 1.25rem;
+}
+.promos-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.promos-card__head h3 {
+  font-size: 1rem;
+  color: var(--borgona-300);
+}
+.promos-count { color: var(--texto-secundario); font-weight: 400; }
+.promos-card__head p { margin: 0.25rem 0 0; font-size: 0.78rem; color: var(--texto-secundario); }
+.promos-card__rows { display: flex; flex-direction: column; gap: 0.75rem; }
+.promos-row {
+  border: 1px solid var(--gris-200);
+  border-radius: var(--radio-md);
+  padding: 0.75rem;
+  background: #fff;
+}
+.promos-row__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.promos-row__grid--between { align-items: end; }
+.promos-field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem; color: var(--texto-secundario); font-weight: 600; }
+.promos-field--grow { flex: 1; }
+.promos-field--check { flex-direction: row; align-items: center; gap: 0.35rem; font-weight: 500; }
+.promos-field input,
+.promos-field select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--gris-200);
+  border-radius: var(--radio-sm);
+  font-size: 0.85rem;
+  color: var(--texto);
+  background: #fff;
+}
+.promos-field input:focus,
+.promos-field select:focus { outline: 2px solid var(--boro-100); border-color: var(--borgona-300); }
+.promos-label { display: block; margin: 0.25rem 0; }
+.promos-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.promo-chip {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.74rem;
+  border-radius: 999px;
+  border: 1px solid var(--gris-200);
+  background: var(--gris-100);
+  color: var(--texto-secundario);
+  cursor: pointer;
+  user-select: none;
+}
+.promo-chip.is-on {
+  background: var(--borgona-300);
+  border-color: var(--borgona-300);
+  color: #fff;
+}
+.promos-empty { font-size: 0.82rem; color: var(--texto-secundario); font-style: italic; }
+.promos-persist {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--gris-200);
+}
+.btn-danger { background: #fff; color: #DC2626; border: 1px solid #FECACA; }
+.btn-danger:hover { background: #FEF2F2; }

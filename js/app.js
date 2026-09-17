@@ -16,6 +16,7 @@ const App = {
 
       CartService.init();
       CartService.onChange(() => this.actualizarUI());
+      CartService.sincronizarStock();
 
       this.renderContenidoCustom?.();
       this.renderDolarTicker();
@@ -28,6 +29,11 @@ const App = {
       this.renderCartSidebar();
       this.actualizarUI();
       this.setupWhatsAppLink();
+      this.renderFlashBanner();
+      if (typeof PromoEngine !== 'undefined') {
+        PromoEngine.apply();
+        PromoEngine.iniciarTicker();
+      }
 
       // Verificar retorno de Mercado Pago (back_url)
       CheckoutService.checkPaymentReturn?.();
@@ -42,7 +48,7 @@ const App = {
   /* ---------- DÓLAR TICKER ---------- */
   renderDolarTicker() {
     const el = document.getElementById('dolar-valor');
-    if (el) el.textContent = '$' + SheetsService.cotizacionDolar.toLocaleString('es-AR');
+    if (el && SheetsService.cotizacionDolar != null) el.textContent = '$' + SheetsService.cotizacionDolar.toLocaleString('es-AR');
   },
 
   /* ---------- SIDEBAR DRAWER FILTERS ---------- */
@@ -200,17 +206,28 @@ const App = {
     if (emptyEl) emptyEl.style.display = 'none';
 
     grid.innerHTML = productos.map(p => {
-      const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
+      const basePrecio = SheetsService.calcularPrecioARS(p.precioUSD);
+      const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(p) : basePrecio;
       const sinStock = p.stock <= 0;
+
       let badge = '';
-      if (p.tags.includes('nuevo')) badge = '<span class="badge badge--new">Nuevo</span>';
+      const promoBadges = (typeof PromoEngine !== 'undefined' && PromoEngine.badgePara) ? PromoEngine.badgePara(p) : [];
+      if (promoBadges.length) {
+        badge = promoBadges.map(b => `<span class="badge ${b.clase}">${b.texto}</span>`).join('');
+      } else if (p.tags.includes('nuevo')) badge = '<span class="badge badge--new">Nuevo</span>';
       else if (p.tags.includes('oferta')) badge = '<span class="badge badge--sale">Oferta</span>';
       else if (sinStock) badge = '<span class="badge badge--low">Pocas unidades</span>';
+
+      const flashBadge = promoBadges.find(b => b.hasta);
+      const countdown = flashBadge
+        ? `<span class="promo-countdown" data-countdown="${flashBadge.hasta}">⏳ ${PromoEngine.restanteHumano(flashBadge.hasta)}</span>`
+        : '';
 
       return `
         <article class="product-card" data-id="${p.id}" role="listitem" tabindex="0" onclick="App.openProductModal('${p.id}')">
           <div class="product-card__media">
             ${badge}
+            ${countdown}
             <img class="product-card__image" src="${escHtml(p.imagen)}" alt="${escHtml(p.nombre)}"
                  loading="lazy"
                  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22><rect width=%22300%22 height=%22400%22 fill=%22%23eedbd8%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239c684c%22 font-size=%2216%22>PrincessLov</text></svg>'">
@@ -222,8 +239,8 @@ const App = {
             <div class="product-card__cat">${escHtml(p.categoriaOriginal)}</div>
             <h3 class="product-card__name">${escHtml(p.nombre)}</h3>
             <div class="product-card__prices">
-              ${p.precioOferta && p.precioOferta < precioARS
-                ? `<span class="price price--old">${SheetsService.formatPrecioARS(precioARS)}</span><span class="price price--current">${SheetsService.formatPrecioARS(p.precioOferta)}</span>`
+              ${precioARS < basePrecio
+                ? `<span class="price price--old">${SheetsService.formatPrecioARS(basePrecio)}</span><span class="price price--current">${SheetsService.formatPrecioARS(precioARS)}</span>`
                 : `<span class="price price--current">${SheetsService.formatPrecioARS(precioARS)}</span>`}
             </div>
             <div class="product-card__stock ${sinStock ? 'product-card__stock--low' : ''}">
@@ -233,6 +250,8 @@ const App = {
         </article>
       `;
     }).join('');
+
+    if (grid.querySelector('[data-countdown]') && typeof PromoEngine !== 'undefined') PromoEngine.iniciarTicker();
 
     // Delegación quick-add (no abre modal)
     grid.querySelectorAll('.product-card__quick').forEach(btn => {
@@ -285,6 +304,9 @@ const App = {
     const badgesEl = document.getElementById('product-modal-badges');
     if (badgesEl) {
       const badges = [];
+      const promoBadges = (typeof PromoEngine !== 'undefined' && PromoEngine.badgePara) ? PromoEngine.badgePara(producto) : [];
+      const promoModalClases = { 'badge--flash': 'product-modal__badge--flash', 'badge--preventa': 'product-modal__badge--preventa', 'badge--combo': 'product-modal__badge--combo', 'badge--2x1': 'product-modal__badge--2x1' };
+      promoBadges.forEach(b => badges.push(`<span class="product-modal__badge ${promoModalClases[b.clase] || b.clase}">${b.texto}</span>`));
       if (producto.tags?.includes('nuevo')) badges.push('<span class="product-modal__badge product-modal__badge--new">Nuevo</span>');
       if (producto.tags?.includes('oferta')) badges.push('<span class="product-modal__badge product-modal__badge--oferta">Oferta</span>');
       if (producto.destacado) badges.push('<span class="product-modal__badge product-modal__badge--bestseller">Destacado</span>');
@@ -308,10 +330,15 @@ const App = {
     // Price
     const priceRowEl = document.getElementById('product-modal-price-row');
     if (priceRowEl) {
-      const precioARS = producto.precioARSManual || SheetsService.calcularPrecioARS(producto.precioUSD);
+      const basePrecio = producto.precioARSManual || SheetsService.calcularPrecioARS(producto.precioUSD);
+      const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(producto) : basePrecio;
       let priceHtml = `<span class="product-modal__price">${SheetsService.formatPrecioARS(precioARS)}</span>`;
-      if (producto.precioOferta && producto.precioOferta < precioARS) {
-        priceHtml = `<span class="product-modal__price-old">${SheetsService.formatPrecioARS(precioARS)}</span> <span class="product-modal__price">${SheetsService.formatPrecioARS(producto.precioOferta)}</span> <span class="product-modal__discount-badge">-${Math.round((1 - producto.precioOferta / precioARS) * 100)}%</span>`;
+      if (precioARS < basePrecio) {
+        const pct = Math.round((1 - precioARS / basePrecio) * 100);
+        priceHtml = `<span class="product-modal__price-old">${SheetsService.formatPrecioARS(basePrecio)}</span> <span class="product-modal__price">${SheetsService.formatPrecioARS(precioARS)}</span> <span class="product-modal__discount-badge">-${pct}%</span>`;
+      }
+      if (typeof PromoEngine !== 'undefined' && PromoEngine.preventaDeProducto && PromoEngine.preventaDeProducto(producto)) {
+        priceHtml += `<br><span class="product-modal__preventa-note">🔖 Preventa: precio especial. Te lo reservamos y lo despachamos en el lanzamiento.</span>`;
       }
       priceRowEl.innerHTML = priceHtml;
     }
@@ -490,6 +517,7 @@ const App = {
       return;
     }
     CartService.addItem(producto);
+    this.showToast(`Agregado: ${producto.nombre}`);
   },
 
   buyViaWhatsAppFromModal() {
@@ -510,7 +538,7 @@ const App = {
       variantText = ` - Color: ${selectedColor}, Talle: ${selectedTalle}`;
     }
 
-    const precioARS = producto.precioARSManual || SheetsService.calcularPrecioARS(producto.precioUSD);
+    const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(producto) : (producto.precioARSManual || SheetsService.calcularPrecioARS(producto.precioUSD));
     const texto = `Hola! Me interesa: ${producto.nombre}${variantText} - ${SheetsService.formatPrecioARS(precioARS)}`;
     const url = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent(texto)}`;
     window.open(url, '_blank');
@@ -531,6 +559,22 @@ const App = {
   },
 
   /* ---------- CARRITO ---------- */
+  renderFlashBanner() {
+    const banner = document.getElementById('promos-banner');
+    if (!banner || typeof PromoEngine === 'undefined' || !PromoEngine.config) return;
+    const flashes = PromoEngine.flashActiva();
+    if (!flashes.length) {
+      banner.style.display = 'none';
+      return;
+    }
+    const chips = flashes.filter(f => f.hasta).map(f =>
+      `<span class="promo-banner__chip">⚡ ${PromoEngine.esc(f.nombre)} −${f.descuento}% <b data-countdown="${f.hasta}">⏳ ${PromoEngine.restanteHumano(f.hasta)}</b></span>`
+    ).join('');
+    banner.innerHTML = chips;
+    banner.style.display = 'flex';
+    if (banner.querySelector('[data-countdown]')) PromoEngine.iniciarTicker();
+  },
+
   renderCartSidebar() {
     const itemsContainer = document.getElementById('cart-items');
     const totalsEl = document.getElementById('cart-totals');
@@ -539,9 +583,6 @@ const App = {
     if (!itemsContainer) return;
 
     const items = CartService.items;
-
-    // Sincroniza stock/cantidades con datos actuales (avisos entre sesiones)
-    CartService.sincronizarStock();
 
     // Header count
     if (headerCountEl) {
@@ -571,7 +612,7 @@ const App = {
       const discount = item.descuento || 0;
 
       return `
-        <article class="cart-item" data-id="${item.id}" role="listitem">
+        <article class="cart-item" data-id="${item.key || item.id}" role="listitem">
           <div class="cart-item__media">
             <img class="cart-item__image" src="${escHtml(item.imagen)}" alt="${escHtml(item.nombre)}"
                  loading="lazy"
@@ -590,11 +631,11 @@ const App = {
             </div>
             <div class="cart-item__qty">
               <div class="qty-selector" role="group" aria-label="Cantidad de ${escHtml(item.nombre)}">
-                <button class="qty-btn" data-action="minus" data-id="${item.id}" aria-label="Disminuir cantidad" ${item.cantidad <= 1 ? 'disabled' : ''}>−</button>
-                <input type="number" class="qty-input" data-id="${item.id}" value="${item.cantidad}" min="1" max="${Math.max(stock, 1)}" aria-label="Cantidad" readonly>
-                <button class="qty-btn" data-action="plus" data-id="${item.id}" aria-label="Aumentar cantidad" ${stock <= 0 || item.cantidad >= stock ? 'disabled' : ''}>+</button>
+                <button class="qty-btn" data-action="minus" data-id="${item.key || item.id}" aria-label="Disminuir cantidad" ${item.cantidad <= 1 ? 'disabled' : ''}>−</button>
+                <input type="number" class="qty-input" data-id="${item.key || item.id}" value="${item.cantidad}" min="1" max="${Math.max(stock, 1)}" aria-label="Cantidad" readonly>
+                <button class="qty-btn" data-action="plus" data-id="${item.key || item.id}" aria-label="Aumentar cantidad" ${stock <= 0 || item.cantidad >= stock ? 'disabled' : ''}>+</button>
               </div>
-              <button class="cart-item__remove" data-action="remove" data-id="${item.id}" aria-label="Eliminar ${escHtml(item.nombre)}" title="Eliminar">
+              <button class="cart-item__remove" data-action="remove" data-id="${item.key || item.id}" aria-label="Eliminar ${escHtml(item.nombre)}" title="Eliminar">
                 <span aria-hidden="true">🗑️</span>
               </button>
             </div>
@@ -604,7 +645,7 @@ const App = {
     }).join('');
 
     // Totals breakdown
-    const subtotal = CartService.getSubtotalARS();
+    const subtotal = CartService.getLineasSubtotalARS();
     const shipping = CartService.getShippingCost() || 0;
     const discount = CartService.getDiscountAmount() || 0;
     const total = CartService.getTotalARS();
@@ -702,14 +743,9 @@ const App = {
     const code = input.value.trim().toUpperCase();
     if (!code) return;
 
-    // Simulated promo validation (replace with real API call)
-    const validPromos = {
-      'WELCOME10': { type: 'percent', value: 10, desc: '10% de descuento' },
-      'ENVIOGRATIS': { type: 'shipping', value: 0, desc: 'Envío gratis' },
-      'PRINCESS20': { type: 'percent', value: 20, desc: '20% de descuento' }
-    };
+    // Cupones del Motor de Promociones (gestionables desde el admin)
+    const promo = (typeof PromoEngine !== 'undefined' && PromoEngine.validarCupon) ? PromoEngine.validarCupon(code) : null;
 
-    const promo = validPromos[code];
     if (promo) {
       CartService.applyPromo(code, promo);
       messageEl.textContent = `✓ ${promo.desc} aplicado`;
@@ -770,7 +806,7 @@ const App = {
     }
 
     grid.innerHTML = recommended.map(p => {
-      const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
+      const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(p) : SheetsService.calcularPrecioARS(p.precioUSD);
       return `
         <button class="cart__cross-sell-item" onclick="App.quickAdd('${p.id}')" aria-label="Agregar ${escHtml(p.nombre)} - ${SheetsService.formatPrecioARS(precioARS)}">
           <img class="cart__cross-sell-img" src="${escHtml(p.imagen)}" alt="" loading="lazy"
@@ -854,7 +890,8 @@ const App = {
       document.body.classList.remove('no-scroll');
       const input = document.getElementById('search-input');
       if (input) input.value = '';
-      document.getElementById('search-results').innerHTML = '';
+      const resultsEl = document.getElementById('search-results');
+      if (resultsEl) resultsEl.innerHTML = '';
     }
   },
 
@@ -874,7 +911,7 @@ const App = {
         return;
       }
       resultsEl.innerHTML = results.slice(0, 8).map(p => {
-        const precioARS = SheetsService.calcularPrecioARS(p.precioUSD);
+        const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(p) : SheetsService.calcularPrecioARS(p.precioUSD);
         return `
           <button class="search__result" onclick="App.toggleSearch(); App.openProductModal('${p.id}');" aria-label="${escHtml(p.nombre)} - ${SheetsService.formatPrecioARS(precioARS)}">
             <img class="search__result-img" src="${escHtml(p.imagen)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2248%22 height=%2264%22><rect width=%2248%22 height=%2264%22 fill=%22%23eedbd8%22/></svg>'">
@@ -1156,7 +1193,7 @@ document.addEventListener('click', (e) => {
     const btn = e.target.closest('.qty-btn');
     const id = btn.dataset.id;
     const action = btn.dataset.action;
-    const item = CartService.items.find(i => i.id === id);
+    const item = CartService.items.find(i => (i.key === id || i.id === id));
     if (item) {
       if (action === 'plus') CartService.updateQuantity(id, item.cantidad + 1);
       else if (action === 'minus') CartService.updateQuantity(id, item.cantidad - 1);
