@@ -736,6 +736,13 @@ input, select { font-family: inherit; font-size: inherit; }
 .grid-empty__icon { font-size: 48px; opacity: 0.3; margin-bottom: var(--sp-3); }
 .grid-empty__title { font-family: var(--font-serif); font-size: 22px; font-weight: 400; color: var(--text); margin-bottom: var(--sp-2); }
 .grid-empty__btn { margin-top: var(--sp-4); }
+.grid-empty__cats { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: center; margin: var(--sp-4) 0; }
+.grid-empty__cat-btn {
+  padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer;
+  transition: all var(--base);
+}
+.grid-empty__cat-btn:hover { border-color: var(--primary); color: var(--primary); }
 
 /* ============================================================
    BUTTONS

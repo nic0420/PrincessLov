@@ -218,7 +218,7 @@ const AdminDashboard = {
   },
 
   renderStockAlerts() {
-    const lowStock = AdminData.getLowStockProducts(5);
+    const lowStock = AdminData.getLowStockProducts(3);
     const card = document.getElementById('stock-alerts-card');
     const list = document.getElementById('stock-alerts-list');
     if (!card || !list) return;
@@ -229,9 +229,12 @@ const AdminDashboard = {
     }
 
     card.style.display = 'block';
+    // Badge de conteo en el título
+    const title = card.querySelector('h3');
+    if (title) title.innerHTML = `⚠️ Alertas de Stock Bajo <span style="background:#EF4444;color:#fff;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:6px;">${lowStock.length}</span>`;
     list.innerHTML = lowStock.map(p => `
       <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0; border-bottom:1px solid var(--gris-200);">
-        <span style="color:#EF4444; font-weight:700;">⚠️</span>
+        <span style="color:${p.stock === 0 ? '#EF4444' : '#F59E0B'}; font-weight:700;">${p.stock === 0 ? '🚫' : '⚠️'}</span>
         <span style="flex:1; font-size:0.85rem;">${p.nombre}</span>
         <span style="font-size:0.8rem; color:${p.stock === 0 ? '#EF4444' : '#F59E0B'}; font-weight:600;">
           ${p.stock === 0 ? 'Sin stock' : `Solo ${p.stock} u.`}

@@ -132,7 +132,7 @@
       </article>
       <article class="hero__slide" data-slide="1">
         <div class="hero__media">
-          <img src="assets/conjunto-flores-rosa.jpg" alt="Lencería floral" loading="eager">
+          <img src="assets/conjunto-flores-rosa.jpg" alt="Lencería floral" loading="lazy">
         </div>
         <div class="hero__content">
           <span class="hero__kicker" data-reveal>Encaje &amp; Feminidad</span>
@@ -143,7 +143,7 @@
       </article>
       <article class="hero__slide" data-slide="2">
         <div class="hero__media">
-          <img src="assets/pijama-corazones-negro.jpg" alt="Pijama de corazones" loading="eager">
+          <img src="assets/pijama-corazones-negro.jpg" alt="Pijama de corazones" loading="lazy">
         </div>
         <div class="hero__content">
           <span class="hero__kicker" data-reveal>Descanso con estilo</span>
@@ -254,7 +254,7 @@
       </header>
       <div class="cat-showcase__grid">
         <a href="#productos" class="cat-card cat-card--large" onclick="App.filtrarCategoria('conjuntos'); ComponentReveal.scrollToProducts(); return false;" data-reveal>
-          <img src="assets/conjunto-deportivo-borgona.jpg" alt="Conjuntos">
+          <img src="assets/conjunto-deportivo-borgona.jpg" alt="Conjuntos" loading="lazy">
           <div class="cat-card__overlay">
             <span class="cat-card__icon" aria-hidden="true">👚</span>
             <h3 class="cat-card__title">Conjuntos</h3>
@@ -262,14 +262,14 @@
           </div>
         </a>
         <a href="#productos" class="cat-card" onclick="App.filtrarCategoria('pijamas'); ComponentReveal.scrollToProducts(); return false;" data-reveal>
-          <img src="assets/pijama-corazones-negro.jpg" alt="Pijamas">
+          <img src="assets/pijama-corazones-negro.jpg" alt="Pijamas" loading="lazy">
           <div class="cat-card__overlay">
             <h3 class="cat-card__title">Pijamas</h3>
             <span class="cat-card__link-under">Comprar →</span>
           </div>
         </a>
         <a href="#productos" class="cat-card" onclick="App.filtrarCategoria('ropa-interior'); ComponentReveal.scrollToProducts(); return false;" data-reveal>
-          <img src="assets/conjunto-flores-rosa.jpg" alt="Lencería">
+          <img src="assets/conjunto-flores-rosa.jpg" alt="Lencería" loading="lazy">
           <div class="cat-card__overlay">
             <h3 class="cat-card__title">Lencería</h3>
             <span class="cat-card__link-under">Comprar →</span>
@@ -374,8 +374,11 @@
     <!-- Empty state -->
     <div id="productos-empty" class="grid-empty" style="display:none;" role="status">
       <div class="grid-empty__icon" aria-hidden="true">🔍</div>
-      <p class="grid-empty__title">No se encontraron productos</p>
-      <p>Probá cambiar los filtros o la búsqueda</p>
+      <p class="grid-empty__title">No encontramos lo que buscás</p>
+      <p>Probá cambiar los filtros o explorá nuestras categorías:</p>
+      <div class="grid-empty__cats" id="empty-categories">
+        <!-- Renderizado dinámico -->
+      </div>
       <button class="btn btn--primary grid-empty__btn" onclick="App.filtrarCategoria('todos'); App.setStockFilter('all');">Ver todos los productos</button>
     </div>
   </main>
@@ -416,7 +419,7 @@
   <section class="promo-band" data-reveal>
     <div class="container promo-band__inner">
       <div class="promo-band__img">
-        <img src="assets/conjunto-flores-rosa.jpg" alt="Oferta especial">
+        <img src="assets/conjunto-flores-rosa.jpg" alt="Oferta especial" loading="lazy">
       </div>
       <div class="promo-band__content">
         <span class="promo-band__kicker">Ofertas limitadas</span>

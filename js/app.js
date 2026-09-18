@@ -279,7 +279,19 @@ const App = {
 
     if (productos.length === 0) {
       grid.style.display = 'none';
-      if (emptyEl) emptyEl.style.display = 'block';
+      if (emptyEl) {
+        emptyEl.style.display = 'block';
+        // Poblar sugerencias de categorías
+        const catsEl = document.getElementById('empty-categories');
+        if (catsEl) {
+          const cats = (typeof SheetsService !== 'undefined' && SheetsService.obtenerCategoriasConConteo)
+            ? SheetsService.obtenerCategoriasConConteo().filter(c => c.id !== 'todos' && c.conteo > 0)
+            : [];
+          catsEl.innerHTML = cats.slice(0, 6).map(c =>
+            `<button class="grid-empty__cat-btn" onclick="App.filtrarCategoria('${c.id}')">${c.icon ? c.icon + ' ' : ''}${c.nombre}</button>`
+          ).join('');
+        }
+      }
       return;
     }
 

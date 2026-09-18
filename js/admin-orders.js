@@ -279,4 +279,56 @@ const AdminOrders = {
     URL.revokeObjectURL(url);
     AdminApp.toast('CSV de pedidos exportado');
   },
+
+  exportPDF() {
+    const orders = AdminData.getOrders();
+    if (orders.length === 0) {
+      AdminApp.toast('No hay pedidos para exportar', 'error');
+      return;
+    }
+
+    const estadoColor = { pendiente: '#F59E0B', enviado: '#3B82F6', completado: '#10B981', cancelado: '#EF4444' };
+    const rows = orders.map(o => `
+      <tr>
+        <td>${o.id || ''}</td>
+        <td>${o.fecha || ''}</td>
+        <td>${o.cliente || ''}</td>
+        <td>${o.telefono || ''}</td>
+        <td><span style="background:${estadoColor[o.estado] || '#6B7280'};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">${o.estado || ''}</span></td>
+        <td>${o.medioPago || ''}</td>
+        <td style="text-align:right;">$${Number(o.total || 0).toLocaleString('es-AR')}</td>
+      </tr>`).join('');
+
+    const totalGeneral = orders.reduce((s, o) => s + Number(o.total || 0), 0);
+    const now = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Pedidos PrincessLov - ${now}</title>
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:Arial,Helvetica,sans-serif; padding:24px; color:#1a1a1a; }
+        h1 { font-size:18px; margin-bottom:4px; }
+        .sub { font-size:12px; color:#666; margin-bottom:16px; }
+        table { width:100%; border-collapse:collapse; font-size:12px; }
+        th { background:#f3f4f6; text-align:left; padding:8px 6px; border-bottom:2px solid #d1d5db; font-weight:600; }
+        td { padding:6px; border-bottom:1px solid #e5e7eb; }
+        tr:nth-child(even) { background:#fafafa; }
+        .footer { margin-top:16px; text-align:right; font-size:13px; font-weight:600; }
+        @media print { body { padding:12px; } }
+      </style></head><body>
+      <h1>Pedidos PrincessLov</h1>
+      <p class="sub">${orders.length} pedidos | Generado: ${now}</p>
+      <table><thead><tr>
+        <th>ID</th><th>Fecha</th><th>Cliente</th><th>Tel</th><th>Estado</th><th>Pago</th><th style="text-align:right;">Total</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+      <div class="footer">Total general: $${totalGeneral.toLocaleString('es-AR')}</div>
+    </body></html>`;
+
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+    AdminApp.toast('PDF abierto para imprimir');
+  },
 };
