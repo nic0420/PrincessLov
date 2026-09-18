@@ -19,7 +19,17 @@ const CartService = {
     const saved = localStorage.getItem('princesslov_cart');
     if (saved) {
       try {
-        this.items = JSON.parse(saved);
+        const data = JSON.parse(saved);
+        if (Array.isArray(data)) {
+          this.items = data;
+        } else if (data && typeof data === 'object') {
+          this.items = data.items || [];
+          this.shippingId = data.shippingId || null;
+          this.shippingCost = data.shippingCost || 0;
+          this.discountAmount = data.discountAmount || 0;
+          this.promoCode = data.promoCode || null;
+          this.promoData = data.promoData || null;
+        }
       } catch (e) {
         this.items = [];
       }
@@ -28,10 +38,17 @@ const CartService = {
   },
 
   /**
-   * Guarda el carrito en localStorage
+   * Guarda el carrito completo en localStorage
    */
   save() {
-    localStorage.setItem('princesslov_cart', JSON.stringify(this.items));
+    localStorage.setItem('princesslov_cart', JSON.stringify({
+      items: this.items,
+      shippingId: this.shippingId,
+      shippingCost: this.shippingCost,
+      discountAmount: this.discountAmount,
+      promoCode: this.promoCode,
+      promoData: this.promoData,
+    }));
     this.notifyListeners();
   },
 
@@ -163,6 +180,75 @@ const CartService = {
     });
     if (cambios > 0) this.save();
     return cambios;
+  },
+
+  /**
+   * Verifica stock en tiempo real contra el servidor
+   * Retorna { ok: boolean, message: string, adjusted: boolean }
+   */
+  async verifyStock() {
+    if (!this.items.length) return { ok: true, message: '', adjusted: false };
+
+    // Intentar verificar contra Apps Script (si está configurado)
+    const url = (typeof CONFIG !== 'undefined' && CONFIG.sheets?.appsScriptUrl && !CONFIG.sheets.appsScriptUrl.includes('TU_SCRIPT_ID'))
+      ? CONFIG.sheets.appsScriptUrl : null;
+
+    let stockMap = {};
+
+    if (url && typeof fetch !== 'undefined') {
+      try {
+        const ids = this.items.filter(i => !i.isClubPrince).map(i => i.id);
+        const u = new URL(url);
+        u.searchParams.set('action', 'check_stock');
+        u.searchParams.set('ids', ids.join(','));
+        const res = await fetch(u, { method: 'GET', headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') stockMap = data;
+        }
+      } catch (e) {
+        console.warn('[Cart] verifyStock remoto falló:', e.message);
+      }
+    }
+
+    // Fallback: usar stock local de SheetsService
+    if (!Object.keys(stockMap).length && typeof SheetsService !== 'undefined') {
+      this.items.forEach(item => {
+        if (item.isClubPrince) return;
+        const prod = SheetsService.obtenerProducto(item.id);
+        if (prod) stockMap[item.id] = prod.stock;
+      });
+    }
+
+    let adjusted = false;
+    const warnings = [];
+
+    this.items.forEach(item => {
+      if (item.isClubPrince) return;
+      const serverStock = stockMap[item.id];
+      if (serverStock == null) return;
+
+      if (serverStock <= 0 && !item.sinStock) {
+        item.sinStock = true;
+        item.stockAjustado = false;
+        warnings.push(`${item.nombre}: sin stock`);
+        adjusted = true;
+      } else if (item.cantidad > serverStock) {
+        item.cantidad = serverStock;
+        item.stockAjustado = true;
+        item.sinStock = false;
+        warnings.push(`${item.nombre}: ajustado a ${serverStock} u.`);
+        adjusted = true;
+      }
+    });
+
+    if (adjusted) this.save();
+
+    return {
+      ok: warnings.length === 0,
+      message: warnings.length ? `Stock actualizado: ${warnings.join(', ')}` : '',
+      adjusted,
+    };
   },
 
   /**

@@ -25,6 +25,15 @@ const App = {
       this.renderMegaMenu?.();
       this.renderShowcase?.();
       this.renderServicios?.();
+
+      // Mostrar skeletons mientras se cargan
+      this.showSkeletons(8);
+
+      // Restaurar filtros: URL tiene prioridad sobre sessionStorage
+      this._loadFromURL();
+      this._loadFilters();
+      this._applyFilterUI();
+
       this.renderProductos(SheetsService.productos);
       this.renderCartSidebar();
       this.actualizarUI();
@@ -150,6 +159,8 @@ const App = {
       }
     }
 
+    this._saveFilters();
+    this._syncURL();
     this.aplicarFiltros();
   },
 
@@ -158,6 +169,8 @@ const App = {
     document.querySelectorAll('#filter-stock .filter-btn').forEach(btn => {
       btn.classList.toggle('filter-btn--active', btn.dataset.filter === filter);
     });
+    this._saveFilters();
+    this._syncURL();
     this.aplicarFiltros();
   },
 
@@ -166,7 +179,75 @@ const App = {
     document.querySelectorAll('#filter-sort .filter-btn').forEach(btn => {
       btn.classList.toggle('filter-btn--active', btn.dataset.sort === order);
     });
+    this._saveFilters();
+    this._syncURL();
     this.aplicarFiltros();
+  },
+
+  /* ---------- FILTROS PERSISTENTES ---------- */
+  _saveFilters() {
+    try {
+      sessionStorage.setItem('pl_filters', JSON.stringify({
+        cat: this.categoriaActual,
+        stock: this.stockFilter,
+        sort: this.sortOrder,
+      }));
+    } catch {}
+  },
+
+  _loadFilters() {
+    try {
+      const raw = sessionStorage.getItem('pl_filters');
+      if (!raw) return;
+      const f = JSON.parse(raw);
+      if (f.cat && f.cat !== 'todos') this.categoriaActual = f.cat;
+      if (f.stock && f.stock !== 'all') this.stockFilter = f.stock;
+      if (f.sort && f.sort !== 'featured') this.sortOrder = f.sort;
+    } catch {}
+  },
+
+  _applyFilterUI() {
+    // Botones de categoría
+    document.querySelectorAll('#filter-categories .filter-btn').forEach(btn => {
+      btn.classList.toggle('filter-btn--active', btn.dataset.cat === this.categoriaActual);
+    });
+    document.querySelectorAll('.cat-pill').forEach(pill => {
+      const active = pill.dataset.cat === this.categoriaActual;
+      pill.classList.toggle('cat-pill--active', active);
+      pill.setAttribute('aria-pressed', active);
+    });
+    // Botones de stock
+    document.querySelectorAll('#filter-stock .filter-btn').forEach(btn => {
+      btn.classList.toggle('filter-btn--active', btn.dataset.filter === this.stockFilter);
+    });
+    // Botones de orden
+    document.querySelectorAll('#filter-sort .filter-btn').forEach(btn => {
+      btn.classList.toggle('filter-btn--active', btn.dataset.sort === this.sortOrder);
+    });
+    // Título de sección
+    const titleEl = document.getElementById('productos-title');
+    if (titleEl && this.categoriaActual !== 'todos') {
+      const cat = SheetsService.obtenerCategoriasConConteo().find(c => c.id === this.categoriaActual);
+      if (cat) titleEl.textContent = cat.nombre;
+    }
+  },
+
+  /* ---------- FILTROS EN URL ---------- */
+  _syncURL() {
+    const params = new URLSearchParams();
+    if (this.categoriaActual && this.categoriaActual !== 'todos') params.set('cat', this.categoriaActual);
+    if (this.stockFilter && this.stockFilter !== 'all') params.set('stock', this.stockFilter);
+    if (this.sortOrder && this.sortOrder !== 'featured') params.set('sort', this.sortOrder);
+    const qs = params.toString();
+    const newURL = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.replaceState({}, '', newURL);
+  },
+
+  _loadFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('cat')) this.categoriaActual = params.get('cat') || 'todos';
+    if (params.has('stock')) this.stockFilter = params.get('stock') || 'all';
+    if (params.has('sort')) this.sortOrder = params.get('sort') || 'featured';
   },
 
   /* ---------- HEADER SEARCH ---------- */
@@ -961,6 +1042,22 @@ const App = {
       el.classList.add('loading-screen--hidden');
       setTimeout(() => el.remove(), 500);
     }
+  },
+
+  showSkeletons(count = 8) {
+    const grid = document.getElementById('productos-grid');
+    if (!grid) return;
+    const skeleton = Array.from({ length: count }, () => `
+      <div class="skeleton-card">
+        <div class="skeleton-card__media"></div>
+        <div class="skeleton-card__info">
+          <div class="skeleton-card__line skeleton-card__line--short"></div>
+          <div class="skeleton-card__line skeleton-card__line--med"></div>
+          <div class="skeleton-card__line"></div>
+        </div>
+      </div>
+    `).join('');
+    grid.innerHTML = skeleton;
   },
 
   /* ---------- WHATSAPP ---------- */

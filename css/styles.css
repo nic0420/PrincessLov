@@ -704,6 +704,33 @@ input, select { font-family: inherit; font-size: inherit; }
 @media (max-width: 900px) { .product-grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-4); } }
 @media (max-width: 480px) { .product-grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); } }
 
+/* Skeleton loading cards */
+.skeleton-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.skeleton-card__media {
+  width: 100%; aspect-ratio: 3/4;
+  background: linear-gradient(110deg, #f0e8e4 30%, #faf5f2 50%, #f0e8e4 70%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+.skeleton-card__info { padding: var(--sp-3) var(--sp-2); }
+.skeleton-card__line {
+  height: 12px; border-radius: 4px; margin-bottom: var(--sp-2);
+  background: linear-gradient(110deg, #f0e8e4 30%, #faf5f2 50%, #f0e8e4 70%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+.skeleton-card__line--short { width: 60%; }
+.skeleton-card__line--med { width: 80%; }
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* Empty state */
 .grid-empty { grid-column: 1 / -1; text-align: center; padding: var(--sp-10) var(--sp-4); color: var(--text-muted); }
 .grid-empty__icon { font-size: 48px; opacity: 0.3; margin-bottom: var(--sp-3); }

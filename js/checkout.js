@@ -201,6 +201,16 @@ const CheckoutService = {
       return;
     }
 
+    // Verificar stock en tiempo real contra el servidor
+    const stockCheck = await CartService.verifyStock();
+    if (!stockCheck.ok) {
+      App.showToast(stockCheck.message + ' Revisá tu carrito.');
+      if (stockCheck.adjusted && typeof App !== 'undefined' && App.renderCartSidebar) {
+        App.renderCartSidebar();
+      }
+      return;
+    }
+
     const btn = document.getElementById('btn-mp-pay');
     if (btn) {
       btn.disabled = true;
@@ -305,7 +315,7 @@ const CheckoutService = {
     }
   },
 
-  enviarPorWhatsApp() {
+  async enviarPorWhatsApp() {
     const datos = this.obtenerDatosFormulario();
     if (!datos.nombre || !datos.telefono) {
       App.showToast('Completá al menos nombre y teléfono');
@@ -317,6 +327,16 @@ const CheckoutService = {
     }
     if (CartService.items.some(i => i.sinStock)) {
       App.showToast('Uno de los productos quedó sin stock. Revisá tu carrito.');
+      return;
+    }
+
+    // Verificar stock en tiempo real
+    const stockCheck = await CartService.verifyStock();
+    if (!stockCheck.ok) {
+      App.showToast(stockCheck.message + ' Revisá tu carrito.');
+      if (stockCheck.adjusted && typeof App !== 'undefined' && App.renderCartSidebar) {
+        App.renderCartSidebar();
+      }
       return;
     }
 
