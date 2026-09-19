@@ -7,11 +7,8 @@ const CheckoutService = {
   apiBase: '/api/mercadopago', // Vercel serverless function
 
   init() {
-    // Ya no inicializamos MP en frontend (se usa serverless)
-    // Si tenés Public Key para Payment Brick futuro:
-    // if (typeof MercadoPago !== 'undefined' && CONFIG.mercadopago.publicKey) {
-    //   this.mp = new MercadoPago(CONFIG.mercadopago.publicKey, { locale: 'es-AR' });
-    // }
+    // Checkout Pro redirige a mercadopago.com: el frontend no maneja
+    // credenciales ni SDK. Todo el cobro pasa por /api/mercadopago.
   },
 
   renderCheckout() {
@@ -196,122 +193,92 @@ const CheckoutService = {
       App.showToast('Seleccioná un método de envío');
       return;
     }
+    if (!CartService.items.length) {
+      App.showToast('Tu carrito está vacío');
+      return;
+    }
     if (CartService.items.some(i => i.sinStock)) {
       App.showToast('Uno de los productos quedó sin stock. Revisá tu carrito.');
       return;
     }
 
-    // Verificar stock en tiempo real contra el servidor
-    const stockCheck = await CartService.verifyStock();
-    if (!stockCheck.ok) {
-      App.showToast(stockCheck.message + ' Revisá tu carrito.');
-      if (stockCheck.adjusted && typeof App !== 'undefined' && App.renderCartSidebar) {
-        App.renderCartSidebar();
-      }
-      return;
+    // Las cajas del Club Prince no están en el catálogo de productos, así que
+    // el servidor no puede verificar su precio. Ese flujo se cierra por WhatsApp.
+    if (CartService._hasClubPrinceItem && CartService._hasClubPrinceItem()) {
+      App.showToast('Las cajas del Club Prince se coordinan por WhatsApp. Te llevamos ahí.');
+      return this.enviarPorWhatsApp();
     }
 
     const btn = document.getElementById('btn-mp-pay');
+    const restaurarBoton = () => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '💳 Pagar con Mercado Pago';
+      }
+    };
     if (btn) {
       btn.disabled = true;
-      btn.textContent = '⏳ Creando preferencia...';
+      btn.textContent = '⏳ Confirmando tu pedido...';
     }
 
-    const items = CartService.items.map(item => ({
-      title: item.nombre,
-      quantity: item.cantidad,
-      unit_price: item.precioARS,
-      currency_id: 'ARS',
-      picture_url: item.imagen,
-    }));
-    const envioPrecio = this.envioSeleccionado.precio;
-
-    if (envioPrecio > 0) {
-      items.push({
-        title: `Envío - ${this.envioSeleccionado.nombre}`,
-        quantity: 1,
-        unit_price: envioPrecio,
-        currency_id: 'ARS',
-      });
-    }
-
-    // Generar reference único para rastrear en webhook
-    const externalRef = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-
-    const preference = {
-      items,
-      payer: {
-        name: datos.nombre,
-        email: datos.email,
-        phone: { area_code: '', number: datos.telefono.replace(/\D/g, '') },
-        address: {
-          street_name: datos.direccion,
-          city: datos.localidad,
-          state: datos.provincia,
-        },
-      },
-      back_urls: {
-        success: window.location.origin + window.location.pathname + '?status=success&ref=' + externalRef,
-        failure: window.location.origin + window.location.pathname + '?status=failure&ref=' + externalRef,
-        pending: window.location.origin + window.location.pathname + '?status=pending&ref=' + externalRef,
-      },
-      auto_return: 'approved',
-      external_reference: externalRef,
-      metadata: {
-        cliente: datos.nombre,
-        telefono: datos.telefono,
-        email: datos.email,
-        direccion: datos.direccion,
-        localidad: datos.localidad,
-        provincia: datos.provincia,
-        medioPago: datos.medioPago,
-        metodoEnvio: this.envioSeleccionado.id,
-        envioPrecio: envioPrecio,
-      },
+    // El navegador solo dice QUÉ quiere comprar. El precio lo pone el servidor.
+    const payload = {
+      items: CartService.items.map(i => ({
+        id: i.id,
+        cantidad: i.cantidad,
+        variante: i._variant ? { color: i._variant.color, talle: i._variant.talle } : null,
+      })),
+      shippingId: this.envioSeleccionado.id,
+      promoCode: CartService.promoCode || null,
+      cliente: datos,
+      totalEsperado: CartService.getTotalARS(),
     };
 
     try {
-      App.showToast('Conectando con Mercado Pago...');
-
       const response = await fetch(`${this.apiBase}/create-preference`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preference, external_reference: externalRef }),
+        body: JSON.stringify(payload),
       });
 
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = '💳 Pagar con Mercado Pago';
-      }
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        throw new Error(err.error || `Error ${response.status}`);
+        restaurarBoton();
+
+        // 409 = el carrito ya no es válido (stock o precios cambiaron)
+        if (response.status === 409) {
+          App.showToast(data.error || 'Tu carrito cambió. Revisalo antes de pagar.');
+          await CartService.verifyStock();
+          if (App.renderCartSidebar) App.renderCartSidebar();
+          this.renderCheckout();
+          return;
+        }
+
+        throw new Error(data.error || `Error ${response.status}`);
       }
 
-      const data = await response.json();
+      if (!data.init_point) throw new Error('No recibimos el link de pago');
 
-      if (data.init_point) {
-        // Guardar reference en sesión para recuperar al volver
-        sessionStorage.setItem('mp_external_ref', externalRef);
-        sessionStorage.setItem('mp_checkout_data', JSON.stringify({
-          datos,
-          envio: this.envioSeleccionado,
-          items: CartService.items.map(i => ({ ...i })),
-        }));
-        
-        // Redirigir a Mercado Pago
-        window.location.href = data.init_point;
-      } else {
-        throw new Error('No se recibió URL de pago');
+      // Si el total cambió mientras compraba, avisamos antes de redirigir.
+      if (data.recalculado) {
+        const ok = window.confirm(
+          `El total se actualizó a ${SheetsService.formatPrecioARS(data.total)}.\n\n¿Querés continuar con el pago?`
+        );
+        if (!ok) {
+          restaurarBoton();
+          return;
+        }
       }
+
+      // Guardamos solo la referencia: el estado real lo consultamos al volver.
+      sessionStorage.setItem('mp_external_ref', data.external_reference);
+
+      window.location.href = data.init_point;
     } catch (error) {
       console.error('[Checkout] Error MercadoPago:', error);
-      App.showToast('Error al procesar el pago: ' + error.message + '. Intentá por WhatsApp.');
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = '💳 Pagar con Mercado Pago';
-      }
+      restaurarBoton();
+      App.showToast('No pudimos abrir el pago: ' + error.message + '. Probá por WhatsApp.');
     }
   },
 
@@ -344,61 +311,71 @@ const CheckoutService = {
     this.cerrarCheckout();
   },
 
-  // Método para verificar estado al volver de MP (llamar en App.init)
+  /**
+   * Se ejecuta al volver de Mercado Pago (App.init lo llama).
+   *
+   * El parámetro de la URL NO decide nada: lo consultamos al servidor, que
+   * solo marca un pedido como confirmado cuando el webhook firmado de
+   * Mercado Pago lo confirmó.
+   */
   async checkPaymentReturn() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const status = urlParams.get('status');
-    const ref = urlParams.get('ref');
-    
-    if (status && ref) {
-      // Limpiar URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-      
-      const saved = sessionStorage.getItem('mp_checkout_data');
-      if (saved) {
-        const { datos, envio, items } = JSON.parse(saved);
-        sessionStorage.removeItem('mp_checkout_data');
-        sessionStorage.removeItem('mp_external_ref');
-        
-        if (status === 'success') {
-          App.showToast('✅ ¡Pago aprobado! Tu pedido está confirmado.');
-          
-          // Crear pedido en Sheets via Apps Script (o localStorage si no está configurado)
-          try {
-            await SheetsService.crearPedido({
-              id: ref,
-              cliente: datos.nombre,
-              telefono: datos.telefono,
-              email: datos.email,
-              direccion: datos.direccion,
-              localidad: datos.localidad,
-              provincia: datos.provincia,
-              estado: 'confirmado',
-              medioPago: 'Mercado Pago',
-              metodoEnvio: envio.id,
-              total: CartService.getTotalARS(),
-              costoTotal: CartService.items.reduce((s, i) => s + (i.precioUSD * i.cantidad), 0) * (SheetsService.cotizacionDolar || 1200) * 0.7, // estimado
-              notas: `Pago MP aprobado. Ref: ${ref}`,
-              items: items.map(i => ({
-                productoId: i.id,
-                cantidad: i.cantidad,
-                precioUnitario: i.precioARS,
-              })),
-            });
-          } catch (e) {
-            console.error('Error guardando pedido post-MP:', e);
-          }
-          
-          CartService.clear();
-          App.actualizarUI();
-          App.closeCheckout();
-        } else if (status === 'failure') {
-          App.showToast('❌ Pago rechazado. Podés reintentar o comprar por WhatsApp.');
-        } else if (status === 'pending') {
-          App.showToast('⏳ Pago pendiente. Te avisamos cuando se acredite.');
-        }
-      }
+    const params = new URLSearchParams(window.location.search);
+    const pago = params.get('pago');
+    const ref = params.get('ref') || sessionStorage.getItem('mp_external_ref');
+
+    if (!pago || !ref) return;
+
+    // Limpiar la URL para que un refresh no repita el mensaje
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    if (pago === 'error') {
+      sessionStorage.removeItem('mp_external_ref');
+      App.showToast('❌ El pago no se completó. Tu carrito sigue intacto, podés reintentar.');
+      return;
     }
+
+    App.showToast('⏳ Verificando tu pago...');
+
+    const estado = await this.consultarEstado(ref);
+
+    if (estado === 'confirmado') {
+      sessionStorage.removeItem('mp_external_ref');
+      CartService.clear();
+      App.actualizarUI();
+      App.closeCheckout();
+      App.showToast('✅ ¡Pago aprobado! Te escribimos por WhatsApp para coordinar el envío.');
+      return;
+    }
+
+    if (estado === 'cancelado') {
+      sessionStorage.removeItem('mp_external_ref');
+      App.showToast('❌ El pago fue rechazado. Podés reintentar o escribirnos por WhatsApp.');
+      return;
+    }
+
+    // pendiente o desconocido: el pedido ya quedó registrado, solo falta que
+    // Mercado Pago lo acredite (típico en pago en efectivo o transferencia).
+    App.showToast('⏳ Tu pedido quedó registrado. Te avisamos apenas se acredite el pago.');
+  },
+
+  /**
+   * Consulta el estado real del pedido, reintentando unos segundos porque el
+   * webhook de Mercado Pago puede llegar justo después que la clienta.
+   */
+  async consultarEstado(ref, intentos = 4) {
+    for (let i = 0; i < intentos; i++) {
+      try {
+        const res = await fetch(`${this.apiBase}/order-status?ref=${encodeURIComponent(ref)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.estado === 'confirmado' || data.estado === 'cancelado') return data.estado;
+        }
+      } catch (e) {
+        console.warn('[Checkout] order-status falló:', e.message);
+      }
+      if (i < intentos - 1) await new Promise(r => setTimeout(r, 1500));
+    }
+    return 'pendiente';
   },
 };
 

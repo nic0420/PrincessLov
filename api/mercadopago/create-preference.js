@@ -1,132 +1,221 @@
 /**
- * Vercel Serverless Function - Crear Preferencia Mercado Pago
- * 
- * Variables de entorno requeridas en Vercel:
- * - MP_ACCESS_TOKEN: Access Token de producción de Mercado Pago
- * - MP_PUBLIC_KEY: Public Key de producción
- * - FRONTEND_URL: URL de tu tienda (ej: https://princess-lov.vercel.app)
- * 
- * Deploy: vercel --prod
+ * POST /api/mercadopago/create-preference
+ * ------------------------------------------------------------------
+ * Crea la preferencia de pago de Checkout Pro.
+ *
+ * REGLA DE ORO: el navegador manda QUE quiere comprar, nunca CUANTO cuesta.
+ * Los precios se recalculan aca contra Google Sheets (ver _lib/pricing.js).
+ *
+ * Body esperado:
+ * {
+ *   items: [{ id, cantidad, variante: {color, talle} | null }],
+ *   shippingId: "correo_argentino",
+ *   promoCode: "PRINCESS20" | null,
+ *   cliente: { nombre, email, telefono, direccion, localidad, provincia },
+ *   totalEsperado: 123456   // opcional, solo para detectar desfasajes
+ * }
+ *
+ * Variables de entorno:
+ *   MP_ACCESS_TOKEN   Access Token (TEST-... o APP_USR-...)
+ *   FRONTEND_URL      https://tu-dominio.vercel.app  (sin barra final)
+ *   APPS_SCRIPT_URL   Web App de Google Apps Script
+ * ------------------------------------------------------------------
  */
 
+import { cotizarCarrito, cotizacionAItemsMP } from '../_lib/pricing.js';
+import { postToAppsScript, appsScriptUrl } from '../_lib/store.js';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function limpiar(v, max = 200) {
+  return String(v ?? '').trim().slice(0, max);
+}
+
+function frontendUrl(req) {
+  const env = process.env.FRONTEND_URL;
+  if (env) return env.replace(/\/$/, '');
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  return `${proto}://${host}`;
+}
+
+function nuevaReferencia() {
+  const rnd = Math.random().toString(36).slice(2, 8);
+  return `ord_${Date.now().toString(36)}_${rnd}`;
+}
+
 export default async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = process.env.FRONTEND_URL || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo no permitido' });
 
   const accessToken = process.env.MP_ACCESS_TOKEN;
   if (!accessToken) {
-    console.error('[MP] MP_ACCESS_TOKEN no configurado en variables de entorno');
-    return res.status(500).json({ error: 'Configuración de servidor incompleta' });
+    console.error('[MP] Falta MP_ACCESS_TOKEN');
+    return res.status(500).json({ error: 'La tienda todavia no tiene configurado el cobro online. Escribinos por WhatsApp.' });
   }
 
   try {
-    const {
-      items,           // Array de items { title, quantity, unit_price, currency_id }
-      payer,           // { name, email, phone, address }
-      back_urls,       // { success, failure, pending }
-      auto_return = 'approved',
-      external_reference,
-      notification_url,
-      statement_descriptor = 'PrincessLov',
-      expires = false,
-      expiration_date_from,
-      expiration_date_to,
-    } = req.body;
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+    const { items, shippingId, promoCode, cliente = {}, totalEsperado } = body;
 
-    // Validaciones básicas
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'Items requeridos' });
+    /* ---------- 1. Validar datos del cliente ---------- */
+    const datos = {
+      nombre: limpiar(cliente.nombre, 120),
+      email: limpiar(cliente.email, 120).toLowerCase(),
+      telefono: limpiar(cliente.telefono, 40),
+      direccion: limpiar(cliente.direccion, 200),
+      localidad: limpiar(cliente.localidad, 100),
+      provincia: limpiar(cliente.provincia, 100),
+      medioPago: limpiar(cliente.medioPago, 50) || 'Mercado Pago',
+    };
+
+    const faltantes = ['nombre', 'email', 'telefono', 'direccion', 'localidad', 'provincia']
+      .filter((k) => !datos[k]);
+    if (faltantes.length) {
+      return res.status(400).json({ error: `Faltan datos obligatorios: ${faltantes.join(', ')}` });
+    }
+    if (!EMAIL_RE.test(datos.email)) {
+      return res.status(400).json({ error: 'El email no parece valido' });
     }
 
-    if (!payer || !payer.email) {
-      return res.status(400).json({ error: 'Email del comprador requerido' });
+    /* ---------- 2. Recalcular el carrito en el servidor ---------- */
+    const cot = await cotizarCarrito({ items, shippingId, promoCode });
+
+    if (!cot.ok) {
+      return res.status(409).json({
+        error: cot.errores[0] || 'No pudimos confirmar tu carrito',
+        errores: cot.errores,
+        recalcular: true,
+      });
     }
 
-    // Construir preferencia
+    // Aviso (no bloqueante) si el total del navegador no coincide: suele pasar
+    // cuando cambio el dolar o vencio una promo mientras la clienta compraba.
+    const desfasaje =
+      Number.isFinite(Number(totalEsperado)) && Math.abs(Number(totalEsperado) - cot.total) > 1;
+    if (desfasaje) {
+      console.warn(`[MP] Total recalculado: navegador=${totalEsperado} servidor=${cot.total}`);
+    }
+
+    /* ---------- 3. Registrar el pedido como pendiente ---------- */
+    const externalReference = nuevaReferencia();
+
+    if (appsScriptUrl()) {
+      try {
+        await postToAppsScript('create_order', {
+          order: {
+            id: externalReference,
+            cliente: datos.nombre,
+            telefono: datos.telefono,
+            email: datos.email,
+            direccion: datos.direccion,
+            localidad: datos.localidad,
+            provincia: datos.provincia,
+            estado: 'pendiente',
+            medioPago: 'Mercado Pago',
+            metodoEnvio: cot.envio.id,
+            total: cot.total,
+            costoTotal: cot.costoTotal,
+            notas: [
+              'Preferencia creada, esperando pago.',
+              cot.cupon ? `Cupon: ${cot.cupon.codigo}` : '',
+              cot.descuentosAuto.map((d) => d.label).join(', '),
+            ].filter(Boolean).join(' | '),
+            items: cot.lineas.map((l) => ({
+              productoId: l.id,
+              nombre: l.nombre,
+              variante: l.variante,
+              cantidad: l.cantidad,
+              precioUnitario: l.precioUnitario,
+            })),
+            mpStatus: 'pending',
+          },
+        });
+      } catch (e) {
+        // No abortamos el pago: el webhook vuelve a intentar registrar el pedido.
+        console.error('[MP] No se pudo pre-registrar el pedido:', e.message);
+      }
+    }
+
+    /* ---------- 4. Crear la preferencia en Mercado Pago ---------- */
+    const base = frontendUrl(req);
+    const telDigits = datos.telefono.replace(/\D/g, '');
+
     const preference = {
-      items: items.map(item => ({
-        title: item.title,
-        quantity: Number(item.quantity),
-        unit_price: Number(item.unit_price),
-        currency_id: item.currency_id || 'ARS',
-        description: item.description || '',
-        picture_url: item.picture_url || '',
-        category_id: item.category_id || 'others',
-      })),
+      items: cotizacionAItemsMP(cot),
       payer: {
-        name: payer.name,
-        email: payer.email,
-        phone: payer.phone ? { area_code: '', number: payer.phone.replace(/\D/g, '') } : undefined,
-        address: payer.address ? {
-          street_name: payer.address.street_name || '',
-          street_number: Number(payer.address.street_number) || undefined,
-          zip_code: payer.address.zip_code || '',
-          city: payer.address.city || '',
-          state: payer.address.state || '',
-        } : undefined,
+        name: datos.nombre,
+        email: datos.email,
+        phone: telDigits ? { area_code: '', number: telDigits } : undefined,
+        address: {
+          street_name: datos.direccion,
+          zip_code: '',
+        },
       },
-      back_urls: back_urls || {
-        success: `${process.env.FRONTEND_URL || 'https://princess-lov.vercel.app'}?status=success`,
-        failure: `${process.env.FRONTEND_URL || 'https://princess-lov.vercel.app'}?status=failure`,
-        pending: `${process.env.FRONTEND_URL || 'https://princess-lov.vercel.app'}?status=pending`,
+      back_urls: {
+        success: `${base}/?pago=ok&ref=${externalReference}`,
+        failure: `${base}/?pago=error&ref=${externalReference}`,
+        pending: `${base}/?pago=pendiente&ref=${externalReference}`,
       },
-      auto_return,
-      external_reference: external_reference || `order_${Date.now()}`,
-      notification_url: notification_url || `${process.env.FRONTEND_URL || 'https://princess-lov.vercel.app'}/api/mercadopago/webhook`,
-      statement_descriptor,
-      expires,
-      expiration_date_from,
-      expiration_date_to,
-      // Metadata para identificar el pedido en webhook
+      auto_return: 'approved',
+      external_reference: externalReference,
+      notification_url: `${base}/api/mercadopago/webhook`,
+      statement_descriptor: 'PRINCESSLOV',
+      binary_mode: false,
       metadata: {
         store: 'princesslov',
-        version: '1.0',
+        envio_id: cot.envio.id,
+        envio_nombre: cot.envio.nombre,
+        envio_precio: cot.costoEnvio,
+        cupon: cot.cupon?.codigo || '',
+        localidad: datos.localidad,
+        provincia: datos.provincia,
+        telefono: datos.telefono,
       },
     };
 
-    // Llamar a Mercado Pago
-    const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
+        'X-Idempotency-Key': externalReference,
       },
       body: JSON.stringify(preference),
     });
 
-    const data = await mpResponse.json();
+    const data = await mpRes.json();
 
-    if (!mpResponse.ok) {
-      console.error('[MP] Error creando preferencia:', data);
-      return res.status(mpResponse.status).json({
-        error: data.message || 'Error al crear preferencia',
-        detail: data,
+    if (!mpRes.ok) {
+      console.error('[MP] Error creando preferencia:', JSON.stringify(data));
+      return res.status(502).json({
+        error: 'Mercado Pago rechazo la solicitud. Proba de nuevo o escribinos por WhatsApp.',
       });
     }
 
-    // Responder con init_point y preference_id
-    return res.status(200).json({
-      id: data.id,
-      init_point: data.init_point,
-      sandbox_init_point: data.sandbox_init_point,
-      preference: data,
-    });
+    const usarSandbox = process.env.MP_USE_SANDBOX === 'true';
+    const checkoutUrl = usarSandbox && data.sandbox_init_point ? data.sandbox_init_point : data.init_point;
 
+    return res.status(200).json({
+      preference_id: data.id,
+      init_point: checkoutUrl,
+      external_reference: externalReference,
+      total: cot.total,
+      recalculado: desfasaje,
+      resumen: {
+        subtotal: cot.subtotalLineas,
+        descuentos: cot.totalDescuentoAuto + cot.descuentoCupon,
+        envio: cot.costoEnvio,
+        total: cot.total,
+      },
+    });
   } catch (error) {
     console.error('[MP] Error interno:', error);
-    return res.status(500).json({
-      error: 'Error interno del servidor',
-      detail: error.message,
-    });
+    return res.status(500).json({ error: 'Error interno. Proba de nuevo en un momento.' });
   }
 }

@@ -1,0 +1,10 @@
+{
+  "name": "princesslov",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tienda web PrincessLov - frontend estatico + funciones serverless de Mercado Pago",
+  "engines": {
+    "node": ">=18"
+  }
+}

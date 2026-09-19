@@ -12,11 +12,11 @@
  *    - Ejecutar como: "Yo (tu-email@gmail.com)"
  *    - Quién tiene acceso: "Cualquiera" (IMPORTANTE para que Vercel pueda llamar)
  * 7. Deploy > Copia la URL generada (algo como https://script.google.com/macros/s/AKfycbx.../exec)
- * 8. En Vercel, agrega variable de entorno: SHEETS_WEBHOOK_URL = esa URL
+ * 8. En Vercel, agrega variable de entorno: APPS_SCRIPT_URL = esa URL
  * 
  * ESTRUCTURA DE HOJAS REQUERIDA:
  * - Hoja "Productos": ID, Nombre, Categoria, Subcategoria, Descripcion, PrecioUSD, Imagen, Stock, Activo, Tags, SKU, PrecioARSManual, PrecioOferta, MargenPersonalizado, Peso, Dimensiones, Galeria, Variantes, Caracteristicas, Destacado, SoloWeb, SEOTitle, SEODesc
- * - Hoja "Pedidos": ID, Fecha, Cliente, Telefono, Email, Direccion, Localidad, Provincia, Estado, MedioPago, MetodoEnvio, Total, CostoTotal, Notas, Items (JSON), MP_PaymentID, MP_Status
+ * - Hoja "Pedidos": ID, Fecha, Cliente, Telefono, Email, Direccion, Localidad, Provincia, Estado, MedioPago, MetodoEnvio, Total, CostoTotal, Notas, Items (JSON), MP_PaymentID, MP_Status, StockDescontado
  * - Hoja "Gastos": ID, Fecha, Concepto, Monto, Categoria, Notas
  * - Hoja "Config": Clave, Valor (para settings globales)
  * - Hoja "ClubPrince_Leads": ID, Fecha, Nombre, Telefono, Ciudad, Origen, Estado
@@ -47,7 +47,7 @@ const HEADERS = {
   PEDIDOS: [
     'ID', 'Fecha', 'Cliente', 'Telefono', 'Email', 'Direccion', 'Localidad',
     'Provincia', 'Estado', 'MedioPago', 'MetodoEnvio', 'Total', 'CostoTotal',
-    'Notas', 'Items', 'MP_PaymentID', 'MP_Status'
+    'Notas', 'Items', 'MP_PaymentID', 'MP_Status', 'StockDescontado'
   ],
   GASTOS: ['ID', 'Fecha', 'Concepto', 'Monto', 'Categoria', 'Notas'],
   CONFIG: ['Clave', 'Valor'],
@@ -85,8 +85,14 @@ function doGet(e) {
       case 'dolar':
         result = getDolarHistory();
         break;
+      case 'check_stock':
+        result = checkStock(e.parameter.ids);
+        break;
+      case 'order_status':
+        result = getOrderStatus(e.parameter.ref);
+        break;
       default:
-        result = { error: 'Acción no válida', actions: ['read', 'read_all', 'search', 'stats', 'config', 'dolar'] };
+        result = { error: 'Acción no válida', actions: ['read', 'read_all', 'search', 'stats', 'config', 'dolar', 'check_stock', 'order_status'] };
     }
     return jsonResponse(result);
   } catch (error) {
@@ -455,24 +461,203 @@ function addDolarRate(valor) {
 // ============================================
 
 function processWebhookMP(data) {
-  // Recibe: { externalReference, mpPaymentId, status, statusDetail, amount, ... }
+  // Llamado SOLO por /api/mercadopago/webhook, que ya verifico la firma de MP.
+  // Recibe: { externalReference, mpPaymentId, status, statusDetail, amount, descontarStock }
   if (!data.externalReference) return { error: 'Falta externalReference' };
-  
-  const updates = {
-    MP_PaymentID: data.mpPaymentId,
-    MP_Status: data.status,
-    Estado: mapMPStatus(data.status),
-  };
-  
-  const result = updateOrder(data.externalReference, updates);
-  
-  // Si aprobado y era pendiente, disparar confirmación
-  if (data.status === 'approved') {
-    // TODO: Enviar email/WhatsApp de confirmación
-    // TODO: Actualizar stock si no se hizo en frontend
+
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+  } catch (e) {
+    return { error: 'Sistema ocupado, reintentar' };
   }
-  
-  return { success: true, ...result };
+
+  try {
+    const sheet = getSheet(SHEET_NAMES.PEDIDOS);
+    asegurarColumna(sheet, 'StockDescontado');
+
+    const fila = buscarFilaPedido(sheet, data.externalReference);
+
+    // Si el pedido no existe (fallo el pre-registro), lo creamos ahora:
+    // asi nunca se pierde un pago acreditado.
+    if (!fila) {
+      createOrder({
+        id: data.externalReference,
+        cliente: data.payerName || 'Cliente Mercado Pago',
+        email: data.payerEmail || '',
+        telefono: '',
+        direccion: '',
+        localidad: '',
+        provincia: '',
+        estado: mapMPStatus(data.status),
+        medioPago: 'Mercado Pago',
+        metodoEnvio: '',
+        total: data.amount || 0,
+        notas: 'Pedido reconstruido desde el webhook de Mercado Pago.',
+        items: [],
+        mpPaymentId: data.mpPaymentId,
+        mpStatus: data.status,
+      });
+      return { success: true, creado: true };
+    }
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const valores = sheet.getRange(fila, 1, 1, headers.length).getValues()[0];
+    const pedido = {};
+    headers.forEach(function (h, i) { pedido[h] = valores[i]; });
+
+    // Idempotencia: Mercado Pago reenvia la misma notificacion varias veces.
+    const yaDescontado = String(pedido.StockDescontado || '').toLowerCase() === 'si';
+    const debeDescontar = data.descontarStock === true && data.status === 'approved' && !yaDescontado;
+
+    const updates = {
+      MP_PaymentID: data.mpPaymentId || pedido.MP_PaymentID,
+      MP_Status: data.status,
+      Estado: mapMPStatus(data.status),
+    };
+
+    if (debeDescontar) {
+      const items = parseItemsPedido(pedido.Items);
+      descontarStock(items);
+      updates.StockDescontado = 'si';
+      updates.Notas = String(pedido.Notas || '') + ' | Pago acreditado ' + new Date().toISOString();
+    }
+
+    updateOrder(data.externalReference, updates);
+
+    return { success: true, stockDescontado: debeDescontar };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Busca la fila (1-indexed) de un pedido por ID. Devuelve null si no existe. */
+function buscarFilaPedido(sheet, id) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+  const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
+  const idx = ids.findIndex(function (v) { return String(v) === String(id); });
+  return idx === -1 ? null : idx + 2;
+}
+
+/** Agrega una columna al final si todavia no existe en la hoja. */
+function asegurarColumna(sheet, nombre) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  if (headers.indexOf(nombre) !== -1) return headers.indexOf(nombre) + 1;
+  sheet.getRange(1, lastCol + 1).setValue(nombre);
+  return lastCol + 1;
+}
+
+function parseItemsPedido(raw) {
+  try {
+    if (!raw) return [];
+    if (typeof raw === 'object') return raw;
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Descuenta stock de los productos vendidos.
+ * Si el item tiene variante, descuenta de esa variante y recalcula el total.
+ */
+function descontarStock(items) {
+  if (!items || !items.length) return;
+
+  const sheet = getSheet(SHEET_NAMES.PRODUCTOS);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const colID = headers.indexOf('ID');
+  const colStock = headers.indexOf('Stock');
+  const colVariantes = headers.indexOf('Variantes');
+  if (colID === -1 || colStock === -1) return;
+
+  const datos = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+
+  items.forEach(function (item) {
+    const pid = String(item.productoId || item.id || '');
+    const cant = Number(item.cantidad) || 0;
+    if (!pid || cant <= 0) return;
+
+    const idx = datos.findIndex(function (r) { return String(r[colID]) === pid; });
+    if (idx === -1) return;
+
+    const fila = idx + 2;
+
+    // Variante: "Rojo / M"
+    if (item.variante && colVariantes !== -1) {
+      const partes = String(item.variante).split('/');
+      const color = (partes[0] || '').trim();
+      const talle = (partes[1] || '').trim();
+      let variantes = [];
+      try { variantes = JSON.parse(datos[idx][colVariantes] || '[]'); } catch (e) { variantes = []; }
+
+      if (variantes.length) {
+        let tocada = false;
+        variantes = variantes.map(function (v) {
+          if (v.color === color && v.talle === talle) {
+            tocada = true;
+            v.stock = Math.max(0, (Number(v.stock) || 0) - cant);
+          }
+          return v;
+        });
+        if (tocada) {
+          sheet.getRange(fila, colVariantes + 1).setValue(JSON.stringify(variantes));
+          const totalVar = variantes.reduce(function (s, v) { return s + (Number(v.stock) || 0); }, 0);
+          sheet.getRange(fila, colStock + 1).setValue(totalVar);
+          return;
+        }
+      }
+    }
+
+    const stockActual = Number(datos[idx][colStock]) || 0;
+    sheet.getRange(fila, colStock + 1).setValue(Math.max(0, stockActual - cant));
+  });
+}
+
+/**
+ * Stock actual de una lista de IDs. Lo consume js/cart.js antes de pagar.
+ * Devuelve { "prod_1": 4, "prod_2": 0 }
+ */
+function checkStock(idsParam) {
+  const ids = String(idsParam || '').split(',').map(function (s) { return s.trim(); }).filter(String);
+  const productos = readSheet('productos');
+  const out = {};
+
+  productos.forEach(function (p) {
+    const id = String(p.ID || '');
+    if (!id) return;
+    if (ids.length && ids.indexOf(id) === -1) return;
+    const activo = p.Activo === true || p.Activo === 'TRUE' || p.Activo === 'true';
+    out[id] = activo ? (Number(p.Stock) || 0) : 0;
+  });
+
+  return out;
+}
+
+/** Estado de un pedido, para la pantalla de "volviste de Mercado Pago". */
+function getOrderStatus(ref) {
+  if (!ref) return { encontrado: false };
+
+  const sheet = getSheet(SHEET_NAMES.PEDIDOS);
+  const fila = buscarFilaPedido(sheet, ref);
+  if (!fila) return { encontrado: false };
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const valores = sheet.getRange(fila, 1, 1, headers.length).getValues()[0];
+  const pedido = {};
+  headers.forEach(function (h, i) { pedido[h] = valores[i]; });
+
+  return {
+    encontrado: true,
+    estado: pedido.Estado || 'pendiente',
+    mpStatus: pedido.MP_Status || '',
+    total: Number(pedido.Total) || 0,
+  };
 }
 
 function mapMPStatus(mpStatus) {

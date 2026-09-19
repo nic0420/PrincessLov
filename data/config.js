@@ -9,11 +9,16 @@ const CONFIG = {
   // ==========================================
   negocio: {
     nombre: "PrincessLov",
-    descripcion: "Indumentaria deportiva y pijamas para mujeres",
+    descripcion: "Sportswear, pijamas y lencería para mujeres",
+    tagline: "Tu espacio favorito de girlie vibes 🎀",
     whatsapp: "5493757338837",    // Tu número de WhatsApp con código de país
-    email: "princesslov@email.com",
-    instagram: "princesslov",
+    // Link corto de WhatsApp del perfil de Instagram (opcional).
+    whatsappLink: "https://wa.me/message/KCJUP2SIDI7VD1",
+    email: "",                    // Dejar vacío si no hay email de contacto
+    instagram: "princesslov_ok",
+    facebook: "",                 // Vacío = no se muestra el ícono en el footer
     direccion: "Puerto Iguazú, Misiones, Argentina",
+    envios: "Envíos a todo el país",
   },
 
   // ==========================================
@@ -60,13 +65,13 @@ const CONFIG = {
   // ==========================================
   // MERCADO PAGO
   // ==========================================
-  // Para producción, necesitás tu Access Token de MP.
-  // Para pruebas, usá el token de sandbox.
+  // Configuración visible de Mercado Pago (sin secretos).
+  // Las credenciales de Mercado Pago NO van acá: este archivo lo descarga
+  // cualquier persona que entre a la tienda. El Access Token vive únicamente
+  // en las variables de entorno de Vercel (MP_ACCESS_TOKEN).
+  // El cobro se maneja en /api/mercadopago/create-preference.
   mercadopago: {
-    publicKey: "TEST-xxxx-xxxx-xxxx",       // Tu public key
-    accessToken: "TEST-xxxx-xxxx-xxxx",     // Tu access token
-    // En TEST: https://www.mercadopago.com.ar/developers/en/reference/preferences/_checkout_preferences/post
-    // En PRODUCCIÓN: reemplazá "TEST" por tu public key real
+    habilitado: true,   // false = oculta el botón "Pagar con Mercado Pago"
   },
 
   // ==========================================
@@ -192,7 +197,7 @@ const CONFIG = {
       titleAccent: "Club Prince",
       subtitle: "Infaltables en tu cajón",
       desc: "Recibí cada mes una cajita curada con lencería, accesorios y sorpresas PrincessLov. Elegí tu plan y sumate al club más querido.",
-      heroImage: "assets/club-prince-hero.jpg",
+      heroImage: "assets/conjunto-flores-rosa.jpg",
       boxes: [
         { id: "box-esencial", nombre: "Caja Esencial", descripcionCorta: "1 conjunto + sorpresa", detalleCompleto: "1 conjunto a elección (deportivo o lencería)\n1 sorpresa PrincessLov", precioUSD: 25, imagenUrl: "", desc: "1 conjunto + sorpresa", icon: "🎀", destacado: false, tag: "Más elegida" },
         { id: "box-premium", nombre: "Caja Premium", descripcionCorta: "2 conjuntos + accesorio + sorpresa", detalleCompleto: "2 conjuntos a elección\n1 accesorio\n1 sorpresa PrincessLov", precioUSD: 38, imagenUrl: "", desc: "2 conjuntos + accesorio + sorpresa", icon: "👑", destacado: true, tag: "Premium" },

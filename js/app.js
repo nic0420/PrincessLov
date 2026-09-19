@@ -1078,8 +1078,38 @@ const App = {
     if (btn) btn.href = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent('Hola! Quiero consultar por sus productos.')}`;
     const footerWa = document.getElementById('footer-whatsapp-link');
     if (footerWa) footerWa.innerHTML = `📱 WhatsApp: <a href="https://wa.me/${CONFIG.negocio.whatsapp}" target="_blank" style="color:var(--primary);">Escribinos</a>`;
+    const ig = CONFIG.negocio.instagram;
+    const igUrl = ig ? `https://instagram.com/${ig}` : null;
+
+    // Ícono de Instagram
     const footerIg = document.getElementById('footer-instagram');
-    if (footerIg && CONFIG.negocio.instagram) footerIg.href = `https://instagram.com/${CONFIG.negocio.instagram}`;
+    if (footerIg) {
+      if (igUrl) footerIg.href = igUrl;
+      else footerIg.style.display = 'none';
+    }
+
+    // Línea de Instagram en la columna de contacto
+    const footerIgLink = document.getElementById('footer-instagram-link');
+    if (footerIgLink) {
+      if (igUrl) {
+        footerIgLink.href = igUrl;
+        footerIgLink.textContent = `📸 Instagram: @${ig}`;
+      } else {
+        footerIgLink.parentElement?.remove();
+      }
+    }
+
+    // Facebook: solo si está cargado en la config
+    const footerFb = document.getElementById('footer-facebook');
+    if (footerFb) {
+      if (CONFIG.negocio.facebook) footerFb.href = CONFIG.negocio.facebook;
+      else footerFb.style.display = 'none';
+    }
+
+    // Frase del perfil
+    const tagline = document.getElementById('footer-tagline');
+    if (tagline && CONFIG.negocio.tagline) tagline.textContent = CONFIG.negocio.tagline;
+
     this.renderFooterCats();
   },
 
