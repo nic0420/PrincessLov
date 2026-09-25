@@ -980,8 +980,8 @@ input, select { font-family: inherit; font-size: inherit; }
 .cart__close { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-muted); border-radius: 50%; transition: background var(--fast), color var(--fast); }
 .cart__close:hover { background: var(--bg); color: var(--text); }
 
-.cart__body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-.cart__items { flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-5); scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.cart__body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.cart__items { flex: none; padding: var(--sp-2) var(--sp-5); }
 .cart__items::-webkit-scrollbar { width: 6px; }
 .cart__items::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 
@@ -1320,3 +1320,17 @@ button.cart__shipping-option:hover { border-color: var(--primary); }
 .club-prince__form-wrap--modal .form-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: var(--sp-3); }
 .club-modal__actions { display: flex; flex-direction: column; gap: 8px; }
 .club-modal__actions [hidden] { display: none; }
+
+/* Carrito: un solo scroll, productos primero y envío desplegable */
+.cart__shipping-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); background: none; border: 0; padding: 0; font: inherit; font-size: 13px; color: var(--text); cursor: pointer; text-align: left; }
+.cart__shipping-toggle strong { color: var(--primary); font-weight: 600; }
+.cart__shipping-toggle-icon { color: var(--primary); font-size: 11px; transition: transform var(--fast); }
+.cart__shipping-toggle--open .cart__shipping-toggle-icon { transform: rotate(180deg); }
+.cart__shipping-result[hidden] { display: none; }
+#cart-shipping .cart__shipping-result { margin: var(--sp-3) 0 0; padding: 0; background: none; border: 0; }
+.cart__promo-message:empty { display: none; }
+.cart__cross-sell-item { min-width: 0; }
+.cart__cross-sell-info { min-width: 0; }
+.cart__cross-sell-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Con el carrito abierto, los avisos van arriba para no tapar "Finalizar pedido" */
+.cart-sidebar--open ~ .toast-container { top: 88px; bottom: auto; }

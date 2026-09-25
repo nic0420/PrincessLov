@@ -786,7 +786,7 @@ const App = {
         </div>` : ''}
         <div class="cart__totals-row cart__totals-row--shipping">
           <span class="cart__totals-label">Envío</span>
-          <span>${CartService.shippingId ? (shipping > 0 ? SheetsService.formatPrecioARS(shipping) : 'Gratis') : 'Elegí abajo'}</span>
+          <span>${CartService.shippingId ? (shipping > 0 ? SheetsService.formatPrecioARS(shipping) : 'Gratis') : 'A elegir'}</span>
         </div>
         <div class="cart__totals-row cart__totals-row--total">
           <span class="cart__totals-label">Total</span>
@@ -860,11 +860,31 @@ const App = {
   },
 
   /** Opciones de envío dentro del carrito (antes había un "calcular por CP" simulado) */
+  /** Desplegable de envíos: cerrado por defecto para que se vean los productos */
+  toggleShippingOptions(abrir) {
+    const el = document.getElementById('shipping-result');
+    const btn = document.getElementById('shipping-toggle');
+    if (!el || !btn) return;
+    const open = typeof abrir === 'boolean' ? abrir : el.hidden;
+    el.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    btn.classList.toggle('cart__shipping-toggle--open', open);
+  },
+
   renderShippingOptions() {
     const el = document.getElementById('shipping-result');
     if (!el) return;
     const gratis = CartService.hasFreeShipping();
-    el.style.display = 'block';
+    const elegido = CartService.getShippingOption();
+    const txt = document.getElementById('shipping-toggle-text');
+    if (txt) {
+      if (elegido) {
+        const costo = CartService.getShippingCost();
+        txt.innerHTML = `Envío: <strong>${escHtml(elegido.nombre)}</strong> · ${costo > 0 ? SheetsService.formatPrecioARS(costo) : 'Gratis'}`;
+      } else {
+        txt.textContent = 'Elegí cómo te llega';
+      }
+    }
     el.innerHTML = (CONFIG.envios || []).filter(e => e.activo !== false).map(e => {
       const sel = CartService.shippingId === e.id;
       const precio = Number(e.precio) > 0 && !gratis ? SheetsService.formatPrecioARS(e.precio) : 'Gratis';
@@ -891,7 +911,7 @@ const App = {
     const allProducts = SheetsService.productos.filter(p => p.stock > 0 && !currentIds.has(p.id));
     const recommended = allProducts
       .sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0) || b.stock - a.stock)
-      .slice(0, 4);
+      .slice(0, 2);
 
     if (recommended.length === 0) {
       section.style.display = 'none';
@@ -924,13 +944,15 @@ const App = {
     if (promo) promo.classList.remove('cart__promo--open');
     if (promoForm) promoForm.style.display = 'none';
     if (promoMsg) promoMsg.textContent = '';
-    if (shippingRes) shippingRes.style.display = 'none';
+    if (shippingRes) shippingRes.hidden = true;
     if (crossSell) crossSell.style.display = 'none';
   },
 
   selectShipping(shippingId) {
     const envio = (CONFIG.envios || []).find(e => e.id === shippingId);
-    if (envio) CartService.setShipping(envio.id); // save() → listeners → re-render
+    if (!envio) return;
+    CartService.setShipping(envio.id); // save() → listeners → re-render
+    this.toggleShippingOptions(false);  // se cierra solo al elegir
   },
 
   openCart() {

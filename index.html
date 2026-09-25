@@ -535,9 +535,12 @@
       </section>
 
       <!-- Shipping Estimator -->
-      <section class="cart__shipping" id="cart-shipping" aria-label="Calcular envío">
-        <h4 class="cart__shipping-title">Elegí tu envío</h4>
-        <div class="cart__shipping-result" id="shipping-result" role="group" aria-label="Opciones de envío"></div>
+      <section class="cart__shipping" id="cart-shipping" aria-label="Envío">
+        <button type="button" class="cart__shipping-toggle" id="shipping-toggle" onclick="App.toggleShippingOptions()" aria-expanded="false" aria-controls="shipping-result">
+          <span class="cart__shipping-toggle-label">🚚 <span id="shipping-toggle-text">Elegí cómo te llega</span></span>
+          <span class="cart__shipping-toggle-icon" aria-hidden="true">▼</span>
+        </button>
+        <div class="cart__shipping-result" id="shipping-result" role="group" aria-label="Opciones de envío" hidden></div>
         <div class="cart__shipping-free-progress" id="free-shipping-progress">
           <div class="cart__free-bar"><div class="cart__free-bar-fill" id="free-bar-fill" style="width:0%"></div></div>
           <p class="cart__free-text" id="free-text">Agregá <strong id="free-amount">$0</strong> más para envío gratis</p>
