@@ -1334,3 +1334,6 @@ button.cart__shipping-option:hover { border-color: var(--primary); }
 .cart__cross-sell-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Con el carrito abierto, los avisos van arriba para no tapar "Finalizar pedido" */
 .cart-sidebar--open ~ .toast-container { top: 88px; bottom: auto; }
+/* Secciones ocultas desde el admin y modo vista previa */
+.is-hidden-by-admin { display: none !important; }
+.is-preview .cookie-banner, .is-preview .loading-screen { display: none !important; }

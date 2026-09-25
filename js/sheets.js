@@ -539,18 +539,36 @@ const SheetsService = {
    * (textos, categorías, envíos, WhatsApp...) y lo aplica sobre CONFIG.
    * Así los cambios del admin llegan a TODAS las clientas, no solo a tu navegador.
    */
-  async cargarConfigPublica() {
+  async cargarConfigPublica(opts = {}) {
     if (!this.appsScriptUrl) return null;
+    // En la vista previa del admin manda lo guardado en este navegador
+    // (así la dueña ve su cambio al instante, antes de que se publique).
+    let local = {};
+    if (opts.preview) {
+      const has = (k) => { try { return !!localStorage.getItem(k); } catch { return false; } };
+      local = { categorias: has('pl_admin_categorias'), contenido: has('pl_admin_contenido'), envios: has('pl_admin_envios') };
+    }
     try {
       const remote = await this.fetchFromAppsScript('config');
       if (!remote || typeof remote !== 'object') return null;
       const parse = (v) => { if (typeof v !== 'string') return v; try { return JSON.parse(v); } catch { return null; } };
       const cats = parse(remote.categorias);
-      if (Array.isArray(cats) && cats.length) CONFIG.categorias = cats;
+      if (!local.categorias && Array.isArray(cats) && cats.length) CONFIG.categorias = cats;
       const cont = parse(remote.contenido);
-      if (cont && typeof cont === 'object') CONFIG.contenido = { ...(CONFIG.contenido || {}), ...cont };
+      if (!local.contenido && cont && typeof cont === 'object') {
+        const base = CONFIG.contenido || {};
+        const merged = { ...base, ...cont };
+        ['showcase', 'servicios', 'promoBand', 'cta', 'newsletter', 'footer', 'productos', 'secciones', 'clubPrince'].forEach(k => {
+          if (cont[k] && typeof cont[k] === 'object' && !Array.isArray(cont[k])) merged[k] = { ...(base[k] || {}), ...cont[k] };
+        });
+        CONFIG.contenido = merged;
+      }
       const envios = parse(remote.envios);
-      if (Array.isArray(envios) && envios.length) CONFIG.envios = envios;
+      if (!local.envios && Array.isArray(envios) && envios.length) CONFIG.envios = envios;
+      if (remote.promos && typeof PromoEngine !== 'undefined') {
+        const pr = parse(remote.promos);
+        if (pr && typeof pr === 'object') { PromoEngine._remote = pr; PromoEngine.apply?.(); }
+      }
       const wa = String(remote.whatsapp || '').replace(/\D/g, '');
       if (wa.length >= 10) CONFIG.negocio.whatsapp = wa;
       if (remote.instagram) CONFIG.negocio.instagram = String(remote.instagram).replace(/^@/, '');

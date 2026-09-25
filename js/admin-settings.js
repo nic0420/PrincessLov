@@ -31,6 +31,8 @@ const AdminSettings = {
     set('set-cv-etiqueta', cv.etiqueta || '');
     set('set-cv-comision', cv.comisionMP || '');
 
+    const box = document.querySelector('#section-settings details.tech-box');
+    if (box && typeof AdminSync !== 'undefined') box.open = !AdminSync.habilitado();
     const tok = document.getElementById('set-admin-token');
     if (tok) tok.placeholder = (typeof AdminSync !== 'undefined' && AdminSync.token()) ? '•••••• token cargado (pegá otro para cambiarlo)' : 'Pegá el token (32+ caracteres)';
 

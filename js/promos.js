@@ -37,14 +37,14 @@ const PromoEngine = {
     const local = this.localRaw() || {};
     const src = { ...base, ...remote, ...local };
     // Conservar el umbral de envío gratis si viniera del bloque viejo
-    if (base.envioGratisUmbralARS && !src.envioGratisUmbralARS) src.envioGratisUmbralARS = base.envioGratisUmbralARS;
+    if (base.envioGratisUmbralARS != null && src.envioGratisUmbralARS == null) src.envioGratisUmbralARS = base.envioGratisUmbralARS;
     return this.normalize(src);
   },
 
   normalize(cfg) {
     const arr = (a) => Array.isArray(a) ? a : [];
     return {
-      envioGratisUmbralARS: Number(cfg?.envioGratisUmbralARS) || 150000,
+      envioGratisUmbralARS: (cfg?.envioGratisUmbralARS === '' || cfg?.envioGratisUmbralARS == null || isNaN(Number(cfg.envioGratisUmbralARS))) ? 150000 : Math.max(0, Number(cfg.envioGratisUmbralARS)),
       cupones: arr(cfg?.cupones).map(c => ({
         id: String(c.id || 'cup_' + String(c.codigo || '').toLowerCase()),
         codigo: String(c.codigo || '').toUpperCase().trim(),

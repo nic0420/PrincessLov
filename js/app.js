@@ -14,7 +14,7 @@ const App = {
       // Config publicada desde el admin (textos, categorías, envíos, WhatsApp)
       // y productos en paralelo para que la carga sea más rápida.
       await Promise.all([
-        SheetsService.cargarConfigPublica(),
+        SheetsService.cargarConfigPublica({ preview: this.esPreview() }),
         SheetsService.cargarProductos(),
       ]);
       await SheetsService.obtenerCotizacion();
@@ -159,7 +159,7 @@ const App = {
     // Section title
     const titleEl = document.getElementById('productos-title');
     if (titleEl) {
-      if (catId === 'todos') titleEl.textContent = 'Todos los productos';
+      if (catId === 'todos') titleEl.textContent = CONFIG.contenido?.productos?.title || 'Todos los productos';
       else {
         const cat = SheetsService.obtenerCategoriasConConteo().find(c => c.id === catId);
         titleEl.textContent = cat ? cat.nombre : catId;
@@ -1138,7 +1138,8 @@ const App = {
 
     // Frase del perfil
     const tagline = document.getElementById('footer-tagline');
-    if (tagline && CONFIG.negocio.tagline) tagline.textContent = CONFIG.negocio.tagline;
+    const frase = CONFIG.contenido?.footer?.frase || CONFIG.negocio.tagline;
+    if (tagline && frase) tagline.textContent = frase;
 
     this.renderFooterCats();
   },
@@ -1161,7 +1162,7 @@ const App = {
    */
   setupNewsletter() {
     const sec = document.getElementById('newsletter');
-    if (sec) sec.style.display = SheetsService.appsScriptUrl ? '' : 'none';
+    if (sec) sec.style.display = (SheetsService.appsScriptUrl && this._newsletterVisible !== false) ? '' : 'none';
   },
 
   async subscribeNewsletter(e) {
@@ -1198,37 +1199,67 @@ const App = {
   },
 
   /* ---------- CONTENIDO EDITABLE (categorías + frases) ---------- */
+  /** ¿La tienda se está viendo dentro de la vista previa del admin? */
+  esPreview() {
+    return new URLSearchParams(location.search).get('preview') === '1';
+  },
+
+  /**
+   * Cambios guardados desde el admin en ESTE navegador (vista previa de la
+   * dueña). Para las clientas, los cambios llegan desde la planilla
+   * (SheetsService.cargarConfigPublica).
+   */
   applyCustomConfig() {
+    const leer = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
     try {
-      const cats = localStorage.getItem('pl_admin_categorias');
-      if (cats) { const arr = JSON.parse(cats); if (Array.isArray(arr) && arr.length) CONFIG.categorias = arr; }
-      const contRaw = localStorage.getItem('pl_admin_contenido');
-      if (contRaw) {
-        const obj = JSON.parse(contRaw);
-        if (obj && typeof obj === 'object') {
-          const base = CONFIG.contenido || {};
-          CONFIG.contenido = { ...base, ...obj };
-          // arrays/objetos anidados: si custom trae valor, usa custom, sino base
-          if (obj.promoBar) CONFIG.contenido.promoBar = obj.promoBar;
-          if (obj.hero) CONFIG.contenido.hero = obj.hero;
-          if (obj.showcase) CONFIG.contenido.showcase = obj.showcase;
-          if (obj.servicios) CONFIG.contenido.servicios = obj.servicios;
-          if (obj.promoBand) CONFIG.contenido.promoBand = obj.promoBand;
-          if (obj.cta) CONFIG.contenido.cta = obj.cta;
-          if (obj.newsletter) CONFIG.contenido.newsletter = obj.newsletter;
-          if (obj.footer) CONFIG.contenido.footer = obj.footer;
-        }
+      const cats = leer('pl_admin_categorias');
+      if (Array.isArray(cats) && cats.length) CONFIG.categorias = cats;
+      const obj = leer('pl_admin_contenido');
+      if (obj && typeof obj === 'object') {
+        const base = CONFIG.contenido || {};
+        const merged = { ...base, ...obj };
+        // objetos de primer nivel: mezcla para no perder campos por defecto
+        ['showcase', 'servicios', 'promoBand', 'cta', 'newsletter', 'footer', 'productos', 'secciones', 'clubPrince'].forEach(k => {
+          if (obj[k] && typeof obj[k] === 'object' && !Array.isArray(obj[k])) merged[k] = { ...(base[k] || {}), ...obj[k] };
+        });
+        CONFIG.contenido = merged;
+      }
+      const envios = leer('pl_admin_envios');
+      if (Array.isArray(envios) && envios.length) CONFIG.envios = envios;
+      const set = leer('pl_admin_settings');
+      if (set && typeof set === 'object') {
+        const wa = String(set.whatsapp || '').replace(/\D/g, '');
+        if (wa.length >= 10) CONFIG.negocio.whatsapp = wa;
+        if (set.instagram) CONFIG.negocio.instagram = String(set.instagram).replace(/^@/, '');
+        if (set.nombre) CONFIG.negocio.nombre = set.nombre;
       }
     } catch (e) { console.warn('[App] custom config', e); }
+    if (this.esPreview()) document.documentElement.classList.add('is-preview');
   },
 
   renderContenidoCustom() {
     const c = CONFIG.contenido; if (!c) return;
     try {
-      // Promo bar (3 frases)
+      // Secciones visibles u ocultas (Admin > Página principal)
+      const vis = { promoBar: true, hero: true, club: true, showcase: true, servicios: true, promoBand: true, cta: true, newsletter: true, ...(c.secciones || {}) };
+      const mostrar = (sel, on) => document.querySelectorAll(sel).forEach(el => { el.hidden = !on; el.classList.toggle('is-hidden-by-admin', !on); });
+      mostrar('.promo-bar', vis.promoBar !== false);
+      mostrar('#hero', vis.hero !== false);
+      mostrar('#club-prince, [data-club-link]', vis.club !== false);
+      mostrar('#categories', vis.showcase !== false);
+      mostrar('#servicios', vis.servicios !== false);
+      mostrar('#promo-band', vis.promoBand !== false);
+      mostrar('#contacto', vis.cta !== false);
+      this._newsletterVisible = vis.newsletter !== false;
+
+      // Promo bar (hasta 3 frases; las vacías se ocultan)
       if (c.promoBar && Array.isArray(c.promoBar)) {
+        const frases = c.promoBar.map(t => String(t || '').trim()).filter(Boolean);
         const slides = document.querySelectorAll('.promo-bar__slide');
-        c.promoBar.forEach((txt, i) => { if (slides[i]) slides[i].textContent = txt; });
+        const dots = document.querySelectorAll('.promo-bar__dot');
+        slides.forEach((sl, i) => { sl.textContent = frases[i] || ''; sl.hidden = !frases[i]; });
+        dots.forEach((d, i) => { d.hidden = !frases[i + 1]; });
+        if (!frases.length) mostrar('.promo-bar', false);
       }
       // Hero (3 slides)
       if (c.hero && Array.isArray(c.hero)) {
@@ -1282,8 +1313,19 @@ const App = {
         const nb = document.querySelector('.newsletter__btn'); if (nb && c.newsletter.btn) nb.textContent = c.newsletter.btn;
         const ni = document.querySelector('.newsletter__input'); if (ni && c.newsletter.placeholder) ni.placeholder = c.newsletter.placeholder;
       }
-      // Footer tagline
+      // Catálogo: encabezado
+      if (c.productos) {
+        const pk = document.getElementById('productos-kicker'); if (pk && c.productos.kicker) pk.textContent = c.productos.kicker;
+        const pt = document.getElementById('productos-title'); if (pt && c.productos.title && this.categoriaActual === 'todos') pt.textContent = c.productos.title;
+      }
+      // Footer: descripción, frase, ubicación, envíos
       if (c.footer?.tagline) { const ft = document.querySelector('.footer__tagline'); if (ft) ft.textContent = c.footer.tagline; }
+      if (c.footer?.direccion) { const fd = document.getElementById('footer-direccion'); if (fd) fd.textContent = '📍 ' + c.footer.direccion; }
+      if (c.footer?.enviosTexto) { const fe = document.getElementById('footer-envios-texto'); if (fe) fe.textContent = '🚚 ' + c.footer.enviosTexto; }
+      const fl = document.getElementById('footer-envios');
+      if (fl && Array.isArray(CONFIG.envios)) {
+        fl.innerHTML = CONFIG.envios.filter(e => e.activo !== false).map(e => `<li><span class="footer__link">${escHtml(e.nombre)}${e.descripcion ? ` <small>(${escHtml(e.descripcion)})</small>` : ''}</span></li>`).join('');
+      }
     } catch (e) { console.warn('[App] renderContenidoCustom', e); }
   },
 
@@ -1312,9 +1354,6 @@ const App = {
     const cards = cont?.cards || [];
     if (!cards.length) return;
     // Si hay contenido custom, renderizar desde él; sino mantener HTML estático
-    let hasCustom = !!SheetsService.appsScriptUrl;
-    try { hasCustom = hasCustom || !!localStorage.getItem('pl_admin_contenido'); } catch {}
-    if (!hasCustom) return;
     grid.innerHTML = cards.map((card, idx) => {
       const large = idx === 0 ? ' cat-card--large' : '';
       const cat = card.categoria || 'todos';

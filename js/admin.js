@@ -6,14 +6,50 @@ const AdminApp = {
   currentSection: 'dashboard',
   dolarRate: 1200,
 
+  /** Título, subtítulo y ayuda corta de cada sección (lo que ve la dueña) */
+  SECTIONS: {
+    dashboard: ['Inicio', 'Resumen de tu tienda', ''],
+    orders: ['Pedidos', 'Lo que te compran', 'Los pedidos de la web llegan como "Pendiente". Cuando la clienta confirma y paga por WhatsApp, cambiá el estado a "Confirmado": ahí se descuenta el stock.'],
+    products: ['Productos', 'Tu catálogo', 'Todo lo que cargues o edites acá se publica en la tienda. Los productos "Inactivos" no se muestran.'],
+    promos: ['Promos y cupones', 'Descuentos, 2x1, combos y ofertas relámpago', 'Los cupones los escribe la clienta en el carrito. El 2x1, combos y flash sales se aplican solos.'],
+    home: ['Página principal', 'Editá lo que ven tus clientas', 'Tocá una sección para abrirla, cambiá textos o fotos y apretá "Guardar y publicar". En la vista previa ves cómo queda. Con el interruptor verde mostrás u ocultás cada sección.'],
+    categories: ['Categorías', 'Cómo se agrupa tu catálogo', 'Aparecen en los filtros, en el menú "Colección" y en el pie de la página.'],
+    club: ['Club Prince', 'Cajas de suscripción', 'Editá las 3 cajas y los textos del club. Abajo ves quién se anotó.'],
+    shipping: ['Envíos', 'Formas de entrega y precios', 'Lo que pongas acá es lo que la clienta elige en el carrito y en el pedido.'],
+    financial: ['Finanzas', 'Ingresos, costos y ganancia', 'Elegí el período arriba. La ganancia se calcula con el costo que cargues en cada pedido.'],
+    expenses: ['Gastos', 'Lo que gastás en el negocio', 'Cargá alquiler, envoltorios, publicidad, etc. para ver tu ganancia real en Finanzas.'],
+    import: ['Importar / Exportar', 'Carga masiva y respaldos', 'Subí un Excel para cargar muchos productos de una, o descargá tus datos como respaldo.'],
+    settings: ['Configuración', 'Datos del negocio y conexión', ''],
+  },
+
   async init() {
     await this.loadDolarRate();
     AdminData.applyCustomToConfig?.();
     AdminSettings.load();
-    this.navigate('dashboard');
+    const inicial = (location.hash || '').replace('#', '');
+    this.navigate(this.HASH_TO_SECTION[inicial] || 'dashboard');
+    window.addEventListener('hashchange', () => {
+      const sec = this.HASH_TO_SECTION[(location.hash || '').replace('#', '')];
+      if (sec && sec !== this.currentSection) this.navigate(sec);
+    });
+  },
+
+  HASH_TO_SECTION: {
+    inicio: 'dashboard', pedidos: 'orders', productos: 'products', promociones: 'promos',
+    pagina: 'home', categorias: 'categories', club: 'club', envios: 'shipping',
+    finanzas: 'financial', gastos: 'expenses', importar: 'import', configuracion: 'settings',
   },
 
   navigate(section) {
+    if (section === 'content') section = 'home'; // nombre viejo
+    if (!this.SECTIONS[section]) section = 'dashboard';
+
+    // Cambios sin guardar en el editor de la página
+    if (this.currentSection === 'home' && section !== 'home' && typeof AdminHome !== 'undefined' && AdminHome.dirty) {
+      if (!confirm('Tenés cambios sin guardar en la página principal. ¿Salir igual?')) return false;
+      AdminHome.descartar(false);
+    }
+
     this.currentSection = section;
 
     document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
@@ -25,36 +61,80 @@ const AdminApp = {
     const navEl = document.querySelector(`.nav-item[data-section="${section}"]`);
     if (navEl) navEl.classList.add('active');
 
-    const titles = {
-      dashboard: ['Dashboard', 'Resumen general'],
-      products: ['Productos', 'Gestión de catálogo'],
-      orders: ['Pedidos', 'Gestión de ventas'],
-      import: ['Importar Excel', 'Carga masiva de productos'],
-      expenses: ['Gastos', 'Control de gastos del negocio'],
-      financial: ['Finanzas', 'Análisis financiero'],
-      content: ['Contenido', 'Categorías y textos del home'],
-      promos: ['Promociones', 'Motor de promociones'],
-      settings: ['Configuración', 'Ajustes del sistema'],
-    };
-
-    const [title, breadcrumb] = titles[section] || ['', ''];
+    const [title, breadcrumb, help] = this.SECTIONS[section];
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-breadcrumb').textContent = breadcrumb;
+    const helpEl = document.getElementById('section-help');
+    if (helpEl) { helpEl.textContent = help ? 'ℹ️ ' + help : ''; helpEl.hidden = !help; }
+    document.body.dataset.section = section;
 
+    const hash = Object.keys(this.HASH_TO_SECTION).find(k => this.HASH_TO_SECTION[k] === section);
+    if (hash && location.hash !== '#' + hash) history.replaceState(null, '', '#' + hash);
+
+    this.toggleMenu(false);
     this.renderSection(section);
+    this.actualizarBadges();
+    window.scrollTo({ top: 0 });
     return false;
   },
 
   renderSection(section) {
     switch (section) {
-      case 'dashboard': AdminDashboard.render(); break;
+      case 'dashboard': AdminDashboard.render(); this.renderChecklist(); break;
       case 'products': AdminProducts.render(); break;
       case 'orders': AdminOrders.render(); break;
       case 'expenses': AdminExpenses.render(); break;
       case 'financial': AdminDashboard.renderFinancial(); break;
-      case 'content': AdminContent.render(); break;
+      case 'home': AdminHome.render(); break;
+      case 'categories': AdminContent.renderCategorias(); break;
+      case 'club': AdminContent.renderClub(); break;
+      case 'shipping': AdminEnvios.render(); break;
       case 'promos': AdminPromos.render(); break;
       case 'settings': AdminSettings.render(); break;
+    }
+  },
+
+  /** Menú lateral en celular */
+  toggleMenu(abrir) {
+    const open = typeof abrir === 'boolean' ? abrir : !document.body.classList.contains('menu-open');
+    document.body.classList.toggle('menu-open', open);
+  },
+
+  /** Contadores del menú: pedidos pendientes y productos sin stock */
+  actualizarBadges() {
+    const pend = AdminData.getOrders().filter(o => (o.estado || 'pendiente') === 'pendiente').length;
+    const sinStock = AdminData.getProducts().filter(p => p.activo !== false && (Number(p.stock) || 0) <= 0).length;
+    const set = (id, n) => { const el = document.getElementById(id); if (el) { el.textContent = n; el.hidden = !n; } };
+    set('nav-badge-orders', pend);
+    set('nav-badge-stock', sinStock);
+    const qa = document.getElementById('qa-pendientes');
+    if (qa) qa.textContent = pend;
+  },
+
+  /** Lista de "Primeros pasos" del inicio: se tilda sola a medida que avanza */
+  renderChecklist() {
+    const ul = document.getElementById('checklist');
+    const card = document.getElementById('checklist-card');
+    if (!ul || !card) return;
+    const cont = AdminData.getContenido();
+    const pasos = [
+      { ok: !!SheetsService.appsScriptUrl && typeof AdminSync !== 'undefined' && !!AdminSync.token(), txt: 'Conectar la planilla de Google (para que tus cambios se vean en la tienda)', ir: 'settings' },
+      { ok: AdminData.getProducts().length > 0, txt: 'Cargar tus productos con foto y precio', ir: 'products' },
+      { ok: !!cont, txt: 'Personalizar la página principal (portada, textos, fotos)', ir: 'home' },
+      { ok: !!AdminData.getSettings().whatsapp, txt: 'Revisar tu WhatsApp y datos del negocio', ir: 'settings' },
+    ];
+    const hechos = pasos.filter(p => p.ok).length;
+    card.hidden = hechos === pasos.length;
+    ul.innerHTML = pasos.map(p => `
+      <li class="checklist__item ${p.ok ? 'checklist__item--ok' : ''}">
+        <span class="checklist__check" aria-hidden="true">${p.ok ? '✓' : ''}</span>
+        <span class="checklist__txt">${escHtml(p.txt)}</span>
+        ${p.ok ? '' : `<button class="btn btn-sm btn-secondary" onclick="AdminApp.navigate('${p.ir}')">Ir →</button>`}
+      </li>`).join('');
+    const title = document.getElementById('welcome-title');
+    if (title) {
+      const h = new Date().getHours();
+      title.textContent = (h < 13 ? '¡Buen día' : h < 20 ? '¡Buenas tardes' : '¡Buenas noches') + '! 👋';
     }
   },
 
@@ -80,7 +160,7 @@ const AdminApp = {
     setTimeout(() => {
       toast.style.animation = 'toastOut 0.3s ease forwards';
       setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, 3200);
   },
 
   formatDate(iso) {
@@ -97,3 +177,4 @@ const AdminApp = {
 };
 
 document.addEventListener('DOMContentLoaded', () => AdminApp.init());
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') AdminApp.toggleMenu(false); });

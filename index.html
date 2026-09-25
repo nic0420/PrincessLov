@@ -84,7 +84,7 @@
               </div>
             </div>
           </li>
-          <li class="nav__item"><a class="nav__link" href="#club-prince">Club Prince 👑</a></li>
+          <li class="nav__item" data-club-link><a class="nav__link" href="#club-prince">Club Prince 👑</a></li>
           <li class="nav__item"><a class="nav__link" href="#productos" onclick="App.goAll(); return false;">Novedades</a></li>
           <li class="nav__item"><a class="nav__link" href="#productos" onclick="App.filtrarCategoria('ofertas'); return false;">Ofertas</a></li>
           <li class="nav__item"><a class="nav__link" href="#servicios">Servicios</a></li>
@@ -326,7 +326,7 @@
     <!-- Section header -->
     <header class="section-head" data-reveal>
       <div>
-        <span class="section-head__kicker">La selección</span>
+        <span class="section-head__kicker" id="productos-kicker">La selección</span>
         <h2 class="section-title" id="productos-title">Todos los productos</h2>
       </div>
       <div class="section-head__tools">
@@ -396,7 +396,7 @@
   </section>
 
   <!-- ============ PROMO BANNER ============ -->
-  <section class="promo-band" data-reveal>
+  <section class="promo-band" id="promo-band" data-reveal>
     <div class="container promo-band__inner">
       <div class="promo-band__img">
         <img src="assets/conjunto-flores-rosa.jpg" alt="Oferta especial" loading="lazy">
@@ -436,7 +436,7 @@
   </section>
 
   <!-- FOOTER -->
-  <footer class="footer" role="contentinfo">
+  <footer class="footer" id="site-footer" role="contentinfo">
     <div class="container">
       <div class="footer__top">
         <div class="footer__brand">
@@ -470,13 +470,13 @@
         <div class="footer__col">
           <h4 class="footer__col-title">Contacto</h4>
           <ul class="footer__links">
-            <li><span class="footer__link">📍 Puerto Iguazú, Misiones</span></li>
+            <li><span class="footer__link" id="footer-direccion">📍 Puerto Iguazú, Misiones</span></li>
             <li><a href="#contacto" id="footer-whatsapp-link" class="footer__link" target="_blank" rel="noopener">📱 WhatsApp: Escribinos</a></li>
             <li><a href="#" id="footer-instagram-link" class="footer__link" target="_blank" rel="noopener">📸 Instagram</a></li>
-            <li><span class="footer__link">🚚 Envíos a todo el país</span></li>
+            <li><span class="footer__link" id="footer-envios-texto">🚚 Envíos a todo el país</span></li>
           </ul>
           <h4 class="footer__col-title" style="margin-top:1.5rem;">Envíos</h4>
-          <ul class="footer__links">
+          <ul class="footer__links" id="footer-envios">
             <li><span class="footer__link">Envío gratis en Iguazú</span></li>
             <li><span class="footer__link">Neo Encomienda (interior)</span></li>
             <li><span class="footer__link">Correo Argentino</span></li>
@@ -698,7 +698,7 @@
       </button>
     </div>
     <ul class="mobile-menu__list">
-      <li><a href="#club-prince" class="mobile-menu__link" onclick="App.closeMobileMenu()">👑 Club Prince</a></li>
+      <li data-club-link><a href="#club-prince" class="mobile-menu__link" onclick="App.closeMobileMenu()">👑 Club Prince</a></li>
       <li><a href="#" class="mobile-menu__link" onclick="App.closeMobileMenu()">Inicio</a></li>
       <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.goAll();">Novedades</a></li>
       <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.openSidebar();">Categorías &amp; Filtros</a></li>

@@ -3,23 +3,15 @@
    ============================================ */
 
 const AdminContent = {
-  tab: 'categorias',
-
-  render() {
-    this.switchTab(this.tab || 'categorias');
+  /** Compatibilidad: la sección vieja "Contenido" ahora está dividida */
+  render() { this.renderCategorias(); },
+  switchTab(which) {
+    AdminApp.navigate(which === 'club' ? 'club' : which === 'frases' ? 'home' : 'categories');
   },
 
-  switchTab(which) {
-    if (!['categorias', 'frases', 'club'].includes(which)) which = 'categorias';
-    this.tab = which;
-    document.querySelectorAll('#content-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
-    const panels = { categorias: 'content-panel-categorias', frases: 'content-panel-frases', club: 'content-panel-club' };
-    Object.entries(panels).forEach(([key, id]) => {
-      const el = document.getElementById(id);
-      if (el) { el.classList.toggle('active', key === which); el.style.display = key === which ? 'block' : 'none'; }
-    });
-    if (which === 'categorias') this.renderCategorias();
-    else { this.renderFrases(); setTimeout(() => this.renderClubLeads(), 120); }
+  renderClub() {
+    this.renderFrases();
+    this.renderClubLeads();
   },
 
   /* ---------- CATEGORÍAS ---------- */
@@ -166,32 +158,11 @@ const AdminContent = {
     }
   },
 
-  saveFrases(e) {
-    e.preventDefault();
+  saveClub(e) {
+    if (e) e.preventDefault();
     const get = (id) => document.getElementById(id)?.value.trim() || '';
     const cont = AdminData.getEffectiveContenido();
-    const next = {
-      ...cont,
-      promoBar: [get('fr-promo-1'), get('fr-promo-2'), get('fr-promo-3')].filter(Boolean),
-      hero: [0,1,2].map(i=> ({
-        kicker: get('fr-hero-'+i+'-kicker'),
-        title: get('fr-hero-'+i+'-title'),
-        desc: get('fr-hero-'+i+'-desc'),
-        cta: get('fr-hero-'+i+'-cta'),
-        categoria: get('fr-hero-'+i+'-cat'),
-        image: cont.hero?.[i]?.image || CONFIG.contenido?.hero?.[i]?.image || ''
-      })),
-      showcase: { kicker: get('fr-show-kicker'), title: get('fr-show-title'), cards: cont.showcase?.cards || CONFIG.contenido?.showcase?.cards || [] },
-      servicios: {
-        kicker: get('fr-serv-kicker'),
-        title: get('fr-serv-title'),
-        items: [0,1,2,3].map(i=> ({ icon: get('fr-serv-'+i+'-icon'), title: get('fr-serv-'+i+'-title'), desc: get('fr-serv-'+i+'-desc') }))
-      },
-      promoBand: { ...cont.promoBand, kicker: get('fr-band-kicker'), title: get('fr-band-title'), desc: get('fr-band-desc'), cta: get('fr-band-cta') },
-      cta: { ...cont.cta, title: get('fr-cta-title'), desc: get('fr-cta-desc'), btn: get('fr-cta-btn'), icon: get('fr-cta-icon') },
-      newsletter: { ...cont.newsletter, title: get('fr-nl-title'), desc: get('fr-nl-desc'), btn: get('fr-nl-btn'), placeholder: cont.newsletter?.placeholder || 'Tu correo electrónico' },
-      footer: { tagline: get('fr-footer-tagline') },
-      clubPrince: {
+    const clubPrince = {
         ...(cont.clubPrince || CONFIG.contenido?.clubPrince || {}),
         badge: get('fr-club-badge') || (cont.clubPrince?.badge || CONFIG.contenido?.clubPrince?.badge),
         title: get('fr-club-title') || (cont.clubPrince?.title || CONFIG.contenido?.clubPrince?.title),
@@ -218,23 +189,30 @@ const AdminContent = {
             destacado: base.destacado || i===1,
           };
         }),
-      },
-    };
-    AdminData.saveContenido(next);
-    // Push CMS a Google Sheets (clave `clubPrince_boxes`) si hay backend configurado
+      };
+    // Solo se toca el Club Prince: el resto de la página no cambia
+    AdminData.saveContenido({ ...(AdminData.getContenido() || {}), clubPrince });
     try {
       if (typeof AdminSync !== 'undefined' && AdminSync.habilitado()) {
-        AdminSync.publicar('save_config', { config: { clubPrince_boxes: JSON.stringify(next.clubPrince.boxes) } }, 'las cajas del Club Prince');
+        AdminSync.publicar('save_config', { config: { clubPrince_boxes: JSON.stringify(clubPrince.boxes) } }, 'las cajas del Club Prince');
       }
     } catch {}
-    AdminApp.toast((typeof AdminSync !== 'undefined' && AdminSync.habilitado()) ? 'Contenido publicado — se ve al recargar la tienda' : 'Contenido guardado solo en este navegador (falta conectar la planilla)');
+    AdminApp.toast((typeof AdminSync !== 'undefined' && AdminSync.habilitado()) ? '✅ Club Prince publicado en la tienda' : 'Guardado en este navegador (falta conectar la planilla para publicarlo)');
   },
 
-  resetFrases() {
-    if (!confirm('¿Restaurar todos los textos por defecto?')) return;
-    AdminData.resetContenido();
+  /** Compatibilidad con llamadas viejas */
+  saveFrases(e) { return this.saveClub(e); },
+
+  resetClub() {
+    if (!confirm('¿Volver a los textos y cajas originales del Club Prince?')) return;
+    const custom = { ...(AdminData.getContenido() || {}) };
+    delete custom.clubPrince;
+    AdminData.saveContenido(custom);
+    if (typeof AdminSync !== 'undefined' && AdminSync.habilitado()) {
+      AdminSync.publicar('save_config', { config: { clubPrince_boxes: '' } }, 'el Club Prince');
+    }
     this.renderFrases();
-    AdminApp.toast('Textos restaurados');
+    AdminApp.toast('Club Prince restaurado');
   },
 
   renderClubLeads(){

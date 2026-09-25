@@ -195,7 +195,7 @@ const CheckoutService = {
   toggleDireccion() {
     const wrap = document.getElementById('checkout-direccion-wrap');
     if (!wrap) return;
-    const esRetiro = this.envioSeleccionado && this.envioSeleccionado.id === 'retiro';
+    const esRetiro = !!(this.envioSeleccionado && (this.envioSeleccionado.retiro || this.envioSeleccionado.id === 'retiro'));
     wrap.style.display = esRetiro ? 'none' : '';
   },
 
@@ -240,7 +240,7 @@ const CheckoutService = {
     const tel = datos.telefono.replace(/\D/g, '');
     if (tel.length < 8 || tel.length > 15) return 'Revisá el teléfono (solo números, con característica).';
     if (datos.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(datos.email)) return 'El email no parece válido.';
-    if (this.envioSeleccionado.id !== 'retiro') {
+    if (!(this.envioSeleccionado.retiro || this.envioSeleccionado.id === 'retiro')) {
       if (!datos.direccion || !datos.localidad || !datos.provincia) return 'Completá dirección, localidad y provincia para el envío.';
     }
     if (!document.getElementById('checkout-acepto')?.checked) return 'Tenés que aceptar los términos y la política de privacidad.';
@@ -303,7 +303,7 @@ const CheckoutService = {
       cliente: datos.nombre,
       telefono: datos.telefono,
       email: datos.email,
-      direccion: envio?.id === 'retiro' ? 'Retira en local' : datos.direccion,
+      direccion: (envio?.retiro || envio?.id === 'retiro') ? 'Retira en persona' : datos.direccion,
       localidad: datos.localidad,
       provincia: datos.provincia,
       medioPago: datos.medioPago,

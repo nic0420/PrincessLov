@@ -340,7 +340,8 @@ const CartService = {
   /** Umbral de envío gratis (editable desde Admin > Promociones) */
   getFreeShippingThreshold() {
     const cfg = (typeof PromoEngine !== 'undefined' && PromoEngine.config) ? PromoEngine.config : null;
-    return Number(cfg?.envioGratisUmbralARS || CONFIG?.promos?.envioGratisUmbralARS) || 0;
+    const v = cfg ? cfg.envioGratisUmbralARS : CONFIG?.promos?.envioGratisUmbralARS;
+    return Math.max(0, Number(v) || 0);
   },
 
   /** Envío seleccionado (objeto de CONFIG.envios) o null */
@@ -484,7 +485,7 @@ const CartService = {
       partes.push(`Nombre: ${datos.nombre || '-'}`);
       if (datos.telefono) partes.push(`Teléfono: ${datos.telefono}`);
       if (datos.email) partes.push(`Email: ${datos.email}`);
-      const esRetiro = envio && envio.id === 'retiro';
+      const esRetiro = !!(envio && (envio.retiro || envio.id === 'retiro'));
       if (!esRetiro) {
         const dir = [datos.direccion, datos.localidad, datos.provincia].filter(Boolean).join(', ');
         if (dir) partes.push(`Dirección: ${dir}`);

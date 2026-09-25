@@ -53,13 +53,13 @@ const AdminSync = {
   avisoLocal() {
     document.querySelectorAll('.local-warning').forEach(n => n.remove());
     if (this.habilitado()) return;
-    ['section-products', 'section-orders', 'section-content'].forEach(id => {
+    ['section-products', 'section-orders', 'section-home', 'section-shipping', 'section-club', 'section-categories'].forEach(id => {
       const sec = document.getElementById(id);
       if (!sec) return;
       const div = document.createElement('div');
       div.className = 'local-warning';
       div.innerHTML = !SheetsService.appsScriptUrl
-        ? '⚠️ <strong>La planilla no está conectada.</strong> Lo que cargues acá queda solo en esta computadora y <strong>no aparece en la tienda</strong>. Seguí la guía de SEGURIDAD.md para conectarla.'
+        ? '⚠️ <strong>La planilla no está conectada.</strong> Lo que cargues acá queda solo en esta computadora y <strong>no aparece en la tienda</strong>. Para conectarla seguí los pasos de SEGURIDAD.md (o pedíselo a quien administra la web).'
         : '🔐 <strong>Falta el token de administración.</strong> Cargalo en Configuración para ver los pedidos que llegan de la web y publicar tus cambios en la tienda.';
       sec.prepend(div);
     });
@@ -220,13 +220,16 @@ const AdminSync = {
         if (cont && typeof cont === 'object') AdminData.saveContenido(cont);
         const promos = parse(cfg.promos);
         if (promos && typeof promos === 'object') localStorage.setItem(AdminData.KEYS.promos, JSON.stringify(promos));
+        const envios = parse(cfg.envios);
+        if (Array.isArray(envios) && envios.length) { localStorage.setItem('pl_admin_envios', JSON.stringify(envios)); CONFIG.envios = envios; }
       } finally { this._silencio = false; }
 
       this.errores = 0;
       this.ultimaSync = new Date();
       this.pintarEstado();
       this.avisoLocal();
-      AdminApp.renderSection(AdminApp.currentSection);
+      if (!(AdminApp.currentSection === 'home' && typeof AdminHome !== 'undefined' && AdminHome.dirty)) AdminApp.renderSection(AdminApp.currentSection);
+      AdminApp.actualizarBadges?.();
       this.renderArrepentimientos();
       const subidos = soloLocales.length + pedLocales.length + gasLocales.length;
       if (manual || subidos) AdminApp.toast(`✅ Sincronizado con Google Sheets${subidos ? ` (${subidos} registros locales subidos)` : ''}`);
@@ -265,6 +268,7 @@ const AdminSync = {
         const antes = (nombre === 'deleteOrder' || nombre === 'deleteExpense' || nombre === 'deleteProduct') ? args[0] : null;
         const res = orig(...args);
         try { if (!self._silencio) despues(res, args, antes); } catch (e) { console.warn('[AdminSync]', e); }
+        try { AdminApp.actualizarBadges?.(); } catch {}
         return res;
       };
     };

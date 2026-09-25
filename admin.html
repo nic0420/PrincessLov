@@ -18,54 +18,61 @@
 
 <div class="admin-layout">
   <!-- SIDEBAR -->
-  <aside class="admin-sidebar">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="AdminApp.toggleMenu(false)"></div>
+  <aside class="admin-sidebar" id="admin-sidebar" aria-label="Menú del panel">
     <div class="logo">
-      <span class="logo-icon">👑</span>
-      <span class="logo-text">PrincessLov</span>
-      <span class="logo-badge">Admin</span>
+      <img src="assets/logo.jpg" alt="" class="logo-img" onerror="this.src='assets/logo.svg'">
+      <span class="logo-text">PrincessLov <small>Panel de la tienda</small></span>
     </div>
     <nav class="admin-nav">
-      <a href="#" class="nav-item active" data-section="dashboard" onclick="return AdminApp.navigate('dashboard')">
-        <span class="nav-icon">📊</span>
-        <span class="nav-label">Dashboard</span>
+      <a href="#inicio" class="nav-item active" data-section="dashboard" onclick="return AdminApp.navigate('dashboard')">
+        <span class="nav-icon">🏠</span><span class="nav-label">Inicio</span>
       </a>
-      <a href="#" class="nav-item" data-section="products" onclick="return AdminApp.navigate('products')">
-        <span class="nav-icon">📦</span>
-        <span class="nav-label">Productos</span>
+
+      <div class="nav-section">Ventas</div>
+      <a href="#pedidos" class="nav-item" data-section="orders" onclick="return AdminApp.navigate('orders')">
+        <span class="nav-icon">🛒</span><span class="nav-label">Pedidos</span><span class="nav-badge" id="nav-badge-orders" hidden></span>
       </a>
-      <a href="#" class="nav-item" data-section="orders" onclick="return AdminApp.navigate('orders')">
-        <span class="nav-icon">🛒</span>
-        <span class="nav-label">Pedidos</span>
+      <a href="#productos" class="nav-item" data-section="products" onclick="return AdminApp.navigate('products')">
+        <span class="nav-icon">👗</span><span class="nav-label">Productos</span><span class="nav-badge nav-badge--warn" id="nav-badge-stock" hidden></span>
       </a>
-      <a href="#" class="nav-item" data-section="import" onclick="return AdminApp.navigate('import')">
-        <span class="nav-icon">📥</span>
-        <span class="nav-label">Importar Excel</span>
+      <a href="#promociones" class="nav-item" data-section="promos" onclick="return AdminApp.navigate('promos')">
+        <span class="nav-icon">🏷️</span><span class="nav-label">Promos y cupones</span>
       </a>
-      <a href="#" class="nav-item" data-section="expenses" onclick="return AdminApp.navigate('expenses')">
-        <span class="nav-icon">💰</span>
-        <span class="nav-label">Gastos</span>
+
+      <div class="nav-section">Mi tienda online</div>
+      <a href="#pagina" class="nav-item" data-section="home" onclick="return AdminApp.navigate('home')">
+        <span class="nav-icon">🎨</span><span class="nav-label">Página principal</span>
       </a>
-      <a href="#" class="nav-item" data-section="financial" onclick="return AdminApp.navigate('financial')">
-        <span class="nav-icon">📈</span>
-        <span class="nav-label">Finanzas</span>
+      <a href="#categorias" class="nav-item" data-section="categories" onclick="return AdminApp.navigate('categories')">
+        <span class="nav-icon">🗂️</span><span class="nav-label">Categorías</span>
       </a>
-      <a href="#" class="nav-item" data-section="content" onclick="return AdminApp.navigate('content')">
-        <span class="nav-icon">🎨</span>
-        <span class="nav-label">Contenido</span>
+      <a href="#club" class="nav-item" data-section="club" onclick="return AdminApp.navigate('club')">
+        <span class="nav-icon">👑</span><span class="nav-label">Club Prince</span>
       </a>
-      <a href="#" class="nav-item" data-section="promos" onclick="return AdminApp.navigate('promos')">
-        <span class="nav-icon">🚀</span>
-        <span class="nav-label">Promociones</span>
+      <a href="#envios" class="nav-item" data-section="shipping" onclick="return AdminApp.navigate('shipping')">
+        <span class="nav-icon">🚚</span><span class="nav-label">Envíos</span>
       </a>
-      <a href="#" class="nav-item" data-section="settings" onclick="return AdminApp.navigate('settings')">
-        <span class="nav-icon">⚙️</span>
-        <span class="nav-label">Configuración</span>
+
+      <div class="nav-section">Números</div>
+      <a href="#finanzas" class="nav-item" data-section="financial" onclick="return AdminApp.navigate('financial')">
+        <span class="nav-icon">📈</span><span class="nav-label">Finanzas</span>
+      </a>
+      <a href="#gastos" class="nav-item" data-section="expenses" onclick="return AdminApp.navigate('expenses')">
+        <span class="nav-icon">💸</span><span class="nav-label">Gastos</span>
+      </a>
+
+      <div class="nav-section">Herramientas</div>
+      <a href="#importar" class="nav-item" data-section="import" onclick="return AdminApp.navigate('import')">
+        <span class="nav-icon">📥</span><span class="nav-label">Importar / Exportar</span>
+      </a>
+      <a href="#configuracion" class="nav-item" data-section="settings" onclick="return AdminApp.navigate('settings')">
+        <span class="nav-icon">⚙️</span><span class="nav-label">Configuración</span>
       </a>
     </nav>
     <div class="sidebar-footer">
-      <a href="index.html" class="nav-item" target="_blank">
-        <span class="nav-icon">🌐</span>
-        <span class="nav-label">Ver Tienda</span>
+      <a href="/" class="nav-item" target="_blank" rel="noopener">
+        <span class="nav-icon">🌐</span><span class="nav-label">Ver mi tienda</span>
       </a>
     </div>
   </aside>
@@ -74,24 +81,60 @@
   <main class="admin-main">
     <!-- TOPBAR -->
     <div class="admin-topbar">
+      <button type="button" class="menu-toggle" onclick="AdminApp.toggleMenu()" aria-label="Abrir menú" aria-controls="admin-sidebar">☰</button>
       <div class="topbar-left">
-        <h1 id="page-title">Dashboard</h1>
-        <span id="page-breadcrumb" class="breadcrumb">Resumen general</span>
+        <h1 id="page-title">Inicio</h1>
+        <span id="page-breadcrumb" class="breadcrumb">Resumen de tu tienda</span>
       </div>
       <div class="topbar-right">
         <button type="button" class="sync-badge" id="admin-sync-badge" onclick="AdminSync.sincronizar(true)" title="Estado de conexión con Google Sheets">⏳ Conectando…</button>
-        <div class="dolar-badge" id="admin-dolar-badge">
-          💵 Dólar: <strong id="admin-dolar-value">$--</strong>
+        <div class="dolar-badge" id="admin-dolar-badge" title="Cotización usada para pasar precios en USD a pesos">
+          💵 <strong id="admin-dolar-value">$--</strong>
         </div>
-        <a href="/" class="btn btn-sm btn-secondary" target="_blank" rel="noopener">🌐 Ver Tienda</a>
       </div>
     </div>
+    <p class="section-help" id="section-help"></p>
 
     <!-- CONTENT SECTIONS -->
     <div class="admin-content">
 
       <!-- ===== DASHBOARD ===== -->
       <section id="section-dashboard" class="admin-section active">
+
+        <!-- Resumen rápido: lo que hay que hacer hoy -->
+        <div class="welcome-card">
+          <div class="welcome-card__text">
+            <h2 id="welcome-title">¡Hola! 👋</h2>
+            <p>Desde acá manejás toda tu tienda: pedidos, productos, la página principal y tus números.</p>
+          </div>
+          <div class="welcome-card__actions">
+            <button class="quick-action" onclick="AdminApp.navigate('orders')">
+              <span class="quick-action__num" id="qa-pendientes">0</span><span class="quick-action__label">pedidos por confirmar</span>
+            </button>
+            <button class="quick-action" onclick="AdminApp.navigate('products'); setTimeout(()=>AdminProducts.openForm(), 150)">
+              <span class="quick-action__icon">➕</span><span class="quick-action__label">Cargar producto</span>
+            </button>
+            <button class="quick-action" onclick="AdminApp.navigate('home')">
+              <span class="quick-action__icon">🎨</span><span class="quick-action__label">Editar la página</span>
+            </button>
+            <a class="quick-action" href="/" target="_blank" rel="noopener">
+              <span class="quick-action__icon">🌐</span><span class="quick-action__label">Ver mi tienda</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="chart-card checklist-card" id="checklist-card">
+          <h3>✅ Primeros pasos</h3>
+          <ul class="checklist" id="checklist"></ul>
+        </div>
+
+        <!-- Stock Alerts -->
+        <div class="chart-card" id="stock-alerts-card" style="display:none;">
+          <h3>⚠️ Alertas de Stock Bajo</h3>
+          <div id="stock-alerts-list"></div>
+        </div>
+
+        <h3 class="block-title">📊 Cómo vienen las ventas</h3>
         <!-- Period filter tabs -->
         <div class="tab-nav" id="dashboard-tabs">
           <button class="tab" data-period="hoy" onclick="AdminDashboard.setPeriod('hoy')">Hoy</button>
@@ -101,22 +144,6 @@
           <button class="tab" data-period="anio" onclick="AdminDashboard.setPeriod('anio')">1 año</button>
           <button class="tab" data-period="all" onclick="AdminDashboard.setPeriod('all')">Todo</button>
         </div>
-
-        <!-- Guía rápida + acciones -->
-        <div class="chart-card" style="background: linear-gradient(135deg, var(--borgona-500), var(--borgona-300)); color: white; border: none;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-            <div>
-              <h3 style="color:white; margin:0 0 0.35rem; font-size:1.05rem;">👋 Bienvenida a tu panel</h3>
-              <p style="margin:0; opacity:0.9; font-size:0.88rem; max-width:520px;">1) Cargá productos → 2) Recibí pedidos de la tienda → 3) Registrá gastos → 4) Mirá tu <strong>ganancia separada por categoría</strong> en Finanzas (cambia el período arriba para ver por mes).</p>
-            </div>
-            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-              <button class="btn btn-sm" style="background:white; color:var(--borgona-400); font-weight:700;" onclick="AdminApp.navigate('products'); setTimeout(()=>AdminProducts.openForm(), 120); return false;">+ Producto</button>
-              <button class="btn btn-sm" style="background:rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="AdminApp.navigate('orders'); setTimeout(()=>AdminOrders.openForm(), 120); return false;">+ Pedido</button>
-              <button class="btn btn-sm" style="background:rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="return AdminApp.navigate('financial')">📈 Finanzas</button>
-            </div>
-          </div>
-        </div>
-
         <!-- Stats Cards -->
         <div class="stats-grid" id="dashboard-stats">
           <!-- Rendered by JS -->
@@ -150,11 +177,6 @@
           </div>
         </div>
 
-        <!-- Stock Alerts -->
-        <div class="chart-card" id="stock-alerts-card" style="display:none;">
-          <h3>⚠️ Alertas de Stock Bajo</h3>
-          <div id="stock-alerts-list"></div>
-        </div>
       </section>
 
       <!-- ===== PRODUCTS ===== -->
@@ -346,20 +368,20 @@
       </section>
 
       <!-- ===== CONTENT (categorías + frases) ===== -->
-      <section id="section-content" class="admin-section">
-        <div class="tab-nav" id="content-tabs">
-          <button class="tab active" data-tab="categorias" onclick="AdminContent.switchTab('categorias')">📦 Categorías</button>
-          <button class="tab" data-tab="frases" onclick="AdminContent.switchTab('frases')">✏️ Textos & Emojis Home</button>
-          <button class="tab" data-tab="club" onclick="AdminContent.switchTab('club')">👑 Club Prince</button>
-        </div>
+      <!-- ===== PÁGINA PRINCIPAL (editor) ===== -->
+      <section id="section-home" class="admin-section">
+        <div id="home-editor-root"></div>
+      </section>
 
+      <!-- ===== CATEGORÍAS ===== -->
+      <section id="section-categories" class="admin-section">
         <!-- Categorías -->
-        <div id="content-panel-categorias" class="active" style="display:block;">
+        <div id="content-panel-categorias">
           <div class="chart-card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem;">
               <div>
                 <h3 style="margin:0;">📦 Categorías de la tienda</h3>
-                <p style="margin:0.25rem 0 0; color:var(--texto-secundario); font-size:0.85rem;">Editá el nombre, emoji y grupo. Se refleja en filtros, pills y menú de la tienda.</p>
+                <p style="margin:0.25rem 0 0; color:var(--texto-secundario); font-size:0.85rem;">Cambiá nombre, emoji o grupo y se guarda solo. Con ↑ ↓ cambiás el orden en que aparecen.</p>
               </div>
               <button class="btn btn-secondary" onclick="AdminContent.resetCats()">↺ Restaurar</button>
             </div>
@@ -378,120 +400,27 @@
           </div>
         </div>
 
-        <!-- Frases Home -->
-        <div id="content-panel-frases" style="display:none;">
-          <form id="frases-form" onsubmit="AdminContent.saveFrases(event)">
-            <div class="chart-card">
-              <h3>🪧 Barra superior (promo bar)</h3>
-              <p style="color:var(--texto-secundario); font-size:0.85rem;">3 frases que rotan arriba de la tienda.</p>
-              <div class="form-grid">
-                <div class="form-group"><label>Frase 1</label><input type="text" id="fr-promo-1"></div>
-                <div class="form-group"><label>Frase 2</label><input type="text" id="fr-promo-2"></div>
-                <div class="form-group"><label>Frase 3</label><input type="text" id="fr-promo-3"></div>
-              </div>
-            </div>
+      </section>
 
-            <div class="chart-card">
-              <h3>🎠 Hero — 3 slides</h3>
-              <div style="display:grid; gap:1.2rem;">
-                <div style="border:1px solid var(--gris-200); border-radius:8px; padding:1rem;">
-                  <strong>Slide 1</strong>
-                  <div class="form-grid">
-                    <div class="form-group"><label>Kicker (arriba)</label><input type="text" id="fr-hero-0-kicker"></div>
-                    <div class="form-group"><label>Título</label><input type="text" id="fr-hero-0-title"></div>
-                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-hero-0-desc"></div>
-                    <div class="form-group"><label>Texto botón</label><input type="text" id="fr-hero-0-cta"></div>
-                    <div class="form-group"><label>Categoría al clickear</label><input type="text" id="fr-hero-0-cat" placeholder="ej: conjuntos"></div>
-                  </div>
-                </div>
-                <div style="border:1px solid var(--gris-200); border-radius:8px; padding:1rem;">
-                  <strong>Slide 2</strong>
-                  <div class="form-grid">
-                    <div class="form-group"><label>Kicker</label><input type="text" id="fr-hero-1-kicker"></div>
-                    <div class="form-group"><label>Título</label><input type="text" id="fr-hero-1-title"></div>
-                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-hero-1-desc"></div>
-                    <div class="form-group"><label>Texto botón</label><input type="text" id="fr-hero-1-cta"></div>
-                    <div class="form-group"><label>Categoría</label><input type="text" id="fr-hero-1-cat"></div>
-                  </div>
-                </div>
-                <div style="border:1px solid var(--gris-200); border-radius:8px; padding:1rem;">
-                  <strong>Slide 3</strong>
-                  <div class="form-grid">
-                    <div class="form-group"><label>Kicker</label><input type="text" id="fr-hero-2-kicker"></div>
-                    <div class="form-group"><label>Título</label><input type="text" id="fr-hero-2-title"></div>
-                    <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-hero-2-desc"></div>
-                    <div class="form-group"><label>Texto botón</label><input type="text" id="fr-hero-2-cta"></div>
-                    <div class="form-group"><label>Categoría</label><input type="text" id="fr-hero-2-cat"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="chart-card">
-              <h3>🗂️ Showcase “Explorá por categoría”</h3>
-              <div class="form-grid">
-                <div class="form-group"><label>Kicker</label><input type="text" id="fr-show-kicker"></div>
-                <div class="form-group"><label>Título</label><input type="text" id="fr-show-title"></div>
-              </div>
-              <p style="color:var(--texto-secundario); font-size:0.82rem;">Las 4 tarjetas del showcase se generan desde las categorías — el título e icono se editan en la pestaña Categorías.</p>
-            </div>
-
-            <div class="chart-card">
-              <h3>💼 Servicios</h3>
-              <div class="form-grid">
-                <div class="form-group"><label>Kicker servicios</label><input type="text" id="fr-serv-kicker"></div>
-                <div class="form-group"><label>Título servicios</label><input type="text" id="fr-serv-title"></div>
-              </div>
-              <div style="display:grid; gap:0.75rem; margin-top:0.75rem;">
-                <div class="form-grid"><div class="form-group" style="width:70px;"><label>Emoji 1</label><input type="text" id="fr-serv-0-icon"></div><div class="form-group"><label>Título 1</label><input type="text" id="fr-serv-0-title"></div><div class="form-group form-group--full"><label>Desc 1</label><input type="text" id="fr-serv-0-desc"></div></div>
-                <div class="form-grid"><div class="form-group" style="width:70px;"><label>Emoji 2</label><input type="text" id="fr-serv-1-icon"></div><div class="form-group"><label>Título 2</label><input type="text" id="fr-serv-1-title"></div><div class="form-group form-group--full"><label>Desc 2</label><input type="text" id="fr-serv-1-desc"></div></div>
-                <div class="form-grid"><div class="form-group" style="width:70px;"><label>Emoji 3</label><input type="text" id="fr-serv-2-icon"></div><div class="form-group"><label>Título 3</label><input type="text" id="fr-serv-2-title"></div><div class="form-group form-group--full"><label>Desc 3</label><input type="text" id="fr-serv-2-desc"></div></div>
-                <div class="form-grid"><div class="form-group" style="width:70px;"><label>Emoji 4</label><input type="text" id="fr-serv-3-icon"></div><div class="form-group"><label>Título 4</label><input type="text" id="fr-serv-3-title"></div><div class="form-group form-group--full"><label>Desc 4</label><input type="text" id="fr-serv-3-desc"></div></div>
-              </div>
-            </div>
-
-            <div class="chart-card">
-              <h3>🔥 Promo band + CTA + Newsletter + Footer</h3>
-              <div class="form-grid">
-                <div class="form-group"><label>Promo kicker</label><input type="text" id="fr-band-kicker"></div>
-                <div class="form-group"><label>Promo título</label><input type="text" id="fr-band-title"></div>
-                <div class="form-group form-group--full"><label>Promo desc</label><input type="text" id="fr-band-desc"></div>
-                <div class="form-group"><label>Promo botón</label><input type="text" id="fr-band-cta"></div>
-                <div class="form-group"><label>CTA título</label><input type="text" id="fr-cta-title"></div>
-                <div class="form-group form-group--full"><label>CTA desc</label><input type="text" id="fr-cta-desc"></div>
-                <div class="form-group"><label>CTA botón</label><input type="text" id="fr-cta-btn"></div>
-                <div class="form-group" style="width:90px;"><label>CTA emoji</label><input type="text" id="fr-cta-icon"></div>
-                <div class="form-group"><label>Newsletter título</label><input type="text" id="fr-nl-title"></div>
-                <div class="form-group form-group--full"><label>Newsletter desc</label><input type="text" id="fr-nl-desc"></div>
-                <div class="form-group"><label>Newsletter botón</label><input type="text" id="fr-nl-btn"></div>
-                <div class="form-group form-group--full"><label>Footer tagline</label><input type="text" id="fr-footer-tagline"></div>
-              </div>
-            </div>
-
-            <div style="display:flex; gap:0.75rem; margin-top:0.75rem;">
-              <button type="submit" class="btn btn-primary">💾 Guardar todo</button>
-              <button type="button" class="btn btn-secondary" onclick="AdminContent.resetFrases()">↺ Restaurar</button>
-            </div>
-          </form>
-        </div>
-
+      <!-- ===== CLUB PRINCE ===== -->
+      <section id="section-club" class="admin-section">
         <!-- Club Prince (panel propio) -->
-        <div id="content-panel-club" style="display:none;">
-          <form id="club-form" onsubmit="AdminContent.saveFrases(event)">
+        <div id="content-panel-club">
+          <form id="club-form" onsubmit="AdminContent.saveClub(event)">
             <div class="chart-card" style="border: 1px solid var(--borgona-200);">
-              <h3>👑 Club Prince — Landing + Cajas</h3>
-              <p style="color:var(--texto-secundario); font-size:0.83rem; margin-bottom:0.75rem;">Editá el título “Forma parte del Club”, beneficios y las 3 cajas de suscripción. Los cambios se reflejan en <code>#club-prince</code> de la tienda.</p>
+              <h3>👑 Textos del Club Prince</h3>
+              <p style="color:var(--texto-secundario); font-size:0.83rem; margin-bottom:0.75rem;">Así se ve la sección del club en la página: etiqueta, título, beneficios y las 3 cajas.</p>
               <div class="form-grid">
-                <div class="form-group"><label>Badge (ej: ✨ Nuevo)</label><input type="text" id="fr-club-badge"></div>
-                <div class="form-group"><label>Título (línea 1)</label><input type="text" id="fr-club-title" placeholder="Forma parte del"></div>
-                <div class="form-group"><label>Título acento (rosa)</label><input type="text" id="fr-club-title-accent" placeholder="Club Prince"></div>
+                <div class="form-group"><label>Etiqueta de arriba (ej: ✨ Nuevo)</label><input type="text" id="fr-club-badge"></div>
+                <div class="form-group"><label>Título — primera parte</label><input type="text" id="fr-club-title" placeholder="Forma parte del"></div>
+                <div class="form-group"><label>Título — parte destacada</label><input type="text" id="fr-club-title-accent" placeholder="Club Prince"></div>
                 <div class="form-group"><label>Subtítulo</label><input type="text" id="fr-club-subtitle"></div>
                 <div class="form-group form-group--full"><label>Descripción</label><input type="text" id="fr-club-desc"></div>
                 <div class="form-group"><label>Beneficio 1</label><input type="text" id="fr-club-benefit-0"></div>
                 <div class="form-group"><label>Beneficio 2</label><input type="text" id="fr-club-benefit-1"></div>
                 <div class="form-group"><label>Beneficio 3</label><input type="text" id="fr-club-benefit-2"></div>
-                <div class="form-group"><label>Form título</label><input type="text" id="fr-club-form-title"></div>
-                <div class="form-group form-group--full"><label>Form descripción</label><input type="text" id="fr-club-form-desc"></div>
+                <div class="form-group"><label>Título del formulario para sumarse</label><input type="text" id="fr-club-form-title"></div>
+                <div class="form-group form-group--full"><label>Texto del formulario</label><input type="text" id="fr-club-form-desc"></div>
               </div>
               <div style="display:grid; gap:0.9rem; margin-top:0.75rem;">
                 <div style="border:1px solid var(--gris-200); border-radius:8px; padding:0.9rem;">
@@ -499,11 +428,11 @@
                   <div class="form-grid">
                     <div class="form-group"><label>Nombre</label><input type="text" id="fr-club-box-0-nombre"></div>
                     <div class="form-group"><label>Emoji</label><input type="text" id="fr-club-box-0-icon" style="width:70px;"></div>
-                    <div class="form-group"><label>Tag</label><input type="text" id="fr-club-box-0-tag"></div>
-                    <div class="form-group"><label>Precio base (USD → ARS)</label><input type="number" step="0.01" id="fr-club-box-0-precio"></div>
-                    <div class="form-group form-group--full"><label>Descripción corta (tarjeta)</label><input type="text" id="fr-club-box-0-desc"></div>
-                    <div class="form-group form-group--full"><label>Detalle completo (modal)</label><textarea id="fr-club-box-0-detalle" rows="3" placeholder="Un ítem por línea"></textarea></div>
-                    <div class="form-group form-group--full"><label>Imagen URL (vacío = placeholder)</label><input type="url" id="fr-club-box-0-imagen" placeholder="https://..."></div>
+                    <div class="form-group"><label>Etiqueta (ej: Más elegida)</label><input type="text" id="fr-club-box-0-tag"></div>
+                    <div class="form-group"><label>Precio en USD (se pasa a pesos solo)</label><input type="number" step="0.01" id="fr-club-box-0-precio"></div>
+                    <div class="form-group form-group--full"><label>Resumen (se ve en la tarjeta)</label><input type="text" id="fr-club-box-0-desc"></div>
+                    <div class="form-group form-group--full"><label>Qué trae (se ve al tocar “Ver más”, un ítem por renglón)</label><textarea id="fr-club-box-0-detalle" rows="3" placeholder="Un ítem por línea"></textarea></div>
+                    <div class="form-group form-group--full"><label>Foto (link https://, opcional)</label><input type="url" id="fr-club-box-0-imagen" placeholder="https://..."></div>
                   </div>
                 </div>
                 <div style="border:1px solid var(--borgona-200); border-radius:8px; padding:0.9rem; background:var(--gris-100);">
@@ -511,11 +440,11 @@
                   <div class="form-grid">
                     <div class="form-group"><label>Nombre</label><input type="text" id="fr-club-box-1-nombre"></div>
                     <div class="form-group"><label>Emoji</label><input type="text" id="fr-club-box-1-icon" style="width:70px;"></div>
-                    <div class="form-group"><label>Tag</label><input type="text" id="fr-club-box-1-tag"></div>
-                    <div class="form-group"><label>Precio base (USD → ARS)</label><input type="number" step="0.01" id="fr-club-box-1-precio"></div>
-                    <div class="form-group form-group--full"><label>Descripción corta (tarjeta)</label><input type="text" id="fr-club-box-1-desc"></div>
-                    <div class="form-group form-group--full"><label>Detalle completo (modal)</label><textarea id="fr-club-box-1-detalle" rows="3" placeholder="Un ítem por línea"></textarea></div>
-                    <div class="form-group form-group--full"><label>Imagen URL (vacío = placeholder)</label><input type="url" id="fr-club-box-1-imagen" placeholder="https://..."></div>
+                    <div class="form-group"><label>Etiqueta (ej: Más elegida)</label><input type="text" id="fr-club-box-1-tag"></div>
+                    <div class="form-group"><label>Precio en USD (se pasa a pesos solo)</label><input type="number" step="0.01" id="fr-club-box-1-precio"></div>
+                    <div class="form-group form-group--full"><label>Resumen (se ve en la tarjeta)</label><input type="text" id="fr-club-box-1-desc"></div>
+                    <div class="form-group form-group--full"><label>Qué trae (se ve al tocar “Ver más”, un ítem por renglón)</label><textarea id="fr-club-box-1-detalle" rows="3" placeholder="Un ítem por línea"></textarea></div>
+                    <div class="form-group form-group--full"><label>Foto (link https://, opcional)</label><input type="url" id="fr-club-box-1-imagen" placeholder="https://..."></div>
                   </div>
                 </div>
                 <div style="border:1px solid var(--gris-200); border-radius:8px; padding:0.9rem;">
@@ -523,28 +452,33 @@
                   <div class="form-grid">
                     <div class="form-group"><label>Nombre</label><input type="text" id="fr-club-box-2-nombre"></div>
                     <div class="form-group"><label>Emoji</label><input type="text" id="fr-club-box-2-icon" style="width:70px;"></div>
-                    <div class="form-group"><label>Tag</label><input type="text" id="fr-club-box-2-tag"></div>
-                    <div class="form-group"><label>Precio base (USD → ARS)</label><input type="number" step="0.01" id="fr-club-box-2-precio"></div>
-                    <div class="form-group form-group--full"><label>Descripción corta (tarjeta)</label><input type="text" id="fr-club-box-2-desc"></div>
-                    <div class="form-group form-group--full"><label>Detalle completo (modal)</label><textarea id="fr-club-box-2-detalle" rows="3" placeholder="Un ítem por línea"></textarea></div>
-                    <div class="form-group form-group--full"><label>Imagen URL (vacío = placeholder)</label><input type="url" id="fr-club-box-2-imagen" placeholder="https://..."></div>
+                    <div class="form-group"><label>Etiqueta (ej: Más elegida)</label><input type="text" id="fr-club-box-2-tag"></div>
+                    <div class="form-group"><label>Precio en USD (se pasa a pesos solo)</label><input type="number" step="0.01" id="fr-club-box-2-precio"></div>
+                    <div class="form-group form-group--full"><label>Resumen (se ve en la tarjeta)</label><input type="text" id="fr-club-box-2-desc"></div>
+                    <div class="form-group form-group--full"><label>Qué trae (se ve al tocar “Ver más”, un ítem por renglón)</label><textarea id="fr-club-box-2-detalle" rows="3" placeholder="Un ítem por línea"></textarea></div>
+                    <div class="form-group form-group--full"><label>Foto (link https://, opcional)</label><input type="url" id="fr-club-box-2-imagen" placeholder="https://..."></div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div style="display:flex; gap:0.75rem; margin-top:0.75rem;">
-              <button type="submit" class="btn btn-primary">💾 Guardar Club Prince</button>
-              <button type="button" class="btn btn-secondary" onclick="AdminContent.resetFrases()">↺ Restaurar</button>
+              <button type="submit" class="btn btn-primary">💾 Guardar y publicar</button>
+              <button type="button" class="btn btn-secondary" onclick="AdminContent.resetClub()">↺ Restaurar textos originales</button>
             </div>
           <div class="chart-card" style="margin-top:1rem;">
-            <h3>👑 Leads Club Prince (últimos)</h3>
-            <p style="color:var(--texto-secundario); font-size:0.83rem;">Se guardan en pestaña <code>ClubPrince_Leads</code> del Google Sheet (o local si aún no configuraste el Apps Script).</p>
+            <h3>🙋 Quiénes se anotaron al club</h3>
+            <p style="color:var(--texto-secundario); font-size:0.83rem;">Con la planilla conectada aparecen acá (hoja <em>ClubPrince_Leads</em>). Sin planilla, te escriben directo por WhatsApp.</p>
             <div id="club-leads-list" style="margin-top:0.75rem;"></div>
             <button type="button" class="btn btn-sm btn-secondary" style="margin-top:0.5rem;" onclick="AdminContent.renderClubLeads()">↻ Actualizar</button>
           </div>
           </form>
         </div>
+      </section>
+
+      <!-- ===== ENVÍOS ===== -->
+      <section id="section-shipping" class="admin-section">
+        <div id="shipping-editor-root"></div>
       </section>
 
       <!-- ===== PROMOS ===== -->
@@ -561,18 +495,6 @@
         <div class="chart-card">
           <h3>⚙️ Configuración del Negocio</h3>
           <form id="settings-form" onsubmit="AdminSettings.save(event)">
-            <div class="security-box">
-              <h4>🔐 Conexión segura con Google Sheets</h4>
-              <p>Pegá acá el <strong>token de administración</strong> (el mismo valor que cargaste como <code>ADMIN_TOKEN</code> en las propiedades del Apps Script). Se guarda solo en este navegador y permite leer pedidos y publicar cambios en la tienda. Sin él, lo que hagas acá queda solo en esta computadora.</p>
-              <div class="form-group">
-                <label for="set-admin-token">Token de administración</label>
-                <div style="display:flex; gap:0.5rem;">
-                  <input type="password" id="set-admin-token" autocomplete="off" spellcheck="false" placeholder="Pegá el token (32+ caracteres)" style="flex:1;">
-                  <button type="button" class="btn btn-secondary" onclick="AdminSync.guardarToken()">Conectar</button>
-                </div>
-              </div>
-              <p class="form-hint">Usá este panel solo en tus dispositivos. En una compu compartida, borrá el token al terminar (dejá el campo vacío y tocá Conectar).</p>
-            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>Nombre del negocio</label>
@@ -644,8 +566,20 @@
               </div>
             </div>
 
+            <details class="security-box tech-box">
+              <summary>🔐 Conexión con Google Sheets (lo configura quien administra la web)</summary>
+              <p>Pegá acá el <strong>token de administración</strong> (el mismo valor que cargaste como <code>ADMIN_TOKEN</code> en las propiedades del Apps Script). Se guarda solo en este navegador y permite leer pedidos y publicar cambios en la tienda. Sin él, lo que hagas acá queda solo en esta computadora.</p>
+              <div class="form-group">
+                <label for="set-admin-token">Token de administración</label>
+                <div style="display:flex; gap:0.5rem;">
+                  <input type="password" id="set-admin-token" autocomplete="off" spellcheck="false" placeholder="Pegá el token (32+ caracteres)" style="flex:1;">
+                  <button type="button" class="btn btn-secondary" onclick="AdminSync.guardarToken()">Conectar</button>
+                </div>
+              </div>
+              <p class="form-hint">Usá este panel solo en tus dispositivos. En una compu compartida, borrá el token al terminar (dejá el campo vacío y tocá Conectar).</p>
+            </details>
             <div style="margin-top:1.5rem; display:flex; gap:0.75rem;">
-              <button type="submit" class="btn btn-primary">💾 Guardar Configuración</button>
+              <button type="submit" class="btn btn-primary">💾 Guardar configuración</button>
             </div>
           </form>
         </div>
@@ -1006,6 +940,7 @@
 <script src="js/promos.js"></script>
 <script src="js/admin-promos.js"></script>
 <script src="js/admin-settings.js"></script>
+<script src="js/admin-home.js"></script>
 <script src="js/admin-sync.js"></script>
 
 </body>

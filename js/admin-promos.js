@@ -251,8 +251,11 @@ const AdminPromos = {
   bind(root) {
     root.onchange = (e) => {
       const el = e.target;
-      const kind = el.dataset.kind;
-      const idx = el.dataset.idx;
+      // Los datos de la fila están en el contenedor .promos-row (antes se
+      // buscaban en el input y ningún cambio se guardaba).
+      const row = el.closest('.promos-row');
+      const kind = el.dataset.kind || row?.dataset.kind;
+      const idx = el.dataset.idx ?? row?.dataset.idx;
       const field = el.dataset.field;
       if (!kind || idx == null || !field) {
         const addEl = e.target.closest('[data-add]');
@@ -267,6 +270,10 @@ const AdminPromos = {
       if (field === 'desde' || field === 'hasta' || field === 'fechaLanzamiento') val = this.fromLocalInput(el.value);
       rec[field] = val;
       this.afterChange();
+    };
+
+    root.oninput = (e) => {
+      if (e.target.matches('input[type="text"], input[type="number"]')) root.onchange(e);
     };
 
     root.onclick = (e) => {
@@ -335,14 +342,12 @@ const AdminPromos = {
     if (typeof AdminData.savePromos === 'function') AdminData.savePromos(this.data);
     else localStorage.setItem('pl_admin_promos', JSON.stringify(this.data));
 
-    // Push remoto (Apps Script) si está configurado
-    const url = this.endpoint();
-    if (url && typeof SheetsService !== 'undefined' && SheetsService.postToAppsScript) {
-      SheetsService.postToAppsScript('save_config', { config: { promos: JSON.stringify(this.data) } })
-        .then(() => AdminApp.toast?.('Promociones guardadas (local + Sheets)'))
-        .catch(() => AdminApp.toast?.('Guardado local. Configurá Apps Script para sincronizar en la nube', 'warning'));
+    // Publicar en la tienda (planilla) si está conectada
+    if (typeof AdminSync !== 'undefined' && AdminSync.habilitado()) {
+      AdminSync.publicar('save_config', { config: { promos: JSON.stringify(this.data) } }, 'las promociones');
+      AdminApp.toast?.('✅ Promociones publicadas en la tienda');
     } else {
-      AdminApp.toast?.('Promociones guardadas localmente. Configurá Apps Script para sincronizar en la nube', 'warning');
+      AdminApp.toast?.('💾 Promociones guardadas (en la tienda se ven al conectar la planilla)');
     }
   },
 

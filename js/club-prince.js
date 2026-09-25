@@ -120,8 +120,11 @@ const ClubPrince = {
     if (this.boxesFetching) return this.boxesFetching;
 
     this.boxesFetching = (async () => {
+      // 0. Vista previa del admin: manda lo guardado en este navegador
+      const preview = new URLSearchParams(location.search).get('preview') === '1';
+      const localPrev = preview ? this.localBoxes() : null;
       // 1. Google Sheets (Apps Script, clave `clubPrince_boxes`)
-      const url = this.endpoint();
+      const url = localPrev ? null : this.endpoint();
       if (url && typeof fetch !== 'undefined') {
         try {
           const u = new URL(url);
