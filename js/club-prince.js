@@ -31,9 +31,7 @@ const ClubPrince = {
   selectedPlan: null,
 
   endpoint() {
-    const url = (typeof CONFIG !== 'undefined' && CONFIG.sheets?.appsScriptUrl) ? CONFIG.sheets.appsScriptUrl : null;
-    if (!url || url.includes('TU_SCRIPT_ID')) return null;
-    return url;
+    return (typeof appsScriptConfigurado === 'function') ? appsScriptConfigurado() : null;
   },
 
   init() {
@@ -85,7 +83,7 @@ const ClubPrince = {
       detalleCompleto: r.detalleCompleto || '',
       precioUSD: parseFloat(r.precioUSD) || 0,
       precio: 0, // se calcula abajo
-      imagenUrl: r.imagenUrl || r.imagen || '',
+      imagenUrl: /^(https:|assets\/)/.test(String(r.imagenUrl || r.imagen || '')) ? String(r.imagenUrl || r.imagen) : '',
       icon: r.icon || '🎀',
       tag: r.tag || '',
       destacado: !!r.destacado,
@@ -205,7 +203,7 @@ const ClubPrince = {
           ${box.tag ? `<span class="club-box__tag">${this.esc(box.tag)}</span>` : ''}
           <h3 class="club-box__name">${this.esc(box.nombre)}</h3>
           <p class="club-box__meta">${this.esc(box.descripcionCorta)}</p>
-          <button class="btn ${btnClass} btn--block" onclick="ClubPrince.openBoxModal('${this.esc(box.id)}')">Ver más</button>
+          <button class="btn ${btnClass} btn--block" onclick="ClubPrince.openBoxModal('${escJsAttr(box.id)}')">Ver más</button>
         </article>`;
       }).join('');
     }
@@ -356,54 +354,40 @@ const ClubPrince = {
 
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
 
-    const payload = { action: 'club_prince_lead', lead: { nombre, telefono, ciudad, plan, origen: 'Club Prince Web', estado: 'nuevo' } };
-    // Fallback local (siempre guardar localmente además del Sheets)
-    try {
-      const local = JSON.parse(localStorage.getItem('pl_clubprince_leads') || '[]');
-      local.push({ id: `club_${Date.now()}`, fecha: new Date().toISOString(), ...payload.lead });
-      localStorage.setItem('pl_clubprince_leads', JSON.stringify(local));
-    } catch {}
-
-    const url = this.endpoint();
-    // Si no hay endpoint configurado, igual mostrar éxito (queda en localStorage para que admin lo vea)
-    if (!url) {
-      setMsg('¡Gracias! Te contactamos muy pronto para activar tu suscripción. ✨', true);
+    const lead = { nombre: nombre.slice(0, 80), telefono: telefono.slice(0, 20), ciudad: ciudad.slice(0, 60), plan, origen: 'Club Prince Web', estado: 'nuevo' };
+    const textoWa = `Yanela del club Prince quiero sumarme 👑\n\nNombre: ${lead.nombre}\nTeléfono: ${lead.telefono}\nCiudad: ${lead.ciudad}${plan ? `\nPlan: ${plan}` : ''}`;
+    const ok = () => {
+      setMsg('¡Gracias! Te escribimos por WhatsApp para activar tu suscripción. 💕', true);
       e.target.reset();
       this.renderPlanSelect();
+    };
+
+    // Sin planilla conectada: el lead viaja por WhatsApp (antes quedaba
+    // guardado solo en el celular de la clienta y nunca te llegaba).
+    // Se abre ANTES de cualquier await para que el celular no lo bloquee.
+    const url = this.endpoint();
+    if (!url) {
+      CartService.abrirWhatsApp(textoWa);
+      ok();
       if (btn) { btn.disabled = false; btn.textContent = '✨ Quiero ser parte'; }
-      if (typeof App !== 'undefined') App.showToast('¡Bienvenida al Club Prince! 👑');
       return;
     }
 
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload),
-      });
-      // Apps Script responde texto JSON aunque sea opaque en cors; intentar leer
-      let data = null;
-      try { data = await res.json(); } catch { try { data = JSON.parse(await res.text()); } catch {} }
-
-      if (data && data.error) throw new Error(data.error);
-
-      setMsg('¡Gracias! Ya sos parte del Club Prince. Te escribimos en breve. 💕', true);
-      e.target.reset();
-      this.renderPlanSelect();
-      if (typeof App !== 'undefined') App.showToast('¡Lead guardado en ClubPrince_Leads! 👑');
+      await SheetsService.postToAppsScript('club_prince_lead', { lead });
+      ok();
+      if (typeof App !== 'undefined') App.showToast('¡Bienvenida al Club Prince! 👑');
     } catch (err) {
-      console.error('[ClubPrince] fetch', err);
-      // Aunque falle el Sheets, el lead quedó local
-      setMsg('¡Recibido! Te contactamos pronto. (Guardado localmente)', true);
-      e.target.reset();
-      this.renderPlanSelect();
+      console.warn('[ClubPrince] no se pudo guardar el lead:', err.message);
+      setMsg('No pudimos registrarte automáticamente. Tocá el botón de nuevo para enviarnos tus datos por WhatsApp.', false);
+      // Segundo intento: sin endpoint → WhatsApp
+      this.endpoint = () => null;
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '✨ Quiero ser parte'; }
     }
   },
 
-  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  esc(s) { return escHtml(s); }
 };
 
 document.addEventListener('DOMContentLoaded', () => ClubPrince.init());

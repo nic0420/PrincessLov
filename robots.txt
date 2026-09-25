@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /admin
+Disallow: /api/
+Allow: /
+
+Sitemap: https://princess-lov.vercel.app/sitemap.xml

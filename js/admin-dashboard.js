@@ -211,7 +211,7 @@ const AdminDashboard = {
     container.innerHTML = stats.topProductos.map((p, i) => `
       <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0; border-bottom:1px solid var(--gris-200);">
         <span style="width:24px; text-align:center; font-weight:700; color:${i < 3 ? 'var(--borgona-300)' : 'var(--texto-secundario)'};">#${i + 1}</span>
-        <span style="flex:1; font-size:0.85rem; font-weight:500;">${p.nombre}</span>
+        <span style="flex:1; font-size:0.85rem; font-weight:500;">${escHtml(p.nombre)}</span>
         <span style="font-weight:700; color:var(--borgona-300);">${p.cantidad} u.</span>
       </div>
     `).join('');
@@ -235,7 +235,7 @@ const AdminDashboard = {
     list.innerHTML = lowStock.map(p => `
       <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0; border-bottom:1px solid var(--gris-200);">
         <span style="color:${p.stock === 0 ? '#EF4444' : '#F59E0B'}; font-weight:700;">${p.stock === 0 ? '🚫' : '⚠️'}</span>
-        <span style="flex:1; font-size:0.85rem;">${p.nombre}</span>
+        <span style="flex:1; font-size:0.85rem;">${escHtml(p.nombre)}</span>
         <span style="font-size:0.8rem; color:${p.stock === 0 ? '#EF4444' : '#F59E0B'}; font-weight:600;">
           ${p.stock === 0 ? 'Sin stock' : `Solo ${p.stock} u.`}
         </span>
@@ -426,9 +426,9 @@ const AdminDashboard = {
 
     container.innerHTML = expenses.map(e => `
       <div style="display:flex; align-items:center; gap:1rem; padding:0.75rem 0; border-bottom:1px solid var(--gris-200);">
-        <span style="flex:1; font-size:0.85rem; font-weight:500;">${e.concepto}</span>
+        <span style="flex:1; font-size:0.85rem; font-weight:500;">${escHtml(e.concepto)}</span>
         <span style="font-size:0.8rem; color:var(--texto-secundario);">${AdminApp.formatDate(e.fecha)}</span>
-        <span style="font-size:0.8rem; padding:0.2rem 0.5rem; border-radius:20px; background:var(--gris-200);">${e.categoria}</span>
+        <span style="font-size:0.8rem; padding:0.2rem 0.5rem; border-radius:20px; background:var(--gris-200);">${escHtml(e.categoria)}</span>
         <span style="font-weight:700; color:#EF4444;">-${AdminData.formatARS(e.monto)}</span>
       </div>
     `).join('');

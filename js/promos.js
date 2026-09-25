@@ -314,7 +314,7 @@ const PromoEngine = {
     }, 1000);
   },
 
-  esc(s) { if (typeof document === 'undefined') return String(s ?? ''); const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  esc(s) { return (typeof escHtml === 'function') ? escHtml(s) : String(s ?? ''); }
 };
 
 if (typeof module !== 'undefined' && module.exports) {

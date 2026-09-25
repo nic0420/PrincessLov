@@ -11,7 +11,12 @@ const App = {
   async init() {
     try {
       this.applyCustomConfig?.();
-      await SheetsService.cargarProductos();
+      // Config publicada desde el admin (textos, categorías, envíos, WhatsApp)
+      // y productos en paralelo para que la carga sea más rápida.
+      await Promise.all([
+        SheetsService.cargarConfigPublica(),
+        SheetsService.cargarProductos(),
+      ]);
       await SheetsService.obtenerCotizacion();
 
       CartService.init();
@@ -34,7 +39,8 @@ const App = {
       this._loadFilters();
       this._applyFilterUI();
 
-      this.renderProductos(SheetsService.productos);
+      this.aplicarFiltros();
+      this.renderStockCounts();
       this.renderCartSidebar();
       this.actualizarUI();
       this.setupWhatsAppLink();
@@ -44,9 +50,7 @@ const App = {
         PromoEngine.iniciarTicker();
       }
 
-      // Verificar retorno de Mercado Pago (back_url)
-      CheckoutService.checkPaymentReturn?.();
-
+      this.setupNewsletter();
       this.hideLoading();
     } catch (error) {
       console.error('[App] Error inicializando:', error);
@@ -73,8 +77,8 @@ const App = {
         <span class="filter-btn__count">${SheetsService.productos.length}</span>
       </button>
       ${cats.map(cat => `
-        <button class="filter-btn ${cat.id === this.categoriaActual ? 'filter-btn--active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}">
-          <span><span aria-hidden="true">${cat.icon}</span> ${escHtml(cat.nombre)}</span>
+        <button class="filter-btn ${cat.id === this.categoriaActual ? 'filter-btn--active' : ''}" onclick="App.filtrarCategoria('${escJsAttr(cat.id)}')" data-cat="${escHtml(cat.id)}">
+          <span><span aria-hidden="true">${escHtml(cat.icon || '')}</span> ${escHtml(cat.nombre)}</span>
           <span class="filter-btn__count">${cat.count}</span>
         </button>
       `).join('')}
@@ -92,8 +96,8 @@ const App = {
     container.innerHTML = `
       <button class="cat-pill ${this.categoriaActual === 'todos' ? 'cat-pill--active' : ''}" onclick="App.filtrarCategoria('todos')" data-cat="todos" aria-pressed="${this.categoriaActual === 'todos'}">Todos</button>
       ${cats.map(cat => `
-        <button class="cat-pill ${cat.id === this.categoriaActual ? 'cat-pill--active' : ''}" onclick="App.filtrarCategoria('${cat.id}')" data-cat="${cat.id}" aria-pressed="${cat.id === this.categoriaActual}">
-          <span aria-hidden="true">${cat.icon}</span> ${escHtml(cat.nombre)}
+        <button class="cat-pill ${cat.id === this.categoriaActual ? 'cat-pill--active' : ''}" onclick="App.filtrarCategoria('${escJsAttr(cat.id)}')" data-cat="${escHtml(cat.id)}" aria-pressed="${cat.id === this.categoriaActual}">
+          <span aria-hidden="true">${escHtml(cat.icon || '')}</span> ${escHtml(cat.nombre)}
         </button>
       `).join('')}
     `;
@@ -125,10 +129,13 @@ const App = {
       productos = productos.filter(p => p.stock <= 0);
     }
 
+    // Ordenar por el precio que ve la clienta (respeta precio manual en pesos y ofertas)
+    const precio = (p) => (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(p) : SheetsService.calcularPrecioARS(p.precioUSD, p);
     switch (this.sortOrder) {
-      case 'price-asc': productos.sort((a, b) => a.precioUSD - b.precioUSD); break;
-      case 'price-desc': productos.sort((a, b) => b.precioUSD - a.precioUSD); break;
-      case 'name': productos.sort((a, b) => a.nombre.localeCompare(b.nombre)); break;
+      case 'price-asc': productos.sort((a, b) => precio(a) - precio(b)); break;
+      case 'price-desc': productos.sort((a, b) => precio(b) - precio(a)); break;
+      case 'name': productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')); break;
+      default: productos.sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0));
     }
 
     this.renderProductos(productos);
@@ -285,10 +292,10 @@ const App = {
         const catsEl = document.getElementById('empty-categories');
         if (catsEl) {
           const cats = (typeof SheetsService !== 'undefined' && SheetsService.obtenerCategoriasConConteo)
-            ? SheetsService.obtenerCategoriasConConteo().filter(c => c.id !== 'todos' && c.conteo > 0)
+            ? SheetsService.obtenerCategoriasConConteo().filter(c => c.id !== 'todos' && c.count > 0)
             : [];
           catsEl.innerHTML = cats.slice(0, 6).map(c =>
-            `<button class="grid-empty__cat-btn" onclick="App.filtrarCategoria('${c.id}')">${c.icon ? c.icon + ' ' : ''}${c.nombre}</button>`
+            `<button class="grid-empty__cat-btn" onclick="App.filtrarCategoria('${escJsAttr(c.id)}')">${c.icon ? escHtml(c.icon) + ' ' : ''}${escHtml(c.nombre)}</button>`
           ).join('');
         }
       }
@@ -299,32 +306,33 @@ const App = {
     if (emptyEl) emptyEl.style.display = 'none';
 
     grid.innerHTML = productos.map(p => {
-      const basePrecio = SheetsService.calcularPrecioARS(p.precioUSD);
+      const basePrecio = SheetsService.calcularPrecioARS(p.precioUSD, p);
       const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(p) : basePrecio;
       const sinStock = p.stock <= 0;
 
       let badge = '';
       const promoBadges = (typeof PromoEngine !== 'undefined' && PromoEngine.badgePara) ? PromoEngine.badgePara(p) : [];
-      if (promoBadges.length) {
-        badge = promoBadges.map(b => `<span class="badge ${b.clase}">${b.texto}</span>`).join('');
+      if (sinStock) badge = '<span class="badge badge--low">Sin stock</span>';
+      else if (promoBadges.length) {
+        badge = promoBadges.map(b => `<span class="badge ${b.clase}">${escHtml(b.texto)}</span>`).join('');
       } else if (p.tags.includes('nuevo')) badge = '<span class="badge badge--new">Nuevo</span>';
       else if (p.tags.includes('oferta')) badge = '<span class="badge badge--sale">Oferta</span>';
-      else if (sinStock) badge = '<span class="badge badge--low">Pocas unidades</span>';
+      else if (p.stock <= 3) badge = '<span class="badge badge--low">Últimas unidades</span>';
 
       const flashBadge = promoBadges.find(b => b.hasta);
       const countdown = flashBadge
-        ? `<span class="promo-countdown" data-countdown="${flashBadge.hasta}">⏳ ${PromoEngine.restanteHumano(flashBadge.hasta)}</span>`
+        ? `<span class="promo-countdown" data-countdown="${escHtml(flashBadge.hasta)}">⏳ ${PromoEngine.restanteHumano(flashBadge.hasta)}</span>`
         : '';
 
       return `
-        <article class="product-card" data-id="${p.id}" role="listitem" tabindex="0" onclick="App.openProductModal('${p.id}')">
+        <article class="product-card" data-id="${escHtml(p.id)}" role="listitem" tabindex="0" aria-label="${escHtml(p.nombre)}" onclick="App.openProductModal('${escJsAttr(p.id)}')" onkeydown="if(event.key==='Enter'){App.openProductModal('${escJsAttr(p.id)}')}">
           <div class="product-card__media">
             ${badge}
             ${countdown}
             <img class="product-card__image" src="${escHtml(p.imagen)}" alt="${escHtml(p.nombre)}"
                  loading="lazy"
                  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22><rect width=%22300%22 height=%22400%22 fill=%22%23eedbd8%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239c684c%22 font-size=%2216%22>PrincessLov</text></svg>'">
-            <button class="product-card__quick" data-id="${p.id}" aria-label="Agregar ${escHtml(p.nombre)} al carrito" ${sinStock ? 'disabled' : ''}>
+            <button class="product-card__quick" data-id="${escHtml(p.id)}" aria-label="Agregar ${escHtml(p.nombre)} al carrito" ${sinStock ? 'disabled' : ''}>
               <span aria-hidden="true">🛒</span>
             </button>
           </div>
@@ -337,7 +345,7 @@ const App = {
                 : `<span class="price price--current">${SheetsService.formatPrecioARS(precioARS)}</span>`}
             </div>
             <div class="product-card__stock ${sinStock ? 'product-card__stock--low' : ''}">
-              ${sinStock ? '⚠️ Sin stock' : `Stock: ${p.stock} unidades`}
+              ${sinStock ? 'Sin stock' : (p.stock <= 3 ? `¡Quedan ${p.stock}!` : 'En stock')}
             </div>
           </div>
         </article>
@@ -389,7 +397,7 @@ const App = {
       const images = [producto.imagen, ...(producto.galeria || []).map(g => g.url)].filter(Boolean);
       thumbsContainer.innerHTML = images.map((img, idx) => `
         <img class="product-modal__thumb ${idx === 0 ? 'active' : ''}" src="${escHtml(img)}" alt="${escHtml(producto.nombre)} - vista ${idx + 1}" 
-             onclick="App.switchProductModalImage(this)" loading="lazy">
+             onclick="App.switchProductModalImage(this)" loading="lazy" onerror="this.remove()">
       `).join('');
     }
 
@@ -399,7 +407,7 @@ const App = {
       const badges = [];
       const promoBadges = (typeof PromoEngine !== 'undefined' && PromoEngine.badgePara) ? PromoEngine.badgePara(producto) : [];
       const promoModalClases = { 'badge--flash': 'product-modal__badge--flash', 'badge--preventa': 'product-modal__badge--preventa', 'badge--combo': 'product-modal__badge--combo', 'badge--2x1': 'product-modal__badge--2x1' };
-      promoBadges.forEach(b => badges.push(`<span class="product-modal__badge ${promoModalClases[b.clase] || b.clase}">${b.texto}</span>`));
+      promoBadges.forEach(b => badges.push(`<span class="product-modal__badge ${promoModalClases[b.clase] || b.clase}">${escHtml(b.texto)}</span>`));
       if (producto.tags?.includes('nuevo')) badges.push('<span class="product-modal__badge product-modal__badge--new">Nuevo</span>');
       if (producto.tags?.includes('oferta')) badges.push('<span class="product-modal__badge product-modal__badge--oferta">Oferta</span>');
       if (producto.destacado) badges.push('<span class="product-modal__badge product-modal__badge--bestseller">Destacado</span>');
@@ -468,13 +476,13 @@ const App = {
         html += `
           <div class="product-modal__variant-group">
             <div class="product-modal__variant-label" style="display:flex; align-items:center; gap:0.5rem;">
-              <span style="width:16px;height:16px;border-radius:50%;background:${escHtml(colorHex)};border:1px solid var(--border);"></span>
+              <span style="width:16px;height:16px;border-radius:50%;background:${/^#[0-9a-f]{3,8}$/i.test(colorHex) ? colorHex : '#800020'};border:1px solid var(--border);"></span>
               ${escHtml(color)}
             </div>
             <div class="product-modal__variant-options">
               ${variantsOfColor.map(v => `
                 <button class="product-modal__variant-option ${v.stock <= 0 ? 'disabled' : ''}" 
-                        data-color="${escHtml(color)}" data-talle="${escHtml(v.talle)}" data-stock="${v.stock}"
+                        data-color="${escHtml(color)}" data-talle="${escHtml(v.talle)}" data-stock="${Number(v.stock) || 0}"
                         onclick="App.selectProductVariant(this)" ${v.stock <= 0 ? 'disabled' : ''}>
                   ${escHtml(v.talle)}
                   ${v.stock > 0 && v.stock <= 5 ? `<span style="font-size:0.65rem;color:#F59E0B;"> (${v.stock})</span>` : ''}
@@ -632,9 +640,8 @@ const App = {
     }
 
     const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(producto) : (producto.precioARSManual || SheetsService.calcularPrecioARS(producto.precioUSD));
-    const texto = `Hola! Me interesa: ${producto.nombre}${variantText} - ${SheetsService.formatPrecioARS(precioARS)}`;
-    const url = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent(texto)}`;
-    window.open(url, '_blank');
+    const texto = `¡Hola! Me interesa este producto:\n• ${producto.nombre}${variantText}\nPrecio: ${SheetsService.formatPrecioARS(precioARS)}\n\n¿Está disponible?`;
+    CartService.abrirWhatsApp(texto);
     this.closeProductModal();
   },
 
@@ -705,7 +712,7 @@ const App = {
       const discount = item.descuento || 0;
 
       return `
-        <article class="cart-item" data-id="${item.key || item.id}" role="listitem">
+        <article class="cart-item" data-id="${escHtml(item.key || item.id)}" role="listitem">
           <div class="cart-item__media">
             <img class="cart-item__image" src="${escHtml(item.imagen)}" alt="${escHtml(item.nombre)}"
                  loading="lazy"
@@ -724,11 +731,11 @@ const App = {
             </div>
             <div class="cart-item__qty">
               <div class="qty-selector" role="group" aria-label="Cantidad de ${escHtml(item.nombre)}">
-                <button class="qty-btn" data-action="minus" data-id="${item.key || item.id}" aria-label="Disminuir cantidad" ${item.cantidad <= 1 ? 'disabled' : ''}>−</button>
-                <input type="number" class="qty-input" data-id="${item.key || item.id}" value="${item.cantidad}" min="1" max="${Math.max(stock, 1)}" aria-label="Cantidad" readonly>
-                <button class="qty-btn" data-action="plus" data-id="${item.key || item.id}" aria-label="Aumentar cantidad" ${stock <= 0 || item.cantidad >= stock ? 'disabled' : ''}>+</button>
+                <button class="qty-btn" data-action="minus" data-id="${escHtml(item.key || item.id)}" aria-label="Disminuir cantidad" ${item.cantidad <= 1 ? 'disabled' : ''}>−</button>
+                <input type="number" class="qty-input" data-id="${escHtml(item.key || item.id)}" value="${item.cantidad}" min="1" max="${Math.max(stock, 1)}" aria-label="Cantidad" readonly>
+                <button class="qty-btn" data-action="plus" data-id="${escHtml(item.key || item.id)}" aria-label="Aumentar cantidad" ${stock <= 0 || item.cantidad >= stock ? 'disabled' : ''}>+</button>
               </div>
-              <button class="cart-item__remove" data-action="remove" data-id="${item.key || item.id}" aria-label="Eliminar ${escHtml(item.nombre)}" title="Eliminar">
+              <button class="cart-item__remove" data-action="remove" data-id="${escHtml(item.key || item.id)}" aria-label="Eliminar ${escHtml(item.nombre)}" title="Eliminar">
                 <span aria-hidden="true">🗑️</span>
               </button>
             </div>
@@ -743,9 +750,13 @@ const App = {
     const discount = CartService.getDiscountAmount() || 0;
     const total = CartService.getTotalARS();
     const count = CartService.getTotalItems();
-    const freeShippingThreshold = CONFIG?.promos?.envioGratisUmbralARS || 150000; // $150k ARS
-    const progress = Math.min((subtotal / freeShippingThreshold) * 100, 100);
-    const remaining = Math.max(freeShippingThreshold - subtotal, 0);
+    const freeShippingThreshold = CartService.getFreeShippingThreshold();
+    const baseEnvioGratis = subtotal - discount;
+    const progress = freeShippingThreshold > 0 ? Math.min((baseEnvioGratis / freeShippingThreshold) * 100, 100) : 0;
+    const remaining = Math.max(freeShippingThreshold - baseEnvioGratis, 0);
+    const progressWrap = document.getElementById('free-shipping-progress');
+    if (progressWrap) progressWrap.style.display = freeShippingThreshold > 0 ? '' : 'none';
+    this.renderShippingOptions();
 
     // Update free shipping progress
     const freeBarFill = document.getElementById('free-bar-fill');
@@ -754,7 +765,7 @@ const App = {
     if (freeBarFill) freeBarFill.style.width = `${progress}%`;
     if (freeAmount) freeAmount.textContent = SheetsService.formatPrecioARS(remaining);
     if (freeText) {
-      if (remaining <= 0) {
+      if (CartService.hasFreeShipping()) {
         freeText.innerHTML = `¡Tenés <strong>envío gratis</strong>! 🎉`;
       } else {
         freeText.innerHTML = `Agregá <strong>${SheetsService.formatPrecioARS(remaining)}</strong> más para envío gratis`;
@@ -774,11 +785,8 @@ const App = {
           <span>−${SheetsService.formatPrecioARS(discount)}</span>
         </div>` : ''}
         <div class="cart__totals-row cart__totals-row--shipping">
-          <span class="cart__totals-label">
-            Envío
-            <span class="cart__totals-tooltip" title="Calculado en el checkout según tu ubicación">ⓘ</span>
-          </span>
-          <span>${shipping > 0 ? SheetsService.formatPrecioARS(shipping) : 'Calcular'}</span>
+          <span class="cart__totals-label">Envío</span>
+          <span>${CartService.shippingId ? (shipping > 0 ? SheetsService.formatPrecioARS(shipping) : 'Gratis') : 'Elegí abajo'}</span>
         </div>
         <div class="cart__totals-row cart__totals-row--total">
           <span class="cart__totals-label">Total</span>
@@ -851,35 +859,27 @@ const App = {
     }
   },
 
-  calculateShipping(e) {
-    e.preventDefault();
-    const zip = document.getElementById('shipping-zip')?.value.trim();
-    const city = document.getElementById('shipping-city')?.value.trim();
-    const resultEl = document.getElementById('shipping-result');
-    if (!zip || !city || !resultEl) return;
-
-    // Simulated shipping calculation
-    const envio = CONFIG.envios.find(e => e.id === 'correo_argentino') || CONFIG.envios[3];
-    const cost = envio.precio;
-
-    CartService.setShipping(envio.id, cost);
-    resultEl.style.display = 'block';
-    resultEl.innerHTML = `
-      <strong>Opciones para ${city} (${zip}):</strong>
-      <div style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
-        ${CONFIG.envios.filter(e => e.activo).map(e => `
-          <div class="cart__shipping-option" data-shipping="${e.id}">
-            <div class="cart__shipping-option-label">
-              <span class="cart__shipping-option-name">${e.nombre}</span>
-              <span class="cart__shipping-option-desc">${e.descripcion}</span>
-            </div>
-            <span class="cart__shipping-option-price">${e.precio > 0 ? SheetsService.formatPrecioARS(e.precio) : 'Gratis'}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-    this.renderCartSidebar();
+  /** Opciones de envío dentro del carrito (antes había un "calcular por CP" simulado) */
+  renderShippingOptions() {
+    const el = document.getElementById('shipping-result');
+    if (!el) return;
+    const gratis = CartService.hasFreeShipping();
+    el.style.display = 'block';
+    el.innerHTML = (CONFIG.envios || []).filter(e => e.activo !== false).map(e => {
+      const sel = CartService.shippingId === e.id;
+      const precio = Number(e.precio) > 0 && !gratis ? SheetsService.formatPrecioARS(e.precio) : 'Gratis';
+      return `
+        <button type="button" class="cart__shipping-option ${sel ? 'cart__shipping-option--selected' : ''}" data-shipping="${escHtml(e.id)}" aria-pressed="${sel}">
+          <span class="cart__shipping-option-label">
+            <span class="cart__shipping-option-name">${escHtml(e.nombre)}</span>
+            <span class="cart__shipping-option-desc">${escHtml(e.descripcion || '')}</span>
+          </span>
+          <span class="cart__shipping-option-price">${precio}</span>
+        </button>`;
+    }).join('');
   },
+
+  calculateShipping(e) { if (e) e.preventDefault(); this.renderShippingOptions(); },
 
   renderCrossSell() {
     const grid = document.getElementById('cross-sell-grid');
@@ -890,7 +890,7 @@ const App = {
     const currentIds = new Set(items.map(i => i.id));
     const allProducts = SheetsService.productos.filter(p => p.stock > 0 && !currentIds.has(p.id));
     const recommended = allProducts
-      .sort(() => Math.random() - 0.5)
+      .sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0) || b.stock - a.stock)
       .slice(0, 4);
 
     if (recommended.length === 0) {
@@ -899,9 +899,9 @@ const App = {
     }
 
     grid.innerHTML = recommended.map(p => {
-      const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(p) : SheetsService.calcularPrecioARS(p.precioUSD);
+      const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(p) : SheetsService.calcularPrecioARS(p.precioUSD, p);
       return `
-        <button class="cart__cross-sell-item" onclick="App.quickAdd('${p.id}')" aria-label="Agregar ${escHtml(p.nombre)} - ${SheetsService.formatPrecioARS(precioARS)}">
+        <button class="cart__cross-sell-item" onclick="App.quickAdd('${escJsAttr(p.id)}')" aria-label="Agregar ${escHtml(p.nombre)} - ${SheetsService.formatPrecioARS(precioARS)}">
           <img class="cart__cross-sell-img" src="${escHtml(p.imagen)}" alt="" loading="lazy"
                onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%23eedbd8%22/></svg>'">
           <div class="cart__cross-sell-info">
@@ -929,11 +929,8 @@ const App = {
   },
 
   selectShipping(shippingId) {
-    const envio = CONFIG.envios.find(e => e.id === shippingId);
-    if (envio) {
-      CartService.setShipping(envio.id, envio.precio);
-      this.renderCartSidebar();
-    }
+    const envio = (CONFIG.envios || []).find(e => e.id === shippingId);
+    if (envio) CartService.setShipping(envio.id); // save() → listeners → re-render
   },
 
   openCart() {
@@ -948,10 +945,10 @@ const App = {
     document.body.classList.remove('no-scroll');
   },
 
+  /** Consulta rápida por WhatsApp con el carrito (sin datos de envío) */
   enviarCarritoWhatsApp() {
     if (CartService.items.length === 0) { this.showToast('El carrito está vacío'); return; }
-    const envio = CONFIG.envios.find(e => e.id === 'retiro');
-    CartService.enviarWhatsApp(envio, null);
+    CartService.enviarWhatsApp(CartService.getShippingOption(), null);
     this.closeCart();
   },
 
@@ -960,12 +957,15 @@ const App = {
     if (CartService.items.length === 0) { this.showToast('El carrito está vacío'); return; }
     this.closeCart();
     CheckoutService.renderCheckout();
-    document.getElementById('checkout-modal')?.classList.add('modal-overlay--open');
+    const m = document.getElementById('checkout-modal');
+    if (m) { m.classList.add('modal-overlay--open'); m.setAttribute('aria-hidden', 'false'); }
     document.body.classList.add('no-scroll');
+    setTimeout(() => document.getElementById('checkout-nombre')?.focus(), 100);
   },
 
   closeCheckout() {
-    document.getElementById('checkout-modal')?.classList.remove('modal-overlay--open');
+    const m = document.getElementById('checkout-modal');
+    if (m) { m.classList.remove('modal-overlay--open'); m.setAttribute('aria-hidden', 'true'); }
     document.body.classList.remove('no-scroll');
   },
 
@@ -1006,7 +1006,7 @@ const App = {
       resultsEl.innerHTML = results.slice(0, 8).map(p => {
         const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(p) : SheetsService.calcularPrecioARS(p.precioUSD);
         return `
-          <button class="search__result" onclick="App.toggleSearch(); App.openProductModal('${p.id}');" aria-label="${escHtml(p.nombre)} - ${SheetsService.formatPrecioARS(precioARS)}">
+          <button class="search__result" onclick="App.toggleSearch(); App.openProductModal('${escJsAttr(p.id)}');" aria-label="${escHtml(p.nombre)} - ${SheetsService.formatPrecioARS(precioARS)}">
             <img class="search__result-img" src="${escHtml(p.imagen)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2248%22 height=%2264%22><rect width=%2248%22 height=%2264%22 fill=%22%23eedbd8%22/></svg>'">
             <div>
               <div class="search__result-name">${escHtml(p.nombre)}</div>
@@ -1039,7 +1039,11 @@ const App = {
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<span aria-hidden="true">✨</span> ${message}`;
+    const icon = document.createElement('span');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '✨ ';
+    toast.appendChild(icon);
+    toast.appendChild(document.createTextNode(String(message ?? '')));
     container.appendChild(toast);
     setTimeout(() => {
       toast.classList.add('toast--out');
@@ -1075,9 +1079,13 @@ const App = {
   /* ---------- WHATSAPP ---------- */
   setupWhatsAppLink() {
     const btn = document.getElementById('contacto-whatsapp-btn');
-    if (btn) btn.href = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent('Hola! Quiero consultar por sus productos.')}`;
+    if (btn) { btn.href = CartService.whatsappUrl('¡Hola! Quiero consultar por sus productos.'); btn.rel = 'noopener'; }
     const footerWa = document.getElementById('footer-whatsapp-link');
-    if (footerWa) footerWa.innerHTML = `📱 WhatsApp: <a href="https://wa.me/${CONFIG.negocio.whatsapp}" target="_blank" style="color:var(--primary);">Escribinos</a>`;
+    if (footerWa) {
+      footerWa.href = CartService.whatsappUrl('¡Hola! Quiero hacer una consulta.');
+      footerWa.rel = 'noopener';
+      footerWa.textContent = '📱 WhatsApp: Escribinos';
+    }
     const ig = CONFIG.negocio.instagram;
     const igUrl = ig ? `https://instagram.com/${ig}` : null;
 
@@ -1119,40 +1127,52 @@ const App = {
     if (!el) return;
     const cats = SheetsService.obtenerCategoriasConConteo().slice(0, 6);
     el.innerHTML = cats.map(cat => `
-      <li><a href="#productos" class="footer__link" onclick="App.filtrarCategoria('${cat.id}'); return false;">${cat.nombre}</a></li>
+      <li><a href="#productos" class="footer__link" onclick="App.filtrarCategoria('${escJsAttr(cat.id)}'); App.scrollToProducts(); return false;">${escHtml(cat.nombre)}</a></li>
     `).join('');
   },
 
   /* ---------- NEWSLETTER ---------- */
-  subscribeNewsletter(e) {
+  /**
+   * Sin planilla conectada, el mail quedaba guardado solo en el navegador
+   * de la clienta (nunca te llegaba). Ahora la sección se oculta hasta que
+   * el Apps Script esté configurado.
+   */
+  setupNewsletter() {
+    const sec = document.getElementById('newsletter');
+    if (sec) sec.style.display = SheetsService.appsScriptUrl ? '' : 'none';
+  },
+
+  async subscribeNewsletter(e) {
     e.preventDefault();
     const input = document.getElementById('newsletter-email');
     const msg = document.getElementById('newsletter-msg');
+    const btn = e.target.querySelector('button[type="submit"]');
     const email = input?.value.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      if (msg) {
-        msg.textContent = 'Ingresá un correo válido.';
-        msg.className = 'newsletter__msg newsletter__msg--error';
-      }
+    const setMsg = (t, ok) => { if (msg) { msg.textContent = t; msg.className = 'newsletter__msg newsletter__msg--' + (ok ? 'success' : 'error'); } };
+    if (!email || email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      setMsg('Ingresá un correo válido.', false);
       return;
     }
-    // Guardar suscriptores en localStorage (fallback) y en Sheets si está configurado
+    if (e.target.querySelector('.hp-field input')?.value) return; // bot
+    if (btn) btn.disabled = true;
     try {
-      const subs = JSON.parse(localStorage.getItem('pl_newsletter') || '[]');
-      if (!subs.includes(email)) {
-        subs.push(email);
-        localStorage.setItem('pl_newsletter', JSON.stringify(subs));
-      }
-      if (SheetsService.postToAppsScript) {
-        SheetsService.postToAppsScript('subscribe_newsletter', { email }).catch(() => {});
-      }
-    } catch (err) { console.warn('Newsletter:', err); }
-
-    if (msg) {
-      msg.textContent = '¡Gracias por suscribirte! Te avisaremos de las novedades. 💕';
-      msg.className = 'newsletter__msg newsletter__msg--success';
+      await SheetsService.postToAppsScript('subscribe_newsletter', { email });
+      setMsg('¡Gracias por suscribirte! Te avisaremos de las novedades. 💕', true);
+      if (input) input.value = '';
+    } catch (err) {
+      setMsg('No pudimos registrarte ahora. Probá de nuevo en un rato.', false);
+    } finally {
+      if (btn) btn.disabled = false;
     }
-    if (input) input.value = '';
+  },
+
+  /* ---------- CONTADORES DE STOCK (filtros) ---------- */
+  renderStockCounts() {
+    const prods = SheetsService.productos || [];
+    const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+    set('stock-count-all', prods.length);
+    set('stock-count-in', prods.filter(p => p.stock > 0).length);
+    set('stock-count-out', prods.filter(p => p.stock <= 0).length);
   },
 
   /* ---------- CONTENIDO EDITABLE (categorías + frases) ---------- */
@@ -1196,8 +1216,8 @@ const App = {
           const kicker = s.querySelector('.hero__kicker'); if (kicker && h.kicker) kicker.textContent = h.kicker;
           const title = s.querySelector('.hero__title'); if (title && h.title) title.textContent = h.title;
           const desc = s.querySelector('.hero__desc'); if (desc && h.desc) desc.textContent = h.desc;
-          const cta = s.querySelector('.hero__cta'); if (cta) { if (h.cta) cta.textContent = h.cta; if (h.categoria) cta.setAttribute('onclick', `App.filtrarCategoria('${h.categoria}'); scrollToProducts(); return false;`); }
-          const img = s.querySelector('.hero__media img'); if (img && h.image) img.src = h.image;
+          const cta = s.querySelector('.hero__cta'); if (cta) { if (h.cta) cta.textContent = h.cta; if (h.categoria) cta.setAttribute('onclick', `App.filtrarCategoria('${String(h.categoria).replace(/[^a-z0-9-]/gi, '')}'); scrollToProducts(); return false;`); }
+          const img = s.querySelector('.hero__media img'); if (img && h.image && /^(https:|assets\/|data:image\/)/.test(h.image)) img.src = h.image;
         });
       }
       // Showcase
@@ -1224,8 +1244,8 @@ const App = {
         const pk = document.querySelector('.promo-band__kicker'); if (pk && c.promoBand.kicker) pk.textContent = c.promoBand.kicker;
         const pt = document.querySelector('.promo-band__title'); if (pt && c.promoBand.title) pt.textContent = c.promoBand.title;
         const pd = document.querySelector('.promo-band__desc'); if (pd && c.promoBand.desc) pd.textContent = c.promoBand.desc;
-        const pc = document.querySelector('.promo-band__cta'); if (pc) { if (c.promoBand.cta) pc.textContent = c.promoBand.cta; if (c.promoBand.categoria) pc.setAttribute('onclick', `App.filtrarCategoria('${c.promoBand.categoria}'); scrollToProducts(); return false;`); }
-        const pi = document.querySelector('.promo-band__img img'); if (pi && c.promoBand.image) pi.src = c.promoBand.image;
+        const pc = document.querySelector('.promo-band__cta'); if (pc) { if (c.promoBand.cta) pc.textContent = c.promoBand.cta; if (c.promoBand.categoria) pc.setAttribute('onclick', `App.filtrarCategoria('${String(c.promoBand.categoria).replace(/[^a-z0-9-]/gi, '')}'); scrollToProducts(); return false;`); }
+        const pi = document.querySelector('.promo-band__img img'); if (pi && c.promoBand.image && /^(https:|assets\/|data:image\/)/.test(c.promoBand.image)) pi.src = c.promoBand.image;
       }
       // CTA
       if (c.cta) {
@@ -1254,13 +1274,13 @@ const App = {
     // Construir columnas por grupo (máx 2 columnas + promo)
     let html = '';
     gruposOrden.slice(0,2).forEach(grupo => {
-      html += `<div class="mega-menu__col"><h4 class="mega-menu__heading">${grupo}</h4>`;
-      grouped[grupo].forEach(cat => { html += `<a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('${cat.id}')">${cat.icon ? cat.icon + ' ' : ''}${cat.nombre}</a>`; });
+      html += `<div class="mega-menu__col"><h4 class="mega-menu__heading">${escHtml(grupo)}</h4>`;
+      grouped[grupo].forEach(cat => { html += `<a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('${escJsAttr(cat.id)}')">${cat.icon ? escHtml(cat.icon) + ' ' : ''}${escHtml(cat.nombre)}</a>`; });
       html += `</div>`;
     });
     // Columna promo (ofertas u última)
     const promoCat = cats.find(c=>c.id==='ofertas') || cats[cats.length-1];
-    html += `<div class="mega-menu__col mega-menu__col--promo"><a href="#productos" class="mega-menu__promo" onclick="App.filtrarCategoria('${promoCat.id}')"><img src="assets/conjunto-deportivo-borgona.jpg" alt=""><span class="mega-menu__promo-label">${promoCat.nombre}</span></a></div>`;
+    if (promoCat) html += `<div class="mega-menu__col mega-menu__col--promo"><a href="#productos" class="mega-menu__promo" onclick="App.filtrarCategoria('${escJsAttr(promoCat.id)}')"><img src="assets/conjunto-deportivo-borgona.jpg" alt=""><span class="mega-menu__promo-label">${escHtml(promoCat.nombre)}</span></a></div>`;
     nav.innerHTML = html;
   },
 
@@ -1270,14 +1290,16 @@ const App = {
     const cards = cont?.cards || [];
     if (!cards.length) return;
     // Si hay contenido custom, renderizar desde él; sino mantener HTML estático
-    const hasCustom = localStorage.getItem('pl_admin_contenido');
+    let hasCustom = !!SheetsService.appsScriptUrl;
+    try { hasCustom = hasCustom || !!localStorage.getItem('pl_admin_contenido'); } catch {}
     if (!hasCustom) return;
     grid.innerHTML = cards.map((card, idx) => {
       const large = idx === 0 ? ' cat-card--large' : '';
       const cat = card.categoria || 'todos';
-      const img = card.image || 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="700"><rect width="600" height="700" fill="#eedbd8"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#9c684c" font-size="20">${card.title}</text></svg>`);
-      const icon = card.icon ? `<span class="cat-card__icon" aria-hidden="true">${card.icon}</span>` : '';
-      return `<a href="#productos" class="cat-card${large}" onclick="App.filtrarCategoria('${cat}'); ComponentReveal.scrollToProducts(); return false;" data-reveal><img src="${img}" alt="${card.title}"><div class="cat-card__overlay">${icon}<h3 class="cat-card__title">${card.title}</h3><span class="cat-card__link-under">Comprar →</span></div></a>`;
+      const safeImg = card.image && /^(https:|assets\/|data:image\/)/.test(card.image) ? card.image : '';
+      const img = safeImg || 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="700"><rect width="600" height="700" fill="#eedbd8"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#9c684c" font-size="20">${escHtml(card.title)}</text></svg>`);
+      const icon = card.icon ? `<span class="cat-card__icon" aria-hidden="true">${escHtml(card.icon)}</span>` : '';
+      return `<a href="#productos" class="cat-card${large} is-revealed" onclick="App.filtrarCategoria('${escJsAttr(cat)}'); ComponentReveal.scrollToProducts(); return false;"><img src="${escHtml(img)}" alt="${escHtml(card.title)}" loading="lazy"><div class="cat-card__overlay">${icon}<h3 class="cat-card__title">${escHtml(card.title)}</h3><span class="cat-card__link-under">Comprar →</span></div></a>`;
     }).join('');
   },
 
@@ -1298,6 +1320,9 @@ document.addEventListener('click', (e) => {
     return;
   }
 
+  /* Search */
+  if (e.target.closest('#search-btn')) { App.toggleSearch(); return; }
+
   /* Cart open/close */
   if (e.target.closest('#cart-btn')) { App.openCart(); return; }
   if (e.target.id === 'cart-overlay' || e.target.closest('.cart__close')) { App.closeCart(); return; }
@@ -1308,8 +1333,9 @@ document.addEventListener('click', (e) => {
   /* Mobile menu */
   if (e.target.closest('#menu-btn')) { App.openMobileMenu(); return; }
 
-  /* Promo toggle */
-  if (e.target.closest('.cart__promo-toggle')) { App.togglePromo(); return; }
+  /* Promo toggle: lo maneja el onclick del botón (antes se ejecutaba dos
+     veces —onclick + este listener— y el formulario de cupón nunca abría) */
+  if (e.target.closest('.cart__promo-toggle')) return;
 
   /* Promo form submit */
   if (e.target.closest('#promo-form')) { return; } // handled by onsubmit
@@ -1343,7 +1369,7 @@ document.addEventListener('click', (e) => {
   /* Cart remove */
   if (e.target.closest('.cart-item__remove')) {
     const id = e.target.closest('.cart-item__remove').dataset.id;
-    const itemEl = document.querySelector(`.cart-item[data-id="${id}"]`);
+    const itemEl = document.querySelector(`.cart-item[data-id="${CSS.escape(id)}"]`);
     if (itemEl) itemEl.classList.add('cart-item--removing');
     setTimeout(() => CartService.removeItem(id), 200);
     return;
@@ -1357,6 +1383,7 @@ document.addEventListener('keydown', (e) => {
     App.closeMobileMenu();
     App.closeSidebar();
     App.closeProductModal();
+    if (typeof ClubPrince !== 'undefined') ClubPrince.closeBoxModal();
     const so = document.getElementById('search-overlay');
     if (so?.classList.contains('search-overlay--open')) App.toggleSearch();
   }

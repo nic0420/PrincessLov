@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
   <title>Admin PrincessLov</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/admin.css">
-  <!-- Chart.js for graphs -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <!-- SheetJS for Excel import -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Chart.js (con integridad SRI: si el CDN fuera alterado, el navegador no lo ejecuta) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
+  <!-- SheetJS 0.20.3 (la 0.18.5 de npm tiene vulnerabilidades conocidas: CVE-2023-30533 y CVE-2024-22363) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -76,10 +79,11 @@
         <span id="page-breadcrumb" class="breadcrumb">Resumen general</span>
       </div>
       <div class="topbar-right">
+        <button type="button" class="sync-badge" id="admin-sync-badge" onclick="AdminSync.sincronizar(true)" title="Estado de conexión con Google Sheets">⏳ Conectando…</button>
         <div class="dolar-badge" id="admin-dolar-badge">
           💵 Dólar: <strong id="admin-dolar-value">$--</strong>
         </div>
-        <a href="index.html" class="btn btn-sm btn-secondary" target="_blank">🌐 Ver Tienda</a>
+        <a href="/" class="btn btn-sm btn-secondary" target="_blank" rel="noopener">🌐 Ver Tienda</a>
       </div>
     </div>
 
@@ -557,6 +561,18 @@
         <div class="chart-card">
           <h3>⚙️ Configuración del Negocio</h3>
           <form id="settings-form" onsubmit="AdminSettings.save(event)">
+            <div class="security-box">
+              <h4>🔐 Conexión segura con Google Sheets</h4>
+              <p>Pegá acá el <strong>token de administración</strong> (el mismo valor que cargaste como <code>ADMIN_TOKEN</code> en las propiedades del Apps Script). Se guarda solo en este navegador y permite leer pedidos y publicar cambios en la tienda. Sin él, lo que hagas acá queda solo en esta computadora.</p>
+              <div class="form-group">
+                <label for="set-admin-token">Token de administración</label>
+                <div style="display:flex; gap:0.5rem;">
+                  <input type="password" id="set-admin-token" autocomplete="off" spellcheck="false" placeholder="Pegá el token (32+ caracteres)" style="flex:1;">
+                  <button type="button" class="btn btn-secondary" onclick="AdminSync.guardarToken()">Conectar</button>
+                </div>
+              </div>
+              <p class="form-hint">Usá este panel solo en tus dispositivos. En una compu compartida, borrá el token al terminar (dejá el campo vacío y tocá Conectar).</p>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>Nombre del negocio</label>
@@ -647,7 +663,7 @@
       <button class="btn-close-modal" onclick="AdminProducts.closeForm()">✕</button>
     </div>
     <div class="modal-body">
-      <form id="product-form" onsubmit="AdminProducts.save(event)">
+      <form id="product-form" novalidate onsubmit="AdminProducts.save(event)">
         <input type="hidden" id="pf-id">
 
         <!-- TABS NAVIGATION -->
@@ -769,7 +785,7 @@
             <h4>🖼️ Imagen Principal</h4>
             <div class="form-group">
               <label for="pf-imagen">URL imagen principal *</label>
-              <input type="url" id="pf-imagen" placeholder="https://...jpg" required>
+              <input type="url" id="pf-imagen" placeholder="https://...jpg">
               <small class="form-hint">Imagen que se ve en la grilla y como primera en el detalle. Ratio recomendado 3:4 (ej: 600x800px)</small>
             </div>
             <div id="pf-imagen-preview" class="image-preview" style="display:none;">
@@ -990,6 +1006,7 @@
 <script src="js/promos.js"></script>
 <script src="js/admin-promos.js"></script>
 <script src="js/admin-settings.js"></script>
+<script src="js/admin-sync.js"></script>
 
 </body>
 </html>

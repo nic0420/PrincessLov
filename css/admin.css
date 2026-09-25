@@ -3259,3 +3259,16 @@ body {
 }
 .btn-danger { background: #fff; color: #DC2626; border: 1px solid #FECACA; }
 .btn-danger:hover { background: #FEF2F2; }
+
+/* ===== Auditoría 2026-09: sincronización y seguridad ===== */
+.sync-badge { border: 1px solid var(--gris-200); background: var(--blanco); color: var(--texto); border-radius: 999px; padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.sync-badge--ok { background: var(--verde-100); border-color: var(--verde-500); color: #166534; }
+.sync-badge--local { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+.sync-badge--error { background: var(--rojo-100); border-color: var(--rojo-500); color: #991B1B; }
+.security-box { background: var(--gris-100); border: 1px solid var(--gris-200); border-left: 4px solid var(--borgona-300); border-radius: var(--radio-md); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+.security-box h4 { margin: 0 0 0.5rem; color: var(--borgona-300); }
+.security-box p { font-size: 0.85rem; color: var(--texto-secundario); margin: 0 0 0.75rem; line-height: 1.5; }
+.security-box code { background: var(--blanco); padding: 1px 5px; border-radius: 4px; }
+.local-warning { background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E; border-radius: var(--radio-md); padding: 0.75rem 1rem; font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.5; }
+.order-origin { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--verde-100); color: #166534; margin-left: 0.4rem; vertical-align: middle; }
+@media (max-width: 768px) { .sync-badge { font-size: 0.7rem; padding: 0.3rem 0.6rem; } }

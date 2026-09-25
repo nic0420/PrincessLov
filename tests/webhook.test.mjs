@@ -11,6 +11,7 @@ process.env.MP_ACCESS_TOKEN = 'TEST-token';
 // Sin APPS_SCRIPT_URL: no queremos que el test escriba en ninguna planilla.
 delete process.env.APPS_SCRIPT_URL;
 
+process.env.MP_ENABLED = 'true';
 const { default: handler } = await import('../api/mercadopago/webhook.js');
 
 function resFalso() {

@@ -5,7 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PrincessLov - Sportwears, Pijamas y Lencerías para mujeres. Envíos a todo el país.">
   <meta name="theme-color" content="#800020">
-  <title>PrincessLov | Sportwears, Pijamas y Lencerías</title>
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>PrincessLov | Sportswear, pijamas y lencería · Puerto Iguazú</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/logo.jpg">
+  <!-- Vista previa al compartir el link (WhatsApp, Instagram, Facebook) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PrincessLov">
+  <meta property="og:title" content="PrincessLov · Tu espacio favorito de girlie vibes 🎀">
+  <meta property="og:description" content="Sportswear, pijamas y lencería para mujeres. Envíos a todo el país desde Puerto Iguazú.">
+  <meta property="og:image" content="https://princess-lov.vercel.app/assets/conjunto-deportivo-borgona.jpg">
+  <meta property="og:url" content="https://princess-lov.vercel.app/">
+  <meta name="twitter:card" content="summary_large_image">
 
   <!-- Fonts: Cormorant Garamond (display serif lujo) + Montserrat (sans) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,9 +24,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/styles.css">
-  <!-- SDK de Mercado Pago no necesario: Checkout Pro redirige a mercadopago.com -->
 </head>
 <body>
+  <noscript><p class="noscript-msg">Para comprar en PrincessLov activá JavaScript en tu navegador, o escribinos por WhatsApp al +54 9 3757 33-8837.</p></noscript>
 
   <!-- LOADING -->
   <div id="loading-screen" class="loading-screen" aria-hidden="true">
@@ -136,7 +147,7 @@
         </div>
         <div class="hero__content">
           <span class="hero__kicker" data-reveal>Encaje &amp; Feminidad</span>
-          <h1 class="hero__title" data-reveal>Lencería Floral</h1>
+          <h2 class="hero__title" data-reveal>Lencería Floral</h2>
           <p class="hero__desc" data-reveal>Bralettes y conjuntos de encaje para cada momento.</p>
           <a class="btn btn--light hero__cta" href="#productos" data-reveal onclick="App.filtrarCategoria('ropa-interior'); scrollToProducts(); return false;">Explorar</a>
         </div>
@@ -147,7 +158,7 @@
         </div>
         <div class="hero__content">
           <span class="hero__kicker" data-reveal>Descanso con estilo</span>
-          <h1 class="hero__title" data-reveal>Pijamas &amp; Suéteres</h1>
+          <h2 class="hero__title" data-reveal>Pijamas &amp; Suéteres</h2>
           <p class="hero__desc" data-reveal>Comodidad absoluta con diseños coquetos y dulces.</p>
           <a class="btn btn--light hero__cta" href="#productos" data-reveal onclick="App.filtrarCategoria('pijamas'); scrollToProducts(); return false;">Ver pijamas</a>
         </div>
@@ -239,7 +250,7 @@
           </div>
           <button type="submit" class="btn btn--primary btn--block" id="club-submit-btn">✨ Quiero ser parte</button>
           <p class="club-prince__form-msg" id="club-form-msg" aria-live="polite"></p>
-          <p class="club-prince__form-hint">Tus datos se guardan en nuestra base del Club Prince. No compartimos tu info.</p>
+          <p class="club-prince__form-hint">Usamos tus datos solo para contactarte por el Club Prince. No los compartimos. <a href="privacidad.html">Política de privacidad</a>.</p>
         </form>
       </div>
     </div>
@@ -409,7 +420,7 @@
         <article class="service-card" data-reveal>
           <div class="service-card__icon" aria-hidden="true">🛍️</div>
           <h3 class="service-card__title">Compra fácil</h3>
-          <p class="service-card__desc">Paga con Mercado Pago o coordina por WhatsApp de forma segura.</p>
+          <p class="service-card__desc">Armás tu pedido en la web y lo confirmamos por WhatsApp: transferencia, efectivo o link de Mercado Pago.</p>
         </article>
       </div>
     </div>
@@ -435,7 +446,7 @@
     <img src="assets/logo.jpg" alt="" class="cta__logo" onerror="this.src='assets/logo.svg'">
     <h2 id="cta-title" class="cta__title">¿Tenés dudas?</h2>
     <p class="cta__desc">Escribinos por WhatsApp y te asesoramos sobre talles, stock o entregas.</p>
-    <a id="contacto-whatsapp-btn" href="#" target="_blank" class="btn btn--whatsapp cta__btn">
+    <a id="contacto-whatsapp-btn" href="#" target="_blank" rel="noopener" class="btn btn--whatsapp cta__btn">
       <span aria-hidden="true">💬</span> Chatear ahora
     </a>
   </section>
@@ -446,9 +457,11 @@
       <h2 class="newsletter__title">Recibí novedades PrincessLov</h2>
       <p class="newsletter__desc">Sé la primera en enterarte de nuevas colecciones, promociones y lanzamientos exclusivos.</p>
       <form class="newsletter__form" onsubmit="App.subscribeNewsletter(event)">
-        <input type="email" id="newsletter-email" class="newsletter__input" placeholder="Tu correo electrónico" required aria-label="Correo electrónico">
+        <input type="email" id="newsletter-email" class="newsletter__input" placeholder="Tu correo electrónico" required maxlength="100" autocomplete="email" aria-label="Correo electrónico">
+        <span class="hp-field" aria-hidden="true"><input type="text" tabindex="-1" autocomplete="off" aria-label="No completar"></span>
         <button type="submit" class="btn btn--dark newsletter__btn">Suscribirme</button>
       </form>
+      <p class="newsletter__legal">Podés darte de baja cuando quieras. Ver <a href="privacidad.html">Política de privacidad</a>.</p>
       <p class="newsletter__msg" id="newsletter-msg" aria-live="polite"></p>
     </div>
   </section>
@@ -465,8 +478,8 @@
           <p class="footer__tagline">Sportwears, pijamas y lencerías para mujeres que buscan estilo, comodidad y calidad.</p>
           <p class="footer__tagline" id="footer-tagline" style="margin-top:0.35rem; font-style:italic;"></p>
           <div class="footer__social">
-            <a href="#" id="footer-instagram" target="_blank" class="footer__social-link" aria-label="Instagram"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
-            <a href="#" id="footer-facebook" target="_blank" class="footer__social-link" aria-label="Facebook"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
+            <a href="#" id="footer-instagram" target="_blank" rel="noopener" class="footer__social-link" aria-label="Instagram"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+            <a href="#" id="footer-facebook" target="_blank" rel="noopener" class="footer__social-link" aria-label="Facebook"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
           </div>
         </div>
         <div class="footer__col">
@@ -488,22 +501,33 @@
         <div class="footer__col">
           <h4 class="footer__col-title">Contacto</h4>
           <ul class="footer__links">
-            <li><a href="#" class="footer__link">📍 Puerto Iguazú, Misiones</a></li>
-            <li><a href="#" id="footer-whatsapp-link" class="footer__link" target="_blank">📱 WhatsApp: Cargando…</a></li>
-            <li><a href="#" id="footer-instagram-link" class="footer__link" target="_blank" rel="noopener">📸 Instagram: Cargando…</a></li>
-            <li><a href="#" class="footer__link">🚚 Envíos a todo el país</a></li>
+            <li><span class="footer__link">📍 Puerto Iguazú, Misiones</span></li>
+            <li><a href="#contacto" id="footer-whatsapp-link" class="footer__link" target="_blank" rel="noopener">📱 WhatsApp: Escribinos</a></li>
+            <li><a href="#" id="footer-instagram-link" class="footer__link" target="_blank" rel="noopener">📸 Instagram</a></li>
+            <li><span class="footer__link">🚚 Envíos a todo el país</span></li>
           </ul>
           <h4 class="footer__col-title" style="margin-top:1.5rem;">Envíos</h4>
           <ul class="footer__links">
-            <li><a href="#" class="footer__link">Envío gratis en Iguazú</a></li>
-            <li><a href="#" class="footer__link">Neo Encomienda (interior)</a></li>
-            <li><a href="#" class="footer__link">Correo Argentino</a></li>
-            <li><a href="#" class="footer__link">Flecha / Vía Cargo</a></li>
+            <li><span class="footer__link">Envío gratis en Iguazú</span></li>
+            <li><span class="footer__link">Neo Encomienda (interior)</span></li>
+            <li><span class="footer__link">Correo Argentino</span></li>
+            <li><span class="footer__link">Flecha / Vía Cargo</span></li>
           </ul>
+        </div>
+        <div class="footer__col">
+          <h4 class="footer__col-title">Legales</h4>
+          <ul class="footer__links">
+            <li><a href="terminos.html" class="footer__link">Términos y condiciones</a></li>
+            <li><a href="terminos.html#cambios" class="footer__link">Cambios y devoluciones</a></li>
+            <li><a href="privacidad.html" class="footer__link">Política de privacidad</a></li>
+            <li><a href="privacidad.html#cookies" class="footer__link">Política de cookies</a></li>
+            <li><a href="https://autogestion.produccion.gob.ar/consumidores" class="footer__link" target="_blank" rel="noopener">Defensa de las y los Consumidores. Para reclamos ingrese aquí</a></li>
+          </ul>
+          <a href="arrepentimiento.html" class="footer__arrepentimiento">Botón de arrepentimiento</a>
         </div>
       </div>
       <div class="footer__bottom">
-        <p>© 2026 PrincessLov. Todos los derechos reservados.</p>
+        <p>© <span id="footer-year">2026</span> PrincessLov. Todos los derechos reservados.</p>
         <p>Hecho con <span aria-hidden="true">♥</span> en Argentina</p>
       </div>
     </div>
@@ -543,15 +567,8 @@
 
       <!-- Shipping Estimator -->
       <section class="cart__shipping" id="cart-shipping" aria-label="Calcular envío">
-        <h4 class="cart__shipping-title">Calcular envío</h4>
-        <form class="cart__shipping-form" id="shipping-form" onsubmit="App.calculateShipping(event)">
-          <div class="cart__shipping-row">
-            <input type="text" class="cart__shipping-input" id="shipping-zip" placeholder="Código postal" aria-label="Código postal" maxlength="8" pattern="[0-9]*" inputmode="numeric" required>
-            <input type="text" class="cart__shipping-input" id="shipping-city" placeholder="Ciudad" aria-label="Ciudad" required>
-          </div>
-          <button type="submit" class="btn btn--ghost cart__shipping-btn">Calcular</button>
-        </form>
-        <div class="cart__shipping-result" id="shipping-result" style="display:none;"></div>
+        <h4 class="cart__shipping-title">Elegí tu envío</h4>
+        <div class="cart__shipping-result" id="shipping-result" role="group" aria-label="Opciones de envío"></div>
         <div class="cart__shipping-free-progress" id="free-shipping-progress">
           <div class="cart__free-bar"><div class="cart__free-bar-fill" id="free-bar-fill" style="width:0%"></div></div>
           <p class="cart__free-text" id="free-text">Agregá <strong id="free-amount">$0</strong> más para envío gratis</p>
@@ -568,11 +585,11 @@
     <footer class="cart__footer">
       <div class="cart__totals" id="cart-totals"></div>
       <div class="cart__actions">
-        <button class="btn btn--primary cart__btn-primary" id="cart-checkout-btn" onclick="App.openCheckout()">Finalizar compra</button>
-        <button class="btn btn--whatsapp cart__btn-secondary" onclick="App.enviarCarritoWhatsApp()">Comprar por WhatsApp</button>
+        <button class="btn btn--primary cart__btn-primary" id="cart-checkout-btn" onclick="App.openCheckout()">Finalizar pedido</button>
+        <button class="btn btn--ghost cart__btn-secondary" onclick="App.enviarCarritoWhatsApp()">💬 Consultar por WhatsApp</button>
       </div>
-      <p class="cart__secure" aria-hidden="true">
-        <span class="cart__secure-icon">🔒</span> Compra segura · Datos encriptados · Envíos a todo el país
+      <p class="cart__secure">
+        <span class="cart__secure-icon" aria-hidden="true">🔒</span> Sitio seguro (HTTPS) · Confirmás y pagás por WhatsApp · Envíos a todo el país
       </p>
     </footer>
   </aside>
@@ -682,11 +699,18 @@
       <li><a href="#productos" class="mobile-menu__link" onclick="App.closeMobileMenu(); App.filtrarCategoria('ofertas');">Ofertas</a></li>
       <li><a href="#servicios" class="mobile-menu__link" onclick="App.closeMobileMenu()">Servicios</a></li>
       <li><a href="#contacto" class="mobile-menu__link" onclick="App.closeMobileMenu()">Contacto</a></li>
+      <li><a href="arrepentimiento.html" class="mobile-menu__link">Botón de arrepentimiento</a></li>
     </ul>
   </nav>
 
   <!-- TOAST -->
   <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- AVISO DE COOKIES (js/cookies.js) -->
+  <div class="cookie-banner" id="cookie-banner" role="region" aria-label="Aviso de cookies" hidden>
+    <p>Usamos solo almacenamiento <strong>necesario</strong> para que funcione el carrito y recordar tus preferencias. No usamos cookies de publicidad ni te rastreamos. <a href="privacidad.html#cookies">Más información</a></p>
+    <button type="button" class="btn btn--primary cookie-banner__btn" id="cookie-accept">Entendido</button>
+  </div>
 
   <!-- SCRIPTS -->
   <script src="data/config.js"></script>
@@ -697,5 +721,6 @@
   <script src="js/effects.js"></script>
   <script src="js/club-prince.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/cookies.js"></script>
 </body>
 </html>

@@ -49,6 +49,7 @@ export async function getFromAppsScript(action, params = {}) {
   const url = new URL(base);
   url.searchParams.set('action', action);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  if (process.env.APPS_SCRIPT_ADMIN_TOKEN) url.searchParams.set('token', process.env.APPS_SCRIPT_ADMIN_TOKEN);
 
   const res = await fetch(url, {
     method: 'GET',
@@ -63,10 +64,13 @@ export async function postToAppsScript(action, payload = {}) {
   const base = appsScriptUrl();
   if (!base) throw new Error('APPS_SCRIPT_URL no configurada');
 
+  // El servidor es de confianza: firma sus llamadas con el token de admin
+  // (misma clave que ADMIN_TOKEN en las propiedades del Apps Script).
+  const token = process.env.APPS_SCRIPT_ADMIN_TOKEN || '';
   const res = await fetch(base, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...payload }),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, ...payload, ...(token ? { token } : {}) }),
     redirect: 'follow',
   });
   if (!res.ok) throw new Error(`Apps Script POST ${action}: HTTP ${res.status}`);

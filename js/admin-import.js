@@ -7,7 +7,7 @@ const AdminImport = {
   pendingData: null,
   workbook: null,
 
-  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
+  esc(s) { return escHtml(s); },
 
   init() {
     const zone = document.getElementById('upload-zone');
@@ -386,12 +386,12 @@ const AdminImport = {
       const precioARS = AdminApp.dolarRate ? Math.round(p.precioUSD * AdminApp.dolarRate * (CONFIG?.cotizacion?.margenGanancia || 1.3)) : 0;
       return `
       <tr>
-        <td><strong>${p.nombre}</strong></td>
-        <td>${p.categoriaOriginal || p.categoria}</td>
+        <td><strong>${escHtml(p.nombre)}</strong></td>
+        <td>${escHtml(p.categoriaOriginal || p.categoria)}</td>
         <td>${AdminData.formatUSD(p.precioUSD)}</td>
         <td>${AdminData.formatARS(precioARS)}</td>
-        <td>${p.stock}</td>
-        <td style="font-size:0.8rem; color:var(--texto-secundario);">${p.observaciones || '-'}</td>
+        <td>${Number(p.stock) || 0}</td>
+        <td style="font-size:0.8rem; color:var(--texto-secundario);">${escHtml(p.observaciones || '-')}</td>
         <td><span class="badge ${p.activo ? 'badge-active' : 'badge-inactive'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
       </tr>
     `;

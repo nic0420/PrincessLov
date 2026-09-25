@@ -7,6 +7,20 @@ function escHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+/**
+ * Escapa un valor para usarlo DENTRO de un string JS entre comillas simples
+ * que a su vez va dentro de un atributo HTML (ej: onclick="f('${escJsAttr(id)}')").
+ */
+function escJsAttr(s) {
+  return escHtml(String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/[\r\n]/g, ' '));
+}
+
+/** URL de Apps Script válida (ignora el placeholder TU_SCRIPT_ID) */
+function appsScriptConfigurado() {
+  const url = (typeof CONFIG !== 'undefined' && CONFIG.sheets?.appsScriptUrl) || '';
+  return /^https:\/\/script\.google\.com\//.test(url) && !url.includes('TU_SCRIPT_ID') ? url : null;
+}
+
 const SheetsService = {
   productos: [],
   cotizacionDolar: null,
@@ -23,8 +37,7 @@ const SheetsService = {
    * Inicializa la URL del Apps Script desde config
    */
   init() {
-    this.appsScriptUrl = CONFIG.sheets?.appsScriptUrl || null;
-    console.log('[Sheets] Apps Script URL:', this.appsScriptUrl ? 'Configurada' : 'No configurada (usando CSV público)');
+    this.appsScriptUrl = appsScriptConfigurado();
   },
 
   /**
@@ -76,19 +89,16 @@ const SheetsService = {
     // Verificar cache
     if (!forceRefresh && this.cache && Date.now() - this.cache.timestamp < this.cacheExpiry) {
       this.productos = this.cache.data;
-      console.log('[Sheets] Usando cache (' + this.productos.length + ' productos)');
       return this.productos;
     }
 
     // 1. Intentar Google Apps Script (bidireccional, con todos los campos nuevos)
     if (this.appsScriptUrl) {
       try {
-        console.log('[Sheets] Intentando Apps Script...');
         const data = await this.fetchFromAppsScript('read', { sheet: 'productos' });
         if (data && data.length > 0) {
           this.productos = this.mapAppsScriptProducts(data);
           this.setCache(this.productos);
-          console.log('[Sheets] ✅ Apps Script: ' + this.productos.length + ' productos');
           return this.productos;
         }
       } catch (e) {
@@ -97,15 +107,14 @@ const SheetsService = {
     }
 
     // 2. CSV público de Google Sheets (solo lectura, campos básicos)
-    try {
-      console.log('[Sheets] Intentando CSV público...');
-      const response = await fetch(CONFIG.sheets.url);
+    const csvUrl = CONFIG.sheets?.url || '';
+    if (csvUrl && !csvUrl.includes('TU_SHEET_ID')) try {
+      const response = await fetch(csvUrl);
       if (response.ok) {
         const csvText = await response.text();
         const rawData = this.parseCSV(csvText);
         this.productos = this.mapCSVProducts(rawData);
         this.setCache(this.productos);
-        console.log('[Sheets] ✅ CSV público: ' + this.productos.length + ' productos');
         return this.productos;
       }
     } catch (e) {
@@ -113,7 +122,6 @@ const SheetsService = {
     }
 
     // 3. Fallback local (data/productos.csv)
-    console.log('[Sheets] Usando fallback local...');
     return this.cargarFallback();
   },
 
@@ -221,11 +229,19 @@ const SheetsService = {
   /**
    * Post al Apps Script (para escrituras)
    */
-  async postToAppsScript(action, data) {
+  async postToAppsScript(action, data = {}, opts = {}) {
+    if (!this.appsScriptUrl) this.appsScriptUrl = appsScriptConfigurado();
+    if (!this.appsScriptUrl) throw new Error('Apps Script no configurado');
+    // Token de administración: solo existe en el navegador del admin
+    // (se carga en Admin > Configuración). La tienda pública no lo tiene.
+    let token = '';
+    try { token = localStorage.getItem('pl_admin_token') || ''; } catch {}
+    // text/plain evita el "preflight" CORS, que Apps Script no soporta.
     const response = await fetch(this.appsScriptUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...data }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, ...data, ...(token ? { token } : {}) }),
+      keepalive: !!opts.keepalive,
     });
 
     if (!response.ok) throw new Error(`Apps Script HTTP ${response.status}`);
@@ -246,7 +262,6 @@ const SheetsService = {
    * Carga fallback local (data/productos.csv)
    */
   cargarFallback() {
-    console.log('[Sheets] Usando fallback local CSV');
     return fetch('data/productos.csv')
       .then(r => r.text())
       .then(csv => {
@@ -294,7 +309,6 @@ const SheetsService = {
           const latest = data[data.length - 1];
           this.cotizacionDolar = parseFloat(latest.Valor) || CONFIG.cotizacion.cotizacionManual;
           this.dolarCacheAt = Date.now();
-          console.log('[Dólar] Apps Script: $' + this.cotizacionDolar);
           return this.cotizacionDolar;
         }
       } catch (e) {
@@ -308,7 +322,6 @@ const SheetsService = {
       const data = await response.json();
       this.cotizacionDolar = data.oficial?.ask || data.blue?.ask || CONFIG.cotizacion.cotizacionManual;
       this.dolarCacheAt = Date.now();
-      console.log('[Dólar] CriptoYa: $' + this.cotizacionDolar);
       return this.cotizacionDolar;
     } catch (error) {
       console.warn('[Dólar] CriptoYa falló:', error.message);
@@ -317,7 +330,6 @@ const SheetsService = {
     // 3. Manual
     this.cotizacionDolar = CONFIG.cotizacion.cotizacionManual;
     this.dolarCacheAt = Date.now();
-    console.log('[Dólar] Manual: $' + this.cotizacionDolar);
     return this.cotizacionDolar;
   },
 
@@ -370,10 +382,18 @@ const SheetsService = {
     });
 
     const cats = (typeof AdminData !== 'undefined' && AdminData.getEffectiveCategorias) ? AdminData.getEffectiveCategorias() : (CONFIG.categorias || []);
-    return cats.map(cat => ({
-      ...cat,
-      count: conteo[cat.id] || 0,
-    })).filter(cat => cat.id === 'todos' || cat.count > 0);
+    const conocidas = new Set(cats.map(c => c.id));
+    const result = cats
+      .filter(cat => cat.id !== 'todos')
+      .map(cat => ({ ...cat, count: conteo[cat.id] || 0 }));
+    // Categorías que vienen de la planilla y no están configuradas: se muestran igual
+    // (antes quedaban invisibles en los filtros, ej. "Calzas").
+    Object.keys(conteo).forEach(id => {
+      if (!id || conocidas.has(id)) return;
+      const ejemplo = this.productos.find(p => p.categoria === id);
+      result.push({ id, nombre: ejemplo?.categoriaOriginal || id, icon: '', grupo: 'Otros', count: conteo[id] });
+    });
+    return result.filter(cat => cat.count > 0);
   },
 
   // Para mega menú / showcase: todas las categorías (sin filtro por conteo)
@@ -512,6 +532,38 @@ const SheetsService = {
     return { success: true, local: true };
   },
 
+  // ==================== CONFIG PÚBLICA (tienda) ====================
+
+  /**
+   * Trae de la hoja Config lo que el admin publica para la tienda
+   * (textos, categorías, envíos, WhatsApp...) y lo aplica sobre CONFIG.
+   * Así los cambios del admin llegan a TODAS las clientas, no solo a tu navegador.
+   */
+  async cargarConfigPublica() {
+    if (!this.appsScriptUrl) return null;
+    try {
+      const remote = await this.fetchFromAppsScript('config');
+      if (!remote || typeof remote !== 'object') return null;
+      const parse = (v) => { if (typeof v !== 'string') return v; try { return JSON.parse(v); } catch { return null; } };
+      const cats = parse(remote.categorias);
+      if (Array.isArray(cats) && cats.length) CONFIG.categorias = cats;
+      const cont = parse(remote.contenido);
+      if (cont && typeof cont === 'object') CONFIG.contenido = { ...(CONFIG.contenido || {}), ...cont };
+      const envios = parse(remote.envios);
+      if (Array.isArray(envios) && envios.length) CONFIG.envios = envios;
+      const wa = String(remote.whatsapp || '').replace(/\D/g, '');
+      if (wa.length >= 10) CONFIG.negocio.whatsapp = wa;
+      if (remote.instagram) CONFIG.negocio.instagram = String(remote.instagram).replace(/^@/, '');
+      if (remote.nombre) CONFIG.negocio.nombre = String(remote.nombre);
+      if (Number(remote.margen) > 0) CONFIG.cotizacion.margenGanancia = Number(remote.margen);
+      if (Number(remote.dolarManual) > 0) CONFIG.cotizacion.cotizacionManual = Number(remote.dolarManual);
+      return remote;
+    } catch (e) {
+      console.warn('[Sheets] config pública no disponible:', e.message);
+      return null;
+    }
+  },
+
   // ==================== CONFIG (sincronía settings) ====================
 
   async obtenerConfig() {
@@ -534,7 +586,8 @@ const SheetsService = {
     try {
       return await this.postToAppsScript('save_config', { config });
     } catch (e) {
-      return this.guardarConfigLocal(config);
+      this.guardarConfigLocal(config);
+      return { success: false, error: e.message };
     }
   },
 

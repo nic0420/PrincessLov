@@ -63,15 +63,14 @@ const CONFIG = {
   },
 
   // ==========================================
-  // MERCADO PAGO
+  // CIERRE DE PEDIDOS
   // ==========================================
-  // Configuración visible de Mercado Pago (sin secretos).
-  // Las credenciales de Mercado Pago NO van acá: este archivo lo descarga
-  // cualquier persona que entre a la tienda. El Access Token vive únicamente
-  // en las variables de entorno de Vercel (MP_ACCESS_TOKEN).
-  // El cobro se maneja en /api/mercadopago/create-preference.
+  // Todos los pedidos terminan en WhatsApp (js/checkout.js). El pago
+  // (transferencia, efectivo o link de Mercado Pago) se coordina por mensaje.
+  // IMPORTANTE: este archivo lo descarga cualquier visitante. Nunca pongas
+  // claves, tokens ni contraseñas acá.
   mercadopago: {
-    habilitado: true,   // false = oculta el botón "Pagar con Mercado Pago"
+    habilitado: false,  // el cobro online con Checkout Pro quedó desactivado
   },
 
   // ==========================================
@@ -184,7 +183,7 @@ const CONFIG = {
         { icon: "🚚", title: "Envíos a tu medida", desc: "Envío gratis en Iguazú, Neo Encomienda, Correo Argentino y Flecha/Vía Cargo a todo el país." },
         { icon: "💬", title: "Asesoría por WhatsApp", desc: "Te ayudamos con talles, colores y composición de tus looks favoritos." },
         { icon: "🎁", title: "Embalaje con cariño", desc: "Cada pedido llega preparado con dedicación y cuidado en los detalles." },
-        { icon: "🛍️", title: "Compra fácil", desc: "Paga con Mercado Pago o coordina por WhatsApp de forma segura." },
+        { icon: "🛍️", title: "Compra fácil", desc: "Armás tu pedido en la web y lo confirmamos por WhatsApp: transferencia, efectivo o link de Mercado Pago." },
       ],
     },
     promoBand: { kicker: "Ofertas limitadas", title: "Renová tu guardarropa", desc: "Aprovechá precios especiales en conjuntos, pijamas y lencería seleccionada.", cta: "Ver ofertas", image: "assets/conjunto-flores-rosa.jpg", categoria: "ofertas" },
@@ -209,26 +208,9 @@ const CONFIG = {
     },
   },
 
-  // ==========================================
-  // MENSAJE WHATSAPP TEMPLATE
-  // ==========================================
-  // {total} = total de la compra
-  // {items} = lista de productos
-  // {envio} = método de envío seleccionado
-  // {datos} = nombre, dirección, etc.
-  whatsappTemplate: `Hola! Quiero hacer un pedido en PrincessLov 🛍️
-
-*Mi pedido:*
-{items}
-
-*Total:* ${"{total}"}
-*Envío:* ${"{envio}"}
-*Medio de pago:* ${"{pago}"}
-
-*Datos:*
-{datos}
-
-¡Gracias! 💕`,
+  // El mensaje de WhatsApp del pedido se arma en js/cart.js
+  // (CartService.generarMensajeWhatsApp): número de pedido, productos,
+  // descuentos, envío, total, forma de pago y datos de la clienta.
 
   // ==========================================
   // IMÁGENES

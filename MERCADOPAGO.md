@@ -1,3 +1,5 @@
+> **Estado (25/09/2026): desactivado.** Los pedidos se cierran por WhatsApp. Los endpoints de `/api/mercadopago` responden 404 salvo que cargues `MP_ENABLED=true` en Vercel. Ver `SEGURIDAD.md`.
+
 # Cobros con Mercado Pago — PrincessLov
 
 Guía de puesta en marcha. Arrancamos en **modo prueba**: podés simular compras

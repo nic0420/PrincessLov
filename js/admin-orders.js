@@ -6,7 +6,7 @@ const AdminOrders = {
   searchQuery: '',
   filterStatus: '',
 
-  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
+  esc(s) { return escHtml(s); },
 
   render() {
     this.populateFilters();
@@ -55,7 +55,8 @@ const AdminOrders = {
       const q = this.searchQuery.toLowerCase();
       orders = orders.filter(o =>
         (o.cliente || '').toLowerCase().includes(q) ||
-        (o.id || '').toLowerCase().includes(q) ||
+        String(o.id || '').toLowerCase().includes(q) ||
+        String(o.telefono || '').includes(q) ||
         (o.notas || '').toLowerCase().includes(q)
       );
     }
@@ -84,15 +85,19 @@ const AdminOrders = {
       const estado = ADMIN_CONFIG.estadosPedido.find(ep => ep.id === o.estado) || ADMIN_CONFIG.estadosPedido[0];
       const items = (o.items || []).map(i => {
         const prod = AdminData.getProduct(i.productoId);
-        return `${this.esc(prod?.nombre || i.productoId)} x${i.cantidad}`;
+        return `${this.esc(prod?.nombre || i.nombre || i.productoId)}${i.variante ? ` (${this.esc(i.variante)})` : ''} x${Number(i.cantidad) || 0}`;
       }).join(', ');
+      const tel = String(o.telefono || '').replace(/\D/g, '');
+      const telWa = tel ? (tel.startsWith('54') ? tel : '549' + tel.replace(/^0/, '')) : '';
+      const waLink = telWa ? `https://wa.me/${telWa}?text=${encodeURIComponent(`¡Hola ${o.cliente || ''}! Te escribimos de PrincessLov por tu pedido #${o.id}.`)}` : '';
 
       return `
         <div class="order-card" style="border-left:4px solid ${estado.color};">
           <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.75rem;">
             <div>
               <strong style="font-size:1rem;">${this.esc(o.cliente || 'Sin cliente')}</strong>
-              <span style="font-size:0.8rem; color:var(--texto-secundario); margin-left:0.5rem;">#${o.id?.slice(-6).toUpperCase()}</span>
+              <span style="font-size:0.8rem; color:var(--texto-secundario); margin-left:0.5rem;">#${this.esc(String(o.id || '').startsWith('PL-') ? o.id : String(o.id || '').slice(-6).toUpperCase())}</span>
+              ${o.origen === 'web-whatsapp' ? '<span class="order-origin">🌐 Web</span>' : ''}
             </div>
             <span class="badge" style="background:${estado.color}; color:white;">${estado.icon} ${estado.label}</span>
           </div>
@@ -101,13 +106,14 @@ const AdminOrders = {
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div style="font-size:0.8rem; color:var(--texto-secundario);">
-              📅 ${AdminApp.formatDate(o.fecha)} &nbsp;|&nbsp; 💳 ${o.medioPago || '-'} &nbsp;|&nbsp; 🚚 ${o.metodoEnvio || '-'}
+              📅 ${AdminApp.formatDate(o.fecha)} &nbsp;|&nbsp; 💳 ${this.esc(o.medioPago || '-')} &nbsp;|&nbsp; 🚚 ${this.esc(o.metodoEnvio || '-')}${o.localidad ? ` &nbsp;|&nbsp; 📍 ${this.esc(o.localidad)}` : ''}
             </div>
             <strong style="color:var(--borgona-300);">${AdminData.formatARS(o.total || 0)}</strong>
           </div>
           <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
-            <button class="btn btn-sm btn-secondary" onclick="AdminOrders.openForm('${o.id}')">✏️ Editar</button>
-            <button class="btn btn-sm btn-danger" onclick="AdminOrders.delete('${o.id}')">🗑️</button>
+            <button class="btn btn-sm btn-secondary" onclick="AdminOrders.openForm('${escJsAttr(o.id)}')">✏️ Editar</button>
+            ${waLink ? `<a class="btn btn-sm btn-secondary" href="${this.esc(waLink)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
+            <button class="btn btn-sm btn-danger" onclick="AdminOrders.delete('${escJsAttr(o.id)}')" aria-label="Eliminar pedido">🗑️</button>
           </div>
         </div>
       `;
@@ -133,7 +139,7 @@ const AdminOrders = {
     if (id) {
       const o = AdminData.getOrder(id);
       if (!o) return;
-      title.textContent = 'Editar Pedido #' + id.slice(-6).toUpperCase();
+      title.textContent = 'Editar Pedido #' + (String(id).startsWith('PL-') ? id : String(id).slice(-6).toUpperCase());
       document.getElementById('of-id').value = o.id;
       document.getElementById('of-cliente').value = o.cliente || '';
       document.getElementById('of-telefono').value = o.telefono || '';
@@ -175,7 +181,7 @@ const AdminOrders = {
           <option value="">Producto...</option>
           ${products.map(p => {
             const precioARS = AdminApp.dolarRate ? Math.round(p.precioUSD * AdminApp.dolarRate * (CONFIG?.cotizacion?.margenGanancia || 1.3)) : 0;
-            return `<option value="${p.id}" data-price="${precioARS}" ${item && item.productoId === p.id ? 'selected' : ''}>${p.nombre} (${AdminData.formatUSD(p.precioUSD)} / ~${AdminData.formatARS(precioARS)})</option>`;
+            return `<option value="${escHtml(p.id)}" data-price="${precioARS}" ${item && String(item.productoId) === String(p.id) ? 'selected' : ''}>${escHtml(p.nombre)} (${AdminData.formatUSD(p.precioUSD)} / ~${AdminData.formatARS(precioARS)})</option>`;
           }).join('')}
         </select>
       </div>
@@ -183,7 +189,9 @@ const AdminOrders = {
         <input type="number" class="order-item-cant" min="1" value="${item ? item.cantidad : 1}" placeholder="Cant." required>
       </div>
       <div class="form-group" style="margin-bottom:0;">
-        <input type="number" class="order-item-precio" step="0.01" value="${item ? item.precioUnitario || '' : ''}" placeholder="Precio unit. (ARS)">
+        <input type="number" class="order-item-precio" step="0.01" value="${item ? Number(item.precioUnitario) || '' : ''}" placeholder="Precio unit. (ARS)">
+        <input type="hidden" class="order-item-variante" value="${escHtml(item?.variante || '')}">
+        <input type="hidden" class="order-item-nombre" value="${escHtml(item?.nombre || '')}">
       </div>
       <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
     `;
@@ -211,12 +219,20 @@ const AdminOrders = {
       const prodId = row.querySelector('.order-item-product').value;
       const cant = parseInt(row.querySelector('.order-item-cant').value) || 0;
       const precio = parseFloat(row.querySelector('.order-item-precio').value) || 0;
+      const variante = row.querySelector('.order-item-variante')?.value || '';
+      const sel = row.querySelector('.order-item-product');
+      const nombre = row.querySelector('.order-item-nombre')?.value || sel?.options[sel.selectedIndex]?.text?.split(' (')[0] || '';
       if (prodId && cant > 0) {
-        items.push({ productoId: prodId, cantidad: cant, precioUnitario: precio });
+        items.push({ productoId: prodId, nombre, variante, cantidad: cant, precioUnitario: precio });
       }
     });
 
-    const total = items.reduce((s, i) => s + (i.precioUnitario * i.cantidad), 0);
+    // Si el pedido ya traía un total (ej. con envío o cupón desde la web) y
+    // los ítems no cambiaron, se respeta; si no, se recalcula.
+    const previo = id ? AdminData.getOrder(id) : null;
+    const sumaItems = items.reduce((s, i) => s + (i.precioUnitario * i.cantidad), 0);
+    const itemsIguales = previo && JSON.stringify((previo.items || []).map(i => [String(i.productoId), i.cantidad, Number(i.precioUnitario)])) === JSON.stringify(items.map(i => [String(i.productoId), i.cantidad, Number(i.precioUnitario)]));
+    const total = itemsIguales ? (Number(previo.total) || sumaItems) : sumaItems;
 
     const data = {
       cliente: document.getElementById('of-cliente').value.trim(),
@@ -267,10 +283,10 @@ const AdminOrders = {
 
     let csv = headers.join(',') + '\n';
     rows.forEach(r => {
-      csv += r.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(',') + '\n';
+      csv += r.map(v => AdminProducts.csvCell(v)).join(',') + '\n';
     });
 
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -287,15 +303,16 @@ const AdminOrders = {
       return;
     }
 
-    const estadoColor = { pendiente: '#F59E0B', enviado: '#3B82F6', completado: '#10B981', cancelado: '#EF4444' };
+    const e = (v) => escHtml(v == null ? '' : v);
+    const estadoColor = Object.fromEntries(ADMIN_CONFIG.estadosPedido.map(ep => [ep.id, ep.color]));
     const rows = orders.map(o => `
       <tr>
-        <td>${o.id || ''}</td>
-        <td>${o.fecha || ''}</td>
-        <td>${o.cliente || ''}</td>
-        <td>${o.telefono || ''}</td>
-        <td><span style="background:${estadoColor[o.estado] || '#6B7280'};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">${o.estado || ''}</span></td>
-        <td>${o.medioPago || ''}</td>
+        <td>${e(o.id)}</td>
+        <td>${e(AdminApp.formatDateTime(o.fecha))}</td>
+        <td>${e(o.cliente)}</td>
+        <td>${e(o.telefono)}</td>
+        <td><span style="background:${estadoColor[o.estado] || '#6B7280'};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">${e(o.estado)}</span></td>
+        <td>${e(o.medioPago)}</td>
         <td style="text-align:right;">$${Number(o.total || 0).toLocaleString('es-AR')}</td>
       </tr>`).join('');
 
@@ -325,6 +342,7 @@ const AdminOrders = {
     </body></html>`;
 
     const w = window.open('', '_blank');
+    if (!w) { AdminApp.toast('El navegador bloqueó la ventana. Permití ventanas emergentes para este sitio.', 'error'); return; }
     w.document.write(html);
     w.document.close();
     w.focus();

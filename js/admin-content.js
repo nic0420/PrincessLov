@@ -29,14 +29,14 @@ const AdminContent = {
     if (!tbody) return;
     tbody.innerHTML = cats.map(c => `
       <tr>
-        <td><input type="text" value="${this.esc(c.icon)}" data-id="${c.id}" data-field="icon" style="width:56px; text-align:center;" placeholder="👖" onchange="AdminContent.updateCatField('${c.id}','icon',this.value)"></td>
-        <td><input type="text" value="${this.esc(c.nombre)}" data-id="${c.id}" data-field="nombre" style="width:100%;" onchange="AdminContent.updateCatField('${c.id}','nombre',this.value)"></td>
+        <td><input type="text" value="${this.esc(c.icon)}" data-id="${this.esc(c.id)}" data-field="icon" style="width:56px; text-align:center;" placeholder="👖" onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','icon',this.value)"></td>
+        <td><input type="text" value="${this.esc(c.nombre)}" data-id="${this.esc(c.id)}" data-field="nombre" style="width:100%;" onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','nombre',this.value)"></td>
         <td><input type="text" value="${this.esc(c.id)}" style="width:100%; opacity:0.6;" disabled title="ID se genera del nombre"><br><small style="color:var(--texto-secundario);">${this.esc(c.id)}</small></td>
-        <td><input type="text" value="${this.esc(c.grupo)}" data-id="${c.id}" data-field="grupo" style="width:100%;" placeholder="Grupo" onchange="AdminContent.updateCatField('${c.id}','grupo',this.value)"></td>
+        <td><input type="text" value="${this.esc(c.grupo)}" data-id="${this.esc(c.id)}" data-field="grupo" style="width:100%;" placeholder="Grupo" onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','grupo',this.value)"></td>
         <td style="white-space:nowrap;">
-          <button class="btn btn-xs btn-secondary" onclick="AdminContent.moveCat('${c.id}',-1)">↑</button>
-          <button class="btn btn-xs btn-secondary" onclick="AdminContent.moveCat('${c.id}',1)">↓</button>
-          <button class="btn btn-xs btn-ghost" style="color:var(--rojo-500);" onclick="AdminContent.removeCat('${c.id}')">✕</button>
+          <button class="btn btn-xs btn-secondary" onclick="AdminContent.moveCat('${escJsAttr(c.id)}',-1)">↑</button>
+          <button class="btn btn-xs btn-secondary" onclick="AdminContent.moveCat('${escJsAttr(c.id)}',1)">↓</button>
+          <button class="btn btn-xs btn-ghost" style="color:var(--rojo-500);" onclick="AdminContent.removeCat('${escJsAttr(c.id)}')">✕</button>
         </td>
       </tr>
     `).join('');
@@ -223,12 +223,11 @@ const AdminContent = {
     AdminData.saveContenido(next);
     // Push CMS a Google Sheets (clave `clubPrince_boxes`) si hay backend configurado
     try {
-      const url = (typeof CONFIG !== 'undefined' && CONFIG.sheets?.appsScriptUrl) ? CONFIG.sheets.appsScriptUrl : null;
-      if (url && !url.includes('TU_SCRIPT_ID') && typeof SheetsService !== 'undefined' && SheetsService.postToAppsScript) {
-        SheetsService.postToAppsScript('save_config', { config: { clubPrince_boxes: JSON.stringify(next.clubPrince.boxes) } }).catch(() => {});
+      if (typeof AdminSync !== 'undefined' && AdminSync.habilitado()) {
+        AdminSync.publicar('save_config', { config: { clubPrince_boxes: JSON.stringify(next.clubPrince.boxes) } }, 'las cajas del Club Prince');
       }
     } catch {}
-    AdminApp.toast('Contenido guardado — se refleja al recargar la tienda');
+    AdminApp.toast((typeof AdminSync !== 'undefined' && AdminSync.habilitado()) ? 'Contenido publicado — se ve al recargar la tienda' : 'Contenido guardado solo en este navegador (falta conectar la planilla)');
   },
 
   resetFrases() {
@@ -242,9 +241,9 @@ const AdminContent = {
     const el = document.getElementById('club-leads-list'); if(!el) return;
     let leads = [];
     try { leads = JSON.parse(localStorage.getItem('pl_clubprince_leads')||'[]').reverse().slice(0,20); } catch {}
-    if (!leads.length) { el.innerHTML = '<p style="color:var(--texto-secundario); font-size:0.85rem; background:var(--gris-100); padding:0.8rem; border-radius:8px;">Aún no hay leads. Probá el formulario del Club en la tienda.</p>'; return; }
+    if (!leads.length) { el.innerHTML = '<p style="color:var(--texto-secundario); font-size:0.85rem; background:var(--gris-100); padding:0.8rem; border-radius:8px;">Aún no hay leads. Con la planilla conectada aparecen acá; si no, las interesadas te escriben directo por WhatsApp.</p>'; return; }
     el.innerHTML = `<div class="table-container"><table class="products-table" style="font-size:0.85rem;"><thead><tr><th>Fecha</th><th>Nombre</th><th>Teléfono</th><th>Ciudad</th><th>Plan</th></tr></thead><tbody>${leads.map(l=> `<tr><td>${this.esc(new Date(l.fecha).toLocaleDateString('es-AR'))}</td><td>${this.esc(l.nombre)}</td><td>${this.esc(l.telefono)}</td><td>${this.esc(l.ciudad)}</td><td>${this.esc(l.plan || '-')}</td></tr>`).join('')}</tbody></table></div>`;
   },
 
-  esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+  esc(s){ return escHtml(s); }
 };

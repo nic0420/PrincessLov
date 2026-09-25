@@ -39,7 +39,7 @@ const AdminPromos = {
     return typeof AdminData !== 'undefined' && typeof PromoEngine !== 'undefined';
   },
 
-  esc(s) { if (typeof document === 'undefined') return String(s ?? ''); const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; },
+  esc(s) { return (typeof escHtml === 'function') ? escHtml(s) : String(s ?? ''); },
 
   render(reload = true) {
     const root = document.getElementById('promos-root');

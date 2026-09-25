@@ -84,6 +84,12 @@ async function traerPago(paymentId) {
 }
 
 export default async function handler(req, res) {
+  // Cobro online desactivado: los pedidos se cierran por WhatsApp.
+  // Para reactivar Mercado Pago, cargar MP_ENABLED=true en Vercel.
+  if (process.env.MP_ENABLED !== 'true') {
+    return res.status(404).json({ error: 'No disponible' });
+  }
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo no permitido' });
 

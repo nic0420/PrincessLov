@@ -1,0 +1,10 @@
+# Archivos del repo que NO deben publicarse en la web.
+# (Antes google-apps-script.gs se podía descargar desde el sitio.)
+google-apps-script.gs
+*.md
+tests/
+components/
+utils/
+.env*
+assets/palette-ref.png
+docs/

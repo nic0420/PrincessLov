@@ -16,14 +16,15 @@ const CartService = {
    * Inicializa el carrito desde localStorage
    */
   init() {
-    const saved = localStorage.getItem('princesslov_cart');
+    let saved = null;
+    try { saved = localStorage.getItem('princesslov_cart'); } catch {}
     if (saved) {
       try {
         const data = JSON.parse(saved);
         if (Array.isArray(data)) {
           this.items = data;
         } else if (data && typeof data === 'object') {
-          this.items = data.items || [];
+          this.items = Array.isArray(data.items) ? data.items : [];
           this.shippingId = data.shippingId || null;
           this.shippingCost = data.shippingCost || 0;
           this.discountAmount = data.discountAmount || 0;
@@ -34,6 +35,9 @@ const CartService = {
         this.items = [];
       }
     }
+    // Datos corruptos o manipulados en localStorage: descartamos lo inválido
+    this.items = this.items.filter(i => i && i.id != null && Number(i.cantidad) > 0)
+      .map(i => ({ ...i, cantidad: Math.min(Math.floor(Number(i.cantidad)) || 1, 99) }));
     this.notifyListeners();
   },
 
@@ -41,14 +45,17 @@ const CartService = {
    * Guarda el carrito completo en localStorage
    */
   save() {
-    localStorage.setItem('princesslov_cart', JSON.stringify({
-      items: this.items,
-      shippingId: this.shippingId,
-      shippingCost: this.shippingCost,
-      discountAmount: this.discountAmount,
-      promoCode: this.promoCode,
-      promoData: this.promoData,
-    }));
+    // Mantener los campos derivados al día (compatibilidad con código viejo)
+    this.discountAmount = this.getCouponDiscount();
+    this.shippingCost = this.getShippingCost();
+    try {
+      localStorage.setItem('princesslov_cart', JSON.stringify({
+        items: this.items,
+        shippingId: this.shippingId,
+        promoCode: this.promoCode,
+        promoData: this.promoData,
+      }));
+    } catch {}
     this.notifyListeners();
   },
 
@@ -92,6 +99,8 @@ const CartService = {
       ? PromoEngine.precioCompraARS(producto)
       : SheetsService.calcularPrecioARS(producto.precioUSD, producto);
     const precioUSD = producto.precioUSD;
+
+    if (!(stockLimite > 0)) return;
 
     if (existing) {
       existing.cantidad = Math.min(existing.cantidad + cantidad, stockLimite);
@@ -304,32 +313,77 @@ const CartService = {
   getTotalARS() {
     const lineas = this.getLineasSubtotalARS();
     const auto = this.calcAutoDiscount();
-    const shipping = this.shippingCost || 0;
-    const coupon = this.discountAmount || 0;
-    return lineas + shipping - auto - coupon;
+    const coupon = this.getCouponDiscount();
+    const shipping = this.getShippingCost();
+    return Math.max(0, lineas - auto - coupon + shipping);
   },
 
   /**
-   * Obtiene el costo de envío
+   * Descuento del cupón, recalculado en cada llamada.
+   * (Antes se calculaba una sola vez al aplicarlo: si después agregabas
+   * productos, el 20% seguía siendo sobre el carrito viejo.)
+   * Misma regla que el servidor (api/_lib/pricing.js): % sobre las líneas.
+   */
+  getCouponDiscount() {
+    const promo = this.promoData;
+    if (!promo || !this.items.length) return 0;
+    // El cupón pudo haberse desactivado desde el admin
+    if (this.promoCode && typeof PromoEngine !== 'undefined' && PromoEngine.validarCupon && !PromoEngine.validarCupon(this.promoCode)) return 0;
+    const type = promo.type || promo.tipo;
+    const value = Number(promo.value != null ? promo.value : promo.valor) || 0;
+    const lineas = this.getLineasSubtotalARS();
+    if (type === 'percent') return Math.round(lineas * Math.min(value, 100) / 100);
+    if (type === 'fijo') return Math.min(Math.round(value), lineas);
+    return 0;
+  },
+
+  /** Umbral de envío gratis (editable desde Admin > Promociones) */
+  getFreeShippingThreshold() {
+    const cfg = (typeof PromoEngine !== 'undefined' && PromoEngine.config) ? PromoEngine.config : null;
+    return Number(cfg?.envioGratisUmbralARS || CONFIG?.promos?.envioGratisUmbralARS) || 0;
+  },
+
+  /** Envío seleccionado (objeto de CONFIG.envios) o null */
+  getShippingOption() {
+    if (!this.shippingId) return null;
+    return (CONFIG.envios || []).find(e => e.id === this.shippingId && e.activo !== false) || null;
+  },
+
+  /** ¿El pedido alcanza el envío gratis (por monto o por cupón)? */
+  hasFreeShipping() {
+    const type = this.promoData ? (this.promoData.type || this.promoData.tipo) : null;
+    if (type === 'shipping' && this.getCouponDiscount() === 0 && this.promoCode &&
+        (typeof PromoEngine === 'undefined' || !PromoEngine.validarCupon || PromoEngine.validarCupon(this.promoCode))) return true;
+    const umbral = this.getFreeShippingThreshold();
+    if (umbral <= 0) return false;
+    const base = this.getLineasSubtotalARS() - this.calcAutoDiscount() - this.getCouponDiscount();
+    return base >= umbral;
+  },
+
+  /**
+   * Costo de envío, recalculado siempre desde la opción elegida.
+   * Aplica el envío gratis por monto (antes se mostraba "¡Tenés envío gratis!"
+   * pero el costo se seguía cobrando).
    */
   getShippingCost() {
-    return this.shippingCost || 0;
+    const envio = this.getShippingOption();
+    if (!envio) return 0;
+    if (this.hasFreeShipping()) return 0;
+    return Number(envio.precio) || 0;
   },
 
   /**
    * Obtiene el monto total de descuento (cupón + promos automáticas)
    */
   getDiscountAmount() {
-    const auto = this.calcAutoDiscount();
-    return (this.discountAmount || 0) + auto;
+    return this.getCouponDiscount() + this.calcAutoDiscount();
   },
 
   /**
-   * Establece el envío seleccionado
+   * Establece el envío seleccionado (el costo se calcula solo)
    */
-  setShipping(shippingId, cost) {
-    this.shippingId = shippingId;
-    this.shippingCost = cost;
+  setShipping(shippingId) {
+    this.shippingId = shippingId || null;
     this.save();
   },
 
@@ -338,16 +392,7 @@ const CartService = {
    */
   applyPromo(code, promo) {
     this.promoCode = code;
-    this.promoData = promo;
-    const type = promo.type || promo.tipo;
-    const value = promo.value != null ? promo.value : promo.valor;
-    if (type === 'percent') {
-      this.discountAmount = Math.round(this.getLineasSubtotalARS() * value / 100);
-    } else if (type === 'fijo') {
-      this.discountAmount = Math.min(value, this.getLineasSubtotalARS());
-    } else if (type === 'shipping') {
-      this.shippingCost = 0;
-    }
+    this.promoData = { tipo: promo.type || promo.tipo, valor: promo.value != null ? promo.value : promo.valor, desc: promo.desc || '' };
     this.save();
   },
 
@@ -398,72 +443,87 @@ const CartService = {
     });
   },
 
-  generarMensajeWhatsApp(envioSeleccionado, datosCliente) {
-    let itemsTexto = this.items.map(i => {
-      const base = `• ${i.nombre} x${i.cantidad}`;
-      const variantText = i.variante ? `\n     Talle: ${i._variant?.talle || ''} | Color: ${i._variant?.color || ''}` : '';
-      const precioLine = SheetsService.formatPrecioARS(i.precioARS * i.cantidad);
-      return `${base} - ${precioLine}${variantText}`;
-    }).join('\n');
-
-    // Agregar resumen de descuento/envío si aplica
-    const subtotal = this.getLineasSubtotalARS();
-    if (this.discountAmount > 0 && this.promoCode) {
-      itemsTexto += `\n• Descuento (${this.promoCode}): -${SheetsService.formatPrecioARS(this.discountAmount)}`;
-    }
-    const autoLines = this.getAutoDiscountLines();
-    autoLines.forEach(l => {
-      itemsTexto += `\n• ${l.label}: -${SheetsService.formatPrecioARS(l.monto)}`;
+  /**
+   * Arma el texto del pedido para WhatsApp.
+   * @param {object|null} envio      opción de CONFIG.envios
+   * @param {object|null} datos      datos del formulario de checkout
+   * @param {string} [pedidoId]      número de pedido (ej: PL-250925-4821)
+   */
+  generarMensajeWhatsApp(envio, datos, pedidoId) {
+    const f = (n) => SheetsService.formatPrecioARS(n);
+    const lineas = this.items.map(i => {
+      const v = i._variant ? ` (${[i._variant.talle && 'Talle ' + i._variant.talle, i._variant.color].filter(Boolean).join(' · ')})` : '';
+      return `• ${i.nombre}${v} x${i.cantidad} — ${f(i.precioARS * i.cantidad)}`;
     });
-    if (this.shippingCost > 0) {
-      itemsTexto += `\n• Envío: ${SheetsService.formatPrecioARS(this.shippingCost)}`;
-    }
 
-    let datosTexto = '';
-    if (datosCliente) {
-      datosTexto = `👤 *Datos del cliente:*`;
-      datosTexto += `\nNombre: ${datosCliente.nombre || '-'}`;
-      datosTexto += `\nTeléfono: ${datosCliente.telefono || '-'}`;
-      datosTexto += `\nEmail: ${datosCliente.email || '-'}`;
-      datosTexto += `\n📍 *Dirección:* ${datosCliente.direccion || '-'}`;
-      if (datosCliente.localidad) datosTexto += `\nLocalidad: ${datosCliente.localidad}`;
-      if (datosCliente.provincia) datosTexto += `\nProvincia: ${datosCliente.provincia}`;
-    }
+    const subtotal = this.getLineasSubtotalARS();
+    const cupon = this.getCouponDiscount();
+    const autoLines = (this.calcAutoDiscount(), this.getAutoDiscountLines());
+    const envioCosto = this.getShippingCost();
+    const total = this.getTotalARS();
 
-    const envioTexto = envioSeleccionado
-      ? `${envioSeleccionado.nombre}${envioSeleccionado.precio > 0 ? ' (' + SheetsService.formatPrecioARS(envioSeleccionado.precio) + ')' : ' (GRATIS)'}`
-      : 'No seleccionado';
-
-    const pagoTexto = datosCliente?.medioPago || 'A coordinar';
-
-    // Lógica condicional Club Prince (crítico): si hay al menos un VIP, el saludo cambia obligatoriamente
-    const isClubPrince = this._hasClubPrinceItem();
-
-    let mensaje;
-    if (isClubPrince) {
-      // Saludo exacto exigido, ignora whatsappTemplate estándar
-      const detallePedido = `${itemsTexto}\n\n💰 *Subtotal:* ${SheetsService.formatPrecioARS(this.getSubtotalARS())}\n🚚 *Envío:* ${envioTexto}\n💳 *Total:* ${SheetsService.formatPrecioARS(this.getTotalARS())}\n*Medio de pago:* ${pagoTexto}\n\n${datosTexto}`;
-      mensaje = `Yanela del club Prince quiero esto\n\n${detallePedido}`;
+    const res = [`Subtotal: ${f(subtotal)}`];
+    if (cupon > 0) res.push(`Descuento${this.promoCode ? ' (' + this.promoCode + ')' : ''}: -${f(cupon)}`);
+    autoLines.forEach(l => res.push(`${l.label}: -${f(l.monto)}`));
+    if (envio) {
+      res.push(`Envío: ${envio.nombre} — ${envioCosto > 0 ? f(envioCosto) : 'GRATIS'}`);
     } else {
-      mensaje = CONFIG.whatsappTemplate
-        .replace('{items}', itemsTexto)
-        .replace('{total}', SheetsService.formatPrecioARS(this.getTotalARS()))
-        .replace('{envio}', envioSeleccionado ? `${envioSeleccionado.nombre}${envioSeleccionado.precio > 0 ? ' (' + SheetsService.formatPrecioARS(envioSeleccionado.precio) + ')' : ' (GRATIS)'}` : 'No seleccionado')
-        .replace('{pago}', datosCliente?.medioPago || 'A coordinar')
-        .replace('{datos}', `${datosTexto}\n\n💰 *Subtotal:* ${SheetsService.formatPrecioARS(this.getSubtotalARS())}\n🚚 *Envío:* ${envioTexto}\n💳 *Total:* ${SheetsService.formatPrecioARS(this.getTotalARS())}`);
+      res.push('Envío: a coordinar');
     }
 
-    return mensaje;
+    const esClub = this._hasClubPrinceItem();
+    const tienda = CONFIG.negocio?.nombre || 'PrincessLov';
+    const partes = [];
+    partes.push(esClub ? 'Yanela del club Prince quiero esto 👑' : `¡Hola ${tienda}! 🛍️ Quiero hacer este pedido:`);
+    if (pedidoId) partes.push(`*Pedido #${pedidoId}*`);
+    partes.push('', '*Productos*', ...lineas, '', ...res, `*Total: ${f(total)}*`);
+
+    if (datos) {
+      partes.push('', `*Forma de pago:* ${datos.medioPago || 'A coordinar'}`);
+      partes.push('', '*Mis datos*');
+      partes.push(`Nombre: ${datos.nombre || '-'}`);
+      if (datos.telefono) partes.push(`Teléfono: ${datos.telefono}`);
+      if (datos.email) partes.push(`Email: ${datos.email}`);
+      const esRetiro = envio && envio.id === 'retiro';
+      if (!esRetiro) {
+        const dir = [datos.direccion, datos.localidad, datos.provincia].filter(Boolean).join(', ');
+        if (dir) partes.push(`Dirección: ${dir}`);
+        if (datos.cp) partes.push(`CP: ${datos.cp}`);
+      }
+      if (datos.notas) partes.push(`Notas: ${datos.notas}`);
+    }
+    partes.push('', 'Quedo atenta para coordinar el pago y el envío. ¡Gracias! 💕');
+    return partes.join('\n');
+  },
+
+  /** URL wa.me al número de la tienda con el texto dado */
+  whatsappUrl(texto) {
+    const numero = String(CONFIG.negocio?.whatsapp || '').replace(/\D/g, '');
+    return `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+  },
+
+  /**
+   * Abre WhatsApp. Debe llamarse directo desde el click (sin await antes),
+   * si no los celulares bloquean la ventana. Si igual se bloquea, navega.
+   * @returns {string} la URL usada
+   */
+  abrirWhatsApp(texto) {
+    const url = this.whatsappUrl(texto);
+    let win = null;
+    try { win = window.open(url, '_blank'); } catch {}
+    if (win) {
+      try { win.opener = null; } catch {}
+    } else {
+      window.location.href = url;
+    }
+    return url;
   },
 
   /**
    * Abre WhatsApp con el mensaje del pedido
    */
-  enviarWhatsApp(envioSeleccionado, datosCliente) {
-    const mensaje = this.generarMensajeWhatsApp(envioSeleccionado, datosCliente);
-    const encoded = encodeURIComponent(mensaje);
-    const url = `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encoded}`;
-    window.open(url, '_blank');
+  enviarWhatsApp(envioSeleccionado, datosCliente, pedidoId) {
+    return this.abrirWhatsApp(this.generarMensajeWhatsApp(envioSeleccionado, datosCliente, pedidoId));
   },
 
   /**
@@ -471,7 +531,7 @@ const CartService = {
    */
   generarMensajeProducto(producto, cantidad = 1, variant = null) {
     const isClub = (producto.categoria === 'club-prince' || producto.isClubPrince || (Array.isArray(producto.tags) && producto.tags.some(t => String(t).toLowerCase().includes('club'))));
-    const precioARS = SheetsService.calcularPrecioARS(producto.precioUSD, producto);
+    const precioARS = (typeof PromoEngine !== 'undefined' && PromoEngine.precioVistaARS) ? PromoEngine.precioVistaARS(producto) : SheetsService.calcularPrecioARS(producto.precioUSD, producto);
     const variantText = variant ? `\n${variant.color} / ${variant.talle}` : '';
     if (isClub) {
       return `Yanela del club Prince quiero esto\n\n• ${producto.nombre}${variantText} x${cantidad} - ${SheetsService.formatPrecioARS(precioARS * cantidad)}`;
@@ -493,6 +553,6 @@ const CartService = {
     );
     const header = hasVip ? 'Yanela del club Prince quiero esto' : `Hola! Quiero hacer un pedido en ${CONFIG.negocio?.nombre || 'PrincessLov'} 🛍️`;
     const mensaje = `${header}\n\n${detallePedido}`;
-    return `https://wa.me/${CONFIG.negocio.whatsapp}?text=${encodeURIComponent(mensaje)}`;
+    return this.whatsappUrl(mensaje);
   },
 };

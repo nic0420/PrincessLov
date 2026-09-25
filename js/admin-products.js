@@ -10,7 +10,8 @@ const AdminProducts = {
   specRowId: 0,
   currentEditId: null,
 
-  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
+  esc(s) { return escHtml(s); },
+  _tabsListos: false,
 
   render() {
     this.populateCategories();
@@ -32,13 +33,15 @@ const AdminProducts = {
         sel.innerHTML = '<option value="">Seleccionar...</option>';
       }
       cats.forEach(c => {
-        sel.innerHTML += `<option value="${c.id}">${c.icon} ${c.nombre}</option>`;
+        sel.innerHTML += `<option value="${escHtml(c.id)}">${escHtml(c.icon || '')} ${escHtml(c.nombre)}</option>`;
       });
       sel.value = currentVal;
     });
   },
 
   initTabs() {
+    if (this._tabsListos) return; // antes sumaba listeners cada vez que entrabas a Productos
+    this._tabsListos = true;
     const tabs = document.querySelectorAll('#product-modal .form-tab');
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -142,8 +145,8 @@ const AdminProducts = {
           <td><span class="badge ${p.activo ? 'badge-active' : 'badge-inactive'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
           <td>
             <div class="table-actions">
-              <button class="btn btn-sm btn-secondary" onclick="AdminProducts.openForm('${p.id}')" title="Editar">✏️</button>
-              <button class="btn btn-sm btn-danger" onclick="AdminProducts.delete('${p.id}')" title="Eliminar">🗑️</button>
+              <button class="btn btn-sm btn-secondary" onclick="AdminProducts.openForm('${escJsAttr(p.id)}')" title="Editar" aria-label="Editar ${this.esc(p.nombre)}">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="AdminProducts.delete('${escJsAttr(p.id)}')" title="Eliminar" aria-label="Eliminar ${this.esc(p.nombre)}">🗑️</button>
             </div>
           </td>
         </tr>
@@ -274,17 +277,17 @@ const AdminProducts = {
       <div class="form-group">
         <label>Color *</label>
         <div style="display:flex; gap:0.5rem; align-items:end;">
-          <input type="text" class="variant-color-name" placeholder="Nombre (ej: Borgoña)" value="${variant.color || ''}" style="flex:1;">
-          <input type="color" class="variant-color-input" value="${variant.colorHex || '#800020'}">
+          <input type="text" class="variant-color-name" placeholder="Nombre (ej: Borgoña)" value="${this.esc(variant.color || '')}" style="flex:1;">
+          <input type="color" class="variant-color-input" value="${/^#[0-9a-f]{6}$/i.test(variant.colorHex || '') ? variant.colorHex : '#800020'}">
         </div>
       </div>
       <div class="form-group">
         <label>Talle *</label>
-        <input type="text" class="variant-talle" placeholder="Ej: S, M, L, XL / Único" value="${variant.talle || ''}">
+        <input type="text" class="variant-talle" placeholder="Ej: S, M, L, XL / Único" value="${this.esc(variant.talle || '')}">
       </div>
       <div class="form-group">
         <label>Stock</label>
-        <input type="number" class="variant-stock" min="0" value="${variant.stock || 0}">
+        <input type="number" class="variant-stock" min="0" value="${Number(variant.stock) || 0}">
       </div>
       <button type="button" class="variant-remove" onclick="this.closest('.variant-row').remove()" title="Eliminar variante">✕</button>
     `;
@@ -301,7 +304,7 @@ const AdminProducts = {
     row.innerHTML = `
       <div class="form-group">
         <label>URL Imagen galería</label>
-        <input type="url" class="gallery-url" placeholder="https://...jpg" value="${image.url || ''}">
+        <input type="url" class="gallery-url" placeholder="https://...jpg" value="${this.esc(image.url || '')}">
       </div>
       <button type="button" class="gallery-remove" onclick="this.closest('.gallery-row').remove()" title="Eliminar">✕</button>
     `;
@@ -318,11 +321,11 @@ const AdminProducts = {
     row.innerHTML = `
       <div class="form-group">
         <label>Característica (clave)</label>
-        <input type="text" class="spec-key" placeholder="Ej: Material, Composición, Cuidado" value="${spec.key || ''}">
+        <input type="text" class="spec-key" placeholder="Ej: Material, Composición, Cuidado" value="${this.esc(spec.key || '')}">
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="text" class="spec-value" placeholder="Ej: 90% Poliéster 10% Elastano" value="${spec.value || ''}">
+        <input type="text" class="spec-value" placeholder="Ej: 90% Poliéster 10% Elastano" value="${this.esc(spec.value || '')}">
       </div>
       <button type="button" class="spec-remove" onclick="this.closest('.spec-row').remove()" title="Eliminar">✕</button>
     `;
@@ -393,7 +396,7 @@ const AdminProducts = {
     const galeria = [];
     document.querySelectorAll('.gallery-row').forEach(row => {
       const url = row.querySelector('.gallery-url')?.value?.trim();
-      if (url) galeria.push({ url });
+      if (url && /^(https:\/\/|assets\/)/.test(url)) galeria.push({ url });
     });
 
     // Collect specs
@@ -404,8 +407,26 @@ const AdminProducts = {
       if (key && value) caracteristicas[key] = value;
     });
 
+    const nombre = document.getElementById('pf-nombre').value.trim();
+    const imagen = document.getElementById('pf-imagen').value.trim();
+    // El form es novalidate: los campos obligatorios pueden estar en otra
+    // pestaña y el navegador bloqueaba el guardado sin decir nada.
+    const irATab = (tab) => document.querySelector(`#product-modal .form-tab[data-tab="${tab}"]`)?.click();
+    if (!nombre) { irATab('basico'); AdminApp.toast('El producto necesita un nombre', 'error'); return; }
+    if (!catId) { irATab('basico'); AdminApp.toast('Elegí una categoría', 'error'); return; }
+    const precioUSD = parseFloat(document.getElementById('pf-preciousd').value);
+    const precioManual = parseFloat(document.getElementById('pf-precio-ars-manual').value);
+    if (!(precioUSD > 0) && !(precioManual > 0)) { irATab('precios'); AdminApp.toast('Cargá el precio (USD o precio manual en pesos)', 'error'); return; }
+    if (imagen && !/^(https:\/\/|assets\/|data:image\/)/.test(imagen)) {
+      AdminApp.toast('La imagen tiene que ser un link https:// (ej. de Google Drive público, Imgur o Cloudinary)', 'error');
+      return;
+    }
+    // Con variantes, el stock total es la suma de las variantes
+    // (antes podía quedar "Sin stock" en la tienda aunque hubiera talles).
+    const stockVariantes = variantes.reduce((s, v) => s + v.stock, 0);
+
     const data = {
-      nombre: document.getElementById('pf-nombre').value.trim(),
+      nombre,
       categoria: catId,
       categoriaOriginal: catConfig ? catConfig.nombre : catId,
       subcategoria: document.getElementById('pf-subcategoria').value.trim(),
@@ -414,14 +435,14 @@ const AdminProducts = {
       precioARSManual: document.getElementById('pf-precio-ars-manual').value ? parseFloat(document.getElementById('pf-precio-ars-manual').value) : null,
       precioOferta: document.getElementById('pf-precio-oferta').value ? parseFloat(document.getElementById('pf-precio-oferta').value) : null,
       margenPersonalizado: document.getElementById('pf-margen-personalizado').value ? parseFloat(document.getElementById('pf-margen-personalizado').value) / 100 : null,
-      stock: parseInt(document.getElementById('pf-stock').value) || 0,
+      stock: variantes.length ? stockVariantes : (parseInt(document.getElementById('pf-stock').value) || 0),
       stockMin: parseInt(document.getElementById('pf-stock-min').value) || 5,
       peso: parseInt(document.getElementById('pf-peso').value) || null,
       dimensiones: document.getElementById('pf-dimensiones').value.trim(),
       tags: document.getElementById('pf-tags').value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
       descripcion: document.getElementById('pf-descripcion').value.trim(),
       descripcionCorta: document.getElementById('pf-descripcion-corta').value.trim(),
-      imagen: document.getElementById('pf-imagen').value.trim(),
+      imagen,
       activo: document.getElementById('pf-activo').checked,
       destacado: document.getElementById('pf-destacado').checked,
       soloWeb: document.getElementById('pf-solo-web').checked,
@@ -488,15 +509,22 @@ const AdminProducts = {
 
     let csv = headers.join(',') + '\n';
     rows.forEach(r => {
-      csv += r.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(',') + '\n';
+      csv += r.map(v => AdminProducts.csvCell(v)).join(',') + '\n';
     });
 
     this.downloadFile(csv, 'productos_princesslov_completo.csv', 'text/csv');
     AdminApp.toast('CSV completo exportado');
   },
 
+  /** Celda CSV segura: conserva ceros y neutraliza fórmulas (=, +, -, @) al abrir en Excel */
+  csvCell(v) {
+    let s = v == null ? '' : String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return `"${s.replace(/"/g, '""')}"`;
+  },
+
   downloadFile(content, filename, type) {
-    const blob = new Blob([content], { type });
+    const blob = new Blob(['\ufeff' + content], { type: type + ';charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

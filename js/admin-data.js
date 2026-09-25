@@ -20,8 +20,16 @@ const AdminData = {
   // ==========================================
   // PRODUCTOS
   // ==========================================
+  _readJSON(key, fallback) {
+    try {
+      const v = JSON.parse(localStorage.getItem(key) || 'null');
+      return v == null ? fallback : v;
+    } catch { return fallback; }
+  },
+
   getProducts() {
-    return JSON.parse(localStorage.getItem(this.KEYS.products) || '[]');
+    const v = this._readJSON(this.KEYS.products, []);
+    return Array.isArray(v) ? v : [];
   },
 
   saveProducts(products) {
@@ -101,7 +109,15 @@ const AdminData = {
   // PEDIDOS / VENTAS
   // ==========================================
   getOrders() {
-    return JSON.parse(localStorage.getItem(this.KEYS.orders) || '[]');
+    const v = this._readJSON(this.KEYS.orders, []);
+    return Array.isArray(v) ? v : [];
+  },
+
+  /** Estados en los que la mercadería ya está comprometida */
+  ESTADOS_CON_STOCK: ['confirmado', 'preparando', 'enviado', 'entregado'],
+
+  _moverStock(order, signo) {
+    (order.items || []).forEach(item => this.adjustStock(item.productoId, signo * (Number(item.cantidad) || 0), item.variante));
   },
 
   saveOrders(orders) {
@@ -118,16 +134,15 @@ const AdminData = {
       order.total = order.items.reduce((s, i) => s + ((i.precioUnitario || 0) * i.cantidad), 0);
     }
     if (order.costoTotal == null) order.costoTotal = 0;
+    // El stock se descuenta cuando el pedido está confirmado (o más avanzado).
+    // Un pedido "pendiente" (ej. recién llegado por WhatsApp) todavía no reserva stock.
+    order.stockDescontado = false;
+    if (this.ESTADOS_CON_STOCK.includes(order.estado) && order.items.length) {
+      this._moverStock(order, -1);
+      order.stockDescontado = true;
+    }
     orders.push(order);
     this.saveOrders(orders);
-
-    // Descontar stock
-    if (order.items.length) {
-      order.items.forEach(item => {
-        this.adjustStock(item.productoId, -item.cantidad);
-      });
-    }
-
     return order;
   },
 
@@ -137,26 +152,27 @@ const AdminData = {
     if (idx === -1) return null;
 
     const oldOrder = orders[idx];
-    orders[idx] = { ...oldOrder, ...updates, fechaModificacion: new Date().toISOString() };
+    const nuevo = { ...oldOrder, ...updates, fechaModificacion: new Date().toISOString() };
 
-    // Si se cancela y antes estaba activa, devolver stock
-    if (updates.estado === 'cancelado' && oldOrder.estado !== 'cancelado' && oldOrder.items) {
-      oldOrder.items.forEach(item => {
-        this.adjustStock(item.productoId, item.cantidad);
-      });
+    // Stock: primero devolvemos lo que había descontado el pedido viejo y
+    // después descontamos según el estado/ítems nuevos. Así funciona al
+    // confirmar, cancelar, reactivar o editar cantidades (antes solo
+    // devolvía stock al cancelar y nunca lo volvía a descontar).
+    if (oldOrder.stockDescontado) this._moverStock(oldOrder, +1);
+    nuevo.stockDescontado = false;
+    if (this.ESTADOS_CON_STOCK.includes(nuevo.estado) && (nuevo.items || []).length) {
+      this._moverStock(nuevo, -1);
+      nuevo.stockDescontado = true;
     }
 
+    orders[idx] = nuevo;
     this.saveOrders(orders);
     return orders[idx];
   },
 
   deleteOrder(id) {
     const order = this.getOrder(id);
-    if (order && order.estado !== 'cancelado' && order.items) {
-      order.items.forEach(item => {
-        this.adjustStock(item.productoId, item.cantidad);
-      });
-    }
+    if (order && order.stockDescontado) this._moverStock(order, +1);
     const orders = this.getOrders().filter(o => o.id !== id);
     this.saveOrders(orders);
   },
@@ -169,7 +185,8 @@ const AdminData = {
   // GASTOS
   // ==========================================
   getExpenses() {
-    return JSON.parse(localStorage.getItem(this.KEYS.expenses) || '[]');
+    const v = this._readJSON(this.KEYS.expenses, []);
+    return Array.isArray(v) ? v : [];
   },
 
   saveExpenses(expenses) {
@@ -199,14 +216,31 @@ const AdminData = {
   // ==========================================
   // STOCK
   // ==========================================
-  adjustStock(productId, delta) {
+  /**
+   * Ajusta stock. Si se indica variante ("Color / Talle"), ajusta esa variante
+   * y recalcula el total del producto.
+   */
+  adjustStock(productId, delta, variante) {
     const products = this.getProducts();
-    const idx = products.findIndex(p => p.id === productId);
-    if (idx !== -1) {
-      products[idx].stock = Math.max(0, (products[idx].stock || 0) + delta);
-      products[idx].fechaModificacion = new Date().toISOString();
-      this.saveProducts(products);
+    const idx = products.findIndex(p => String(p.id) === String(productId));
+    if (idx === -1 || !delta) return null;
+    const p = products[idx];
+    const vars = Array.isArray(p.variantes) ? p.variantes : [];
+    let tocada = false;
+    if (variante && vars.length) {
+      const [color, talle] = String(variante).split('/').map(x => x.trim());
+      const v = vars.find(x => x.color === color && x.talle === talle);
+      if (v) {
+        v.stock = Math.max(0, (Number(v.stock) || 0) + delta);
+        p.stock = vars.reduce((s, x) => s + (Number(x.stock) || 0), 0);
+        tocada = true;
+      }
     }
+    if (!tocada) p.stock = Math.max(0, (Number(p.stock) || 0) + delta);
+    p.fechaModificacion = new Date().toISOString();
+    this.saveProducts(products);
+    window.dispatchEvent(new CustomEvent('admin:stock', { detail: p }));
+    return p;
   },
 
   getLowStockProducts(threshold = 5) {
@@ -287,7 +321,8 @@ const AdminData = {
   // CONFIGURACIÓN
   // ==========================================
   getSettings() {
-    return JSON.parse(localStorage.getItem(this.KEYS.settings) || '{}');
+    const v = this._readJSON(this.KEYS.settings, {});
+    return v && typeof v === 'object' ? v : {};
   },
 
   saveSettings(settings) {
@@ -298,7 +333,7 @@ const AdminData = {
   // HISTORIAL DÓLAR
   // ==========================================
   addDolarRate(rate) {
-    const history = JSON.parse(localStorage.getItem(this.KEYS.dolarHistory) || '[]');
+    const history = this._readJSON(this.KEYS.dolarHistory, []);
     history.push({ fecha: new Date().toISOString(), valor: rate });
     // Mantener solo últimos 90 días
     if (history.length > 90) history.splice(0, history.length - 90);
@@ -306,7 +341,7 @@ const AdminData = {
   },
 
   getDolarHistory() {
-    return JSON.parse(localStorage.getItem(this.KEYS.dolarHistory) || '[]');
+    return this._readJSON(this.KEYS.dolarHistory, []);
   },
 
   // ==========================================

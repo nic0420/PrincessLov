@@ -31,12 +31,23 @@ const AdminSettings = {
     set('set-cv-etiqueta', cv.etiqueta || '');
     set('set-cv-comision', cv.comisionMP || '');
 
-    // Sync con Sheets si está configurado (asíncrono, no bloquea)
-    if (SheetsService && SheetsService.appsScriptUrl) {
-      SheetsService.obtenerConfig().then(remote => {
-        if (remote && Object.keys(remote).length) {
+    const tok = document.getElementById('set-admin-token');
+    if (tok) tok.placeholder = (typeof AdminSync !== 'undefined' && AdminSync.token()) ? '•••••• token cargado (pegá otro para cambiarlo)' : 'Pegá el token (32+ caracteres)';
+
+    // Traer la config completa (incluye datos privados) solo con token
+    if (typeof AdminSync !== 'undefined' && AdminSync.habilitado()) {
+      AdminSync.leer('config').then(rows => {
+        const remote = {};
+        rows.forEach(r => { if (r.Clave) remote[r.Clave] = r.Valor; });
+        if (remote.whatsapp || remote.nombre) {
           AdminData.saveSettings(this.sanitize(remote));
-          AdminApp.toast('Config sincronizada desde Google Sheets');
+          this.load();
+          ['set-nombre', 'set-whatsapp', 'set-email', 'set-instagram', 'set-dolar-manual', 'set-margen'].forEach(id => {
+            const el = document.getElementById(id);
+            const key = { 'set-nombre': 'nombre', 'set-whatsapp': 'whatsapp', 'set-email': 'email', 'set-instagram': 'instagram', 'set-dolar-manual': 'dolarManual', 'set-margen': 'margen' }[id];
+            const val = AdminData.getSettings()[key];
+            if (el && document.activeElement !== el && val != null) el.value = val;
+          });
         }
       }).catch(() => {});
     }
@@ -70,15 +81,16 @@ const AdminSettings = {
   sanitize(settings) {
     // Normaliza las settings remote para que coincidan con el formato del admin
     const s = settings || {};
-    const gastosFijos = s.gastosFijos || {};
-    const costosVariables = s.costosVariables || {};
+    const obj = (v) => { if (v && typeof v === 'object') return v; try { return JSON.parse(v || '{}') || {}; } catch { return {}; } };
+    const gastosFijos = obj(s.gastosFijos);
+    const costosVariables = obj(s.costosVariables);
     return {
       nombre: s.nombre || 'PrincessLov',
-      whatsapp: s.whatsapp || '',
+      whatsapp: String(s.whatsapp || '').replace(/\D/g, ''),
       email: s.email || '',
       instagram: s.instagram || '',
-      dolarManual: s.dolarManual || 1200,
-      margen: s.margen || 1.30,
+      dolarManual: Number(s.dolarManual) || 1200,
+      margen: Number(s.margen) || 1.30,
       gastosFijos: {
         alquiler: gastosFijos.alquiler || 0,
         servicios: gastosFijos.servicios || 0,
@@ -101,11 +113,21 @@ const AdminSettings = {
       return el ? el.value : '';
     };
 
+    const whatsapp = get('set-whatsapp').replace(/\D/g, '');
+    if (whatsapp && (whatsapp.length < 10 || whatsapp.length > 15)) {
+      AdminApp.toast('El WhatsApp tiene que ir con código de país, sin espacios. Ej: 5493757338837', 'error');
+      return;
+    }
+    const margen = parseFloat(get('set-margen'));
+    if (margen && (margen < 1 || margen > 5)) {
+      AdminApp.toast('El margen es un multiplicador: 1.30 = 30% de ganancia', 'error');
+      return;
+    }
     const settings = {
       nombre: get('set-nombre').trim(),
-      whatsapp: get('set-whatsapp').trim(),
+      whatsapp,
       email: get('set-email').trim(),
-      instagram: get('set-instagram').trim(),
+      instagram: get('set-instagram').trim().replace(/^@/, ''),
       dolarManual: parseFloat(get('set-dolar-manual')) || 1200,
       margen: parseFloat(get('set-margen')) || 1.30,
       gastosFijos: {
@@ -125,8 +147,8 @@ const AdminSettings = {
     // Guardar local (fuente de verdad del admin)
     AdminData.saveSettings(settings);
 
-    // Sincronizar a Sheets si está configurado
-    if (SheetsService && SheetsService.appsScriptUrl) {
+    // Sincronizar a Sheets si está configurado (necesita el token)
+    if (typeof AdminSync !== 'undefined' && AdminSync.habilitado()) {
       SheetsService.guardarConfig(settings).then(result => {
         if (result.success) {
           AdminApp.toast('✅ Configuración guardada y sincronizada a la tienda');
@@ -137,7 +159,7 @@ const AdminSettings = {
         AdminApp.toast('⚠️ Guardado local. No se sincronizó a Sheets.', 'error');
       });
     } else {
-      AdminApp.toast('Configuración guardada');
+      AdminApp.toast('Configuración guardada en este navegador (sin publicar: falta conectar la planilla)');
     }
 
     this.load();
@@ -166,9 +188,6 @@ const AdminSettings = {
    EVENTOS GLOBALES PARA SINCRONÍA
    ============================================ */
 
-window.addEventListener('config:updated', (e) => {
-  console.log('[LiveStore] Config actualizada:', e.detail);
-});
 
 // Sincronizar dólar cuando cambia en admin
 window.addEventListener('dolar:updated', (e) => {
