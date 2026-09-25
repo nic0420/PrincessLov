@@ -1311,3 +1311,12 @@ button.cart__shipping-option:hover { border-color: var(--primary); }
 @media (max-width: 767px) {
   .cookie-banner { flex-direction: column; align-items: stretch; bottom: 76px; }
 }
+
+/* Club Prince: el formulario vive dentro del modal de cada caja */
+.club-prince__hint { text-align: center; font-size: 0.85rem; color: var(--texto-light); margin: 0 auto var(--sp-4); }
+.club-prince__form-wrap--modal { max-width: none; margin: 8px 0 0; padding: var(--sp-4) 0 0; border: 0; border-top: 1px solid var(--pink-200); border-radius: 0; box-shadow: none; background: transparent; }
+.club-prince__form-wrap--modal[hidden] { display: none; }
+.club-prince__form-wrap--modal .club-prince__form-head h3 { font-size: 20px; }
+.club-prince__form-wrap--modal .form-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: var(--sp-3); }
+.club-modal__actions { display: flex; flex-direction: column; gap: 8px; }
+.club-modal__actions [hidden] { display: none; }

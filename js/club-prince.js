@@ -275,10 +275,38 @@ const ClubPrince = {
     const price = document.getElementById('club-modal-price');
     if (price) price.textContent = this.formatARS(this.precioARS(box));
 
+    // El formulario para sumarse arranca cerrado en cada caja
+    this.ocultarFormulario();
+    const msg = document.getElementById('club-form-msg');
+    if (msg) { msg.textContent = ''; msg.className = 'club-prince__form-msg'; }
+
     modal.dataset.boxId = box.id;
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('no-scroll');
+  },
+
+  /** Muestra el formulario "Quiero sumarme" dentro del modal de la caja */
+  mostrarFormulario() {
+    const wrap = document.getElementById('club-form-wrap');
+    const btn = document.getElementById('club-join-btn');
+    if (!wrap) return;
+    const modal = document.getElementById('club-modal');
+    if (modal?.dataset.boxId) this.setPlan(modal.dataset.boxId);
+    const box = this.getSelectedBox();
+    const title = document.getElementById('club-form-title');
+    if (title && box) title.textContent = `Quiero la ${box.nombre}`;
+    wrap.hidden = false;
+    if (btn) { btn.hidden = true; btn.setAttribute('aria-expanded', 'true'); }
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(() => document.getElementById('club-nombre')?.focus({ preventScroll: true }), 250);
+  },
+
+  ocultarFormulario() {
+    const wrap = document.getElementById('club-form-wrap');
+    const btn = document.getElementById('club-join-btn');
+    if (wrap) wrap.hidden = true;
+    if (btn) { btn.hidden = false; btn.setAttribute('aria-expanded', 'false'); }
   },
 
   closeBoxModal() {

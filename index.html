@@ -193,6 +193,7 @@
     </div>
 
     <div class="container">
+      <p class="club-prince__hint">Tocá <strong>Ver más</strong> en una caja para ver qué trae y sumarte al club.</p>
       <div class="club-prince__boxes" id="club-boxes">
         <!-- Render dinámico CMS (ClubPrince.fetchBoxes); fallback estático -->
         <article class="club-box" data-box="box-esencial">
@@ -221,38 +222,6 @@
         </article>
       </div>
 
-      <!-- Formulario Lead Gen -->
-      <div class="club-prince__form-wrap" id="club-form-wrap">
-        <div class="club-prince__form-head">
-          <h3 id="club-form-title">Quiero sumarme al Club</h3>
-          <p id="club-form-desc">Dejanos tus datos y te contactamos para activar tu suscripción.</p>
-        </div>
-        <form id="club-prince-form" class="club-prince__form" novalidate>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="club-nombre">Nombre *</label>
-              <input type="text" id="club-nombre" name="nombre" required autocomplete="name" placeholder="Tu nombre">
-            </div>
-            <div class="form-group">
-              <label for="club-telefono">Teléfono *</label>
-              <input type="tel" id="club-telefono" name="telefono" required autocomplete="tel" placeholder="Ej: 3757 123456" inputmode="numeric">
-            </div>
-            <div class="form-group">
-              <label for="club-ciudad">Ciudad *</label>
-              <input type="text" id="club-ciudad" name="ciudad" required autocomplete="address-level2" placeholder="Ej: Puerto Iguazú">
-            </div>
-            <div class="form-group">
-              <label for="club-plan">Plan de interés</label>
-              <select id="club-plan" name="plan" aria-label="Plan de interés">
-                <option value="">Cargando planes…</option>
-              </select>
-            </div>
-          </div>
-          <button type="submit" class="btn btn--primary btn--block" id="club-submit-btn">✨ Quiero ser parte</button>
-          <p class="club-prince__form-msg" id="club-form-msg" aria-live="polite"></p>
-          <p class="club-prince__form-hint">Usamos tus datos solo para contactarte por el Club Prince. No los compartimos. <a href="privacidad.html">Política de privacidad</a>.</p>
-        </form>
-      </div>
     </div>
   </section>
 
@@ -662,8 +631,42 @@
           <div class="club-modal__detail" id="club-modal-detail"></div>
           <div class="club-modal__price" id="club-modal-price"></div>
           <div class="club-modal__actions">
-            <button class="btn btn--primary btn--block" onclick="ClubPrince.addBoxFromModal()">🛒 Agregar al carrito</button>
+            <button type="button" class="btn btn--primary btn--block" id="club-join-btn" onclick="ClubPrince.mostrarFormulario()" aria-expanded="false" aria-controls="club-form-wrap">✨ Quiero sumarme al Club</button>
+            <button type="button" class="btn btn--ghost btn--block" onclick="ClubPrince.addBoxFromModal()">🛒 Agregar al carrito</button>
           </div>
+          <!-- Formulario para sumarse: aparece dentro del modal de cada caja -->
+          <div class="club-prince__form-wrap club-prince__form-wrap--modal" id="club-form-wrap" hidden>
+        <div class="club-prince__form-head">
+          <h3 id="club-form-title">Quiero sumarme al Club</h3>
+          <p id="club-form-desc">Dejanos tus datos y te contactamos para activar tu suscripción.</p>
+        </div>
+        <form id="club-prince-form" class="club-prince__form" novalidate>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="club-nombre">Nombre *</label>
+              <input type="text" id="club-nombre" name="nombre" required autocomplete="name" placeholder="Tu nombre">
+            </div>
+            <div class="form-group">
+              <label for="club-telefono">Teléfono *</label>
+              <input type="tel" id="club-telefono" name="telefono" required autocomplete="tel" placeholder="Ej: 3757 123456" inputmode="numeric">
+            </div>
+            <div class="form-group">
+              <label for="club-ciudad">Ciudad *</label>
+              <input type="text" id="club-ciudad" name="ciudad" required autocomplete="address-level2" placeholder="Ej: Puerto Iguazú">
+            </div>
+            <div class="form-group club-plan-group" hidden>
+              <label for="club-plan">Plan de interés</label>
+              <select id="club-plan" name="plan" aria-label="Plan de interés">
+                <option value="">Cargando planes…</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn--primary btn--block" id="club-submit-btn">✨ Quiero ser parte</button>
+          <p class="club-prince__form-msg" id="club-form-msg" aria-live="polite"></p>
+          <p class="club-prince__form-hint">Usamos tus datos solo para contactarte por el Club Prince. No los compartimos. <a href="privacidad.html">Política de privacidad</a>.</p>
+        </form>
+      </div>
+
         </div>
       </div>
     </div>
