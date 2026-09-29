@@ -3457,3 +3457,25 @@ details.tech-box > summary { cursor: pointer; font-weight: 700; color: var(--bor
   .products-toolbar .toolbar-left, .products-toolbar .toolbar-right { width: 100%; }
   .products-toolbar .toolbar-left > *, .products-toolbar .toolbar-right > * { flex: 1 1 auto; }
 }
+
+/* Subida de fotos (AdminImages) */
+.img-upload {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.img-upload input[type="url"] {
+  flex: 1;
+  min-width: 0;
+}
+.img-upload__btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.img-upload__btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+@media (max-width: 520px) {
+  .img-upload { flex-direction: column; }
+}

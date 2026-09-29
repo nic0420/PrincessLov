@@ -58,6 +58,7 @@ const AdminProducts = {
     const imgInput = document.getElementById('pf-imagen');
     if (imgInput) {
       imgInput.addEventListener('input', () => this.updateImagePreview(imgInput.value));
+      if (typeof AdminImages !== 'undefined') AdminImages.attach(imgInput);
     }
   },
 
@@ -303,12 +304,13 @@ const AdminProducts = {
     row.dataset.id = this.galleryRowId;
     row.innerHTML = `
       <div class="form-group">
-        <label>URL Imagen galería</label>
-        <input type="url" class="gallery-url" placeholder="https://...jpg" value="${this.esc(image.url || '')}">
+        <label>Foto de galería</label>
+        <input type="url" class="gallery-url" placeholder="Tocá &quot;Subir foto&quot; o pegá un link https://" value="${this.esc(image.url || '')}">
       </div>
       <button type="button" class="gallery-remove" onclick="this.closest('.gallery-row').remove()" title="Eliminar">✕</button>
     `;
     container.appendChild(row);
+    if (typeof AdminImages !== 'undefined') AdminImages.attach(row.querySelector('.gallery-url'));
   },
 
   // ========== CARACTERÍSTICAS ==========
@@ -395,7 +397,8 @@ const AdminProducts = {
     // Collect gallery
     const galeria = [];
     document.querySelectorAll('.gallery-row').forEach(row => {
-      const url = row.querySelector('.gallery-url')?.value?.trim();
+      const raw = row.querySelector('.gallery-url')?.value?.trim();
+      const url = typeof AdminImages !== 'undefined' ? AdminImages.normalizarUrl(raw) : raw;
       if (url && /^(https:\/\/|assets\/)/.test(url)) galeria.push({ url });
     });
 
@@ -408,7 +411,8 @@ const AdminProducts = {
     });
 
     const nombre = document.getElementById('pf-nombre').value.trim();
-    const imagen = document.getElementById('pf-imagen').value.trim();
+    const imagenRaw = document.getElementById('pf-imagen').value.trim();
+    const imagen = typeof AdminImages !== 'undefined' ? AdminImages.normalizarUrl(imagenRaw) : imagenRaw;
     // El form es novalidate: los campos obligatorios pueden estar en otra
     // pestaña y el navegador bloqueaba el guardado sin decir nada.
     const irATab = (tab) => document.querySelector(`#product-modal .form-tab[data-tab="${tab}"]`)?.click();
@@ -418,7 +422,8 @@ const AdminProducts = {
     const precioManual = parseFloat(document.getElementById('pf-precio-ars-manual').value);
     if (!(precioUSD > 0) && !(precioManual > 0)) { irATab('precios'); AdminApp.toast('Cargá el precio (USD o precio manual en pesos)', 'error'); return; }
     if (imagen && !/^(https:\/\/|assets\/|data:image\/)/.test(imagen)) {
-      AdminApp.toast('La imagen tiene que ser un link https:// (ej. de Google Drive público, Imgur o Cloudinary)', 'error');
+      irATab('imagenes');
+      AdminApp.toast('La foto principal tiene que ser un link https://. Usá el botón "📷 Subir foto" para subirla desde la compu o el celular.', 'error');
       return;
     }
     // Con variantes, el stock total es la suma de las variantes

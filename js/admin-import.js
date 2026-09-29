@@ -222,7 +222,8 @@ const AdminImport = {
       const categoriaExcel = colMap.categoria !== undefined ? String(row[colMap.categoria] || '').trim() : '';
       const subcategoria = colMap.subcategoria !== undefined ? String(row[colMap.subcategoria] || '').trim() : '';
       const descripcion = colMap.descripcion !== undefined ? String(row[colMap.descripcion] || '').trim() : '';
-      const imagen = colMap.imagen !== undefined ? String(row[colMap.imagen] || '').trim() : '';
+      const imagenRaw = colMap.imagen !== undefined ? String(row[colMap.imagen] || '').trim() : '';
+      const imagen = typeof AdminImages !== 'undefined' ? AdminImages.normalizarUrl(imagenRaw) : imagenRaw;
       const idExcel = colMap.id !== undefined ? String(row[colMap.id] || '').trim() : '';
       const tags = colMap.tags !== undefined ? String(row[colMap.tags] || '').trim() : '';
       const activo = colMap.activo !== undefined ? String(row[colMap.activo] || '').trim().toUpperCase() : '';

@@ -10,6 +10,7 @@
  *                        y, si usás las funciones de /api, en Vercel como APPS_SCRIPT_ADMIN_TOKEN.
  *      SPREADSHEET_ID  = (opcional) el ID de la planilla, si el script no está dentro de ella.
  * 4. Ejecutá una vez la función setupSheets (menú ▶) y aceptá los permisos.
+ *    Después ejecutá una vez autorizarDrive (permiso de Drive para las fotos).
  * 5. Implementar > Nueva implementación > Aplicación web
  *      - Ejecutar como: Yo
  *      - Quién tiene acceso: Cualquier usuario
@@ -146,6 +147,7 @@ function doPost(e) {
       case 'delete_expense': result = deleteRowById(SHEET_NAMES.GASTOS, data.id); break;
       case 'save_config': result = saveConfig(data.config); break;
       case 'add_dolar_rate': result = addDolarRate(data.valor); break;
+      case 'upload_image': result = uploadImage(data.image); break;
       case 'webhook_mp': result = processWebhookMP(data); break;
       default: result = { error: 'Acción no válida' };
     }
@@ -938,6 +940,70 @@ function testConnection() {
   } catch (e) {
     return { error: e.toString() };
   }
+}
+
+// ============================================
+// FOTOS DE PRODUCTOS (Google Drive)
+// ============================================
+// El admin achica la foto y la manda en JPG; acá se guarda en una carpeta de
+// Drive compartida "cualquiera con el link (lector)" y se devuelve un link que
+// la tienda puede mostrar. En la planilla queda solo el link.
+
+const IMG_MAX_BYTES = 5 * 1024 * 1024;
+const IMG_TIPOS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+function carpetaImagenes() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('IMG_FOLDER_ID');
+  if (id) {
+    try { return DriveApp.getFolderById(id); } catch (e) { /* la borraron: se crea otra */ }
+  }
+  const folder = DriveApp.createFolder('PrincessLov - Fotos de productos');
+  try { folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  props.setProperty('IMG_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+/** Verifica por contenido (no por nombre) que sea JPG, PNG o WEBP */
+function tipoRealImagen(bytes) {
+  const b = function (i) { return bytes[i] & 0xff; };
+  if (bytes.length < 12) return null;
+  if (b(0) === 0xff && b(1) === 0xd8 && b(2) === 0xff) return 'image/jpeg';
+  if (b(0) === 0x89 && b(1) === 0x50 && b(2) === 0x4e && b(3) === 0x47) return 'image/png';
+  if (b(0) === 0x52 && b(1) === 0x49 && b(2) === 0x46 && b(3) === 0x46 &&
+      b(8) === 0x57 && b(9) === 0x45 && b(10) === 0x42 && b(11) === 0x50) return 'image/webp';
+  return null;
+}
+
+function uploadImage(img) {
+  if (!img || typeof img.data !== 'string') return { error: 'Foto inválida' };
+  let bytes;
+  try {
+    bytes = Utilities.base64Decode(img.data.replace(/^data:[^,]*,/, ''));
+  } catch (e) {
+    return { error: 'La foto llegó dañada' };
+  }
+  if (!bytes.length || bytes.length > IMG_MAX_BYTES) return { error: 'La foto pesa demasiado (máx. 5 MB)' };
+  const tipo = tipoRealImagen(bytes);
+  if (!tipo) return { error: 'Formato no soportado (usá JPG, PNG o WEBP)' };
+
+  const base = String(img.name || 'producto').replace(/\.[^.]*$/, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'producto';
+  const nombre = base + '-' + Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'yyyyMMdd-HHmmss') +
+    '.' + IMG_TIPOS[tipo];
+
+  const file = carpetaImagenes().createFile(Utilities.newBlob(bytes, tipo, nombre));
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return { success: true, id: file.getId(), url: 'https://lh3.googleusercontent.com/d/' + file.getId() };
+}
+
+// Ejecutar UNA vez después de pegar esta versión: pide el permiso de Google
+// Drive y crea la carpeta de fotos. En el registro aparece el link a la carpeta.
+function autorizarDrive() {
+  const folder = carpetaImagenes();
+  Logger.log('Carpeta de fotos: ' + folder.getUrl());
+  return { success: true, carpeta: folder.getUrl() };
 }
 
 // Ejecutar una vez para crear hojas si no existen
