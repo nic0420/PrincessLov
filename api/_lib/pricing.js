@@ -20,7 +20,7 @@ const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 export function normalizePromos(cfg) {
   return {
-    envioGratisUmbralARS: num(cfg?.envioGratisUmbralARS) || 150000,
+    envioGratisUmbralARS: (cfg?.envioGratisUmbralARS === '' || cfg?.envioGratisUmbralARS == null) ? 150000 : Math.max(0, num(cfg.envioGratisUmbralARS)),
     cupones: arr(cfg?.cupones).map((c) => ({
       id: String(c.id || 'cup_' + String(c.codigo || '').toLowerCase()),
       codigo: String(c.codigo || '').toUpperCase().trim(),

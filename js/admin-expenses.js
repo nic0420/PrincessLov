@@ -3,7 +3,7 @@
    ============================================ */
 
 const AdminExpenses = {
-  esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
+  esc(s) { return escHtml(s); },
 
   render() {
     this.renderList();
@@ -46,7 +46,7 @@ const AdminExpenses = {
               </div>
             </div>
             <strong style="color:#EF4444; font-size:0.95rem;">-${AdminData.formatARS(e.monto)}</strong>
-            <button class="btn btn-sm btn-danger" onclick="AdminExpenses.delete('${e.id}')">🗑️</button>
+            <button class="btn btn-sm btn-danger" onclick="AdminExpenses.delete('${escJsAttr(e.id)}')" aria-label="Eliminar gasto">🗑️</button>
           </div>
         `).join('')}
       </div>

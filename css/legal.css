@@ -1,0 +1,35 @@
+/* Páginas legales (términos, privacidad, arrepentimiento) */
+:root { --burgundy: #800020; --texto: #3d2b24; --muted: #7a6560; --borde: #f0e8e4; --fondo: #FDF8F6; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--texto); background: var(--fondo); line-height: 1.7; font-size: 15px; }
+.legal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; background: #fff; border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 5; }
+.legal-header a { color: var(--burgundy); text-decoration: none; font-weight: 600; font-size: 14px; }
+.legal-brand { display: flex; align-items: center; gap: 10px; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; letter-spacing: .08em; color: var(--texto) !important; }
+.legal-brand img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+main { max-width: 780px; margin: 0 auto; padding: 32px 20px 64px; }
+h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: clamp(30px, 6vw, 42px); color: var(--burgundy); margin: 0 0 4px; line-height: 1.15; }
+h2 { font-size: 17px; margin: 32px 0 8px; color: var(--burgundy); }
+.legal-updated { color: var(--muted); font-size: 13px; margin: 0 0 24px; }
+.legal-toc { background: #fff; border: 1px solid var(--borde); padding: 12px 20px; font-size: 14px; }
+.legal-toc ol { margin: 0; padding-left: 20px; }
+a { color: var(--burgundy); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; background: #fff; }
+th, td { border: 1px solid var(--borde); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f9f5f3; }
+.legal-note { background: #fff; border-left: 3px solid var(--burgundy); padding: 12px 16px; font-size: 14px; }
+.completar { background: #FEF3C7; padding: 0 4px; }
+.legal-footer { text-align: center; font-size: 12px; color: var(--muted); padding: 24px 16px; border-top: 1px solid var(--borde); }
+.legal-footer a { margin: 0 8px; }
+/* Formulario de arrepentimiento */
+.form-arr { background: #fff; border: 1px solid var(--borde); padding: 20px; margin-top: 16px; }
+.form-arr label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--burgundy); margin: 14px 0 6px; }
+.form-arr label small { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); }
+.form-arr input, .form-arr textarea { width: 100%; padding: 10px 12px; font: inherit; font-size: 15px; border: 1px solid #d8ccc7; border-radius: 2px; background: #fff; color: var(--texto); }
+.form-arr input:focus, .form-arr textarea:focus { outline: 2px solid var(--burgundy); outline-offset: 1px; }
+.form-arr button { margin-top: 20px; width: 100%; padding: 14px; font: inherit; font-weight: 600; font-size: 15px; background: var(--burgundy); color: #fff; border: 0; cursor: pointer; }
+.form-arr button:hover { background: #6B0F2A; }
+.form-arr__msg { margin-top: 12px; font-weight: 500; }
+.form-arr__msg--ok { color: #166534; }
+.form-arr__msg--err { color: #991b1b; }
+.codigo { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 18px; background: #F5EDEB; padding: 4px 10px; letter-spacing: .05em; }
+.hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
