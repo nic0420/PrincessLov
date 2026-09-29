@@ -113,6 +113,9 @@ function doPost(e) {
       case 'delete_product':
         result = deleteProduct(data.id);
         break;
+      case 'upload_image':
+        result = uploadImage(data.image, data.filename, data.mimeType);
+        break;
       case 'create_order':
         result = createOrder(data.order);
         break;
@@ -151,9 +154,11 @@ function doPost(e) {
 // ============================================
 
 function jsonResponse(data, status = 200) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentType.JSON)
-    .setHeaders({ 'Access-Control-Allow-Origin': '*' });
+  const output = ContentService.createTextOutput(JSON.stringify(data));
+  try {
+    output.setMimeType(ContentService.MimeType.JSON);
+  } catch (e) {}
+  return output;
 }
 
 function getSheet(name) {
@@ -286,6 +291,60 @@ function deleteProduct(id) {
   
   sheet.deleteRow(idx + 2);
   return { success: true };
+}
+
+// ============================================
+// SUBIDA DE IMÁGENES A GOOGLE DRIVE
+// ============================================
+
+function uploadImage(base64Data, filename, mimeType) {
+  if (!base64Data) {
+    return { error: 'No se recibieron datos de imagen' };
+  }
+
+  try {
+    // Carpeta en Google Drive donde guardar las fotos de PrincessLov
+    const folderName = 'PrincessLov_Imagenes';
+    const folders = DriveApp.getFoldersByName(folderName);
+    let folder;
+    if (folders.hasNext()) {
+      folder = folders.next();
+    } else {
+      folder = DriveApp.createFolder(folderName);
+    }
+
+    let pureBase64 = base64Data;
+    let type = mimeType || 'image/jpeg';
+    if (base64Data.indexOf(';base64,') !== -1) {
+      const parts = base64Data.split(';base64,');
+      type = parts[0].replace('data:', '') || type;
+      pureBase64 = parts[1];
+    }
+
+    const decoded = Utilities.base64Decode(pureBase64);
+    let ext = '.jpg';
+    if (type.indexOf('png') !== -1) ext = '.png';
+    else if (type.indexOf('webp') !== -1) ext = '.webp';
+    else if (type.indexOf('gif') !== -1) ext = '.gif';
+
+    const cleanName = (filename || ('prod_' + Date.now())).replace(/\.[^/.]+$/, '') + ext;
+    const blob = Utilities.newBlob(decoded, type, cleanName);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    const fileId = file.getId();
+    // CDN directo de Google UserContent para imágenes públicas de Drive
+    const directUrl = 'https://lh3.googleusercontent.com/d/' + fileId;
+
+    return {
+      success: true,
+      fileId: fileId,
+      url: directUrl,
+      name: cleanName
+    };
+  } catch (err) {
+    return { error: 'Error al guardar imagen en Drive: ' + err.toString() };
+  }
 }
 
 // ============================================

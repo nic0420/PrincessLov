@@ -9,12 +9,15 @@ const AdminProducts = {
   galleryRowId: 0,
   specRowId: 0,
   currentEditId: null,
+  images: [],
+  _imageUploadInitialized: false,
 
   esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; },
 
   render() {
     this.populateCategories();
     this.initTabs();
+    this.initImageUpload();
     this.renderTable();
   },
 
@@ -47,15 +50,370 @@ const AdminProducts = {
         tab.setAttribute('aria-selected', 'true');
         const tabId = tab.dataset.tab;
         document.querySelectorAll('.form-tab-panel').forEach(p => p.classList.remove('active'));
-        document.getElementById('tab-' + tabId).classList.add('active');
+        const panel = document.getElementById('tab-' + tabId);
+        if (panel) panel.classList.add('active');
       });
     });
 
-    // Live preview for main image
     const imgInput = document.getElementById('pf-imagen');
     if (imgInput) {
       imgInput.addEventListener('input', () => this.updateImagePreview(imgInput.value));
     }
+  },
+
+  initImageUpload() {
+    if (this._imageUploadInitialized) return;
+    this._imageUploadInitialized = true;
+
+    const zone = document.getElementById('pf-upload-zone');
+    const fileInput = document.getElementById('pf-file-input');
+    const urlInput = document.getElementById('pf-url-input');
+
+    if (zone && fileInput) {
+      zone.addEventListener('click', (e) => {
+        if (e.target !== fileInput) {
+          fileInput.click();
+        }
+      });
+
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+      });
+
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('dragover');
+      });
+
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          this.handleImageFiles(e.dataTransfer.files);
+        }
+      });
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+          this.handleImageFiles(fileInput.files);
+          fileInput.value = '';
+        }
+      });
+    }
+
+    if (urlInput) {
+      urlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.addImageFromUrlInput();
+        }
+      });
+    }
+
+    // Soporte para pegar imagen directa con Ctrl+V
+    document.addEventListener('paste', (e) => {
+      const modal = document.getElementById('product-modal');
+      if (!modal || !modal.classList.contains('open')) return;
+
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && activeEl.id !== 'pf-url-input') {
+        if (!e.clipboardData || !e.clipboardData.files || e.clipboardData.files.length === 0) {
+          return;
+        }
+      }
+
+      if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+        const imageFiles = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/'));
+        if (imageFiles.length > 0) {
+          e.preventDefault();
+          const imgTab = document.querySelector('#product-modal .form-tab[data-tab="imagenes"]');
+          if (imgTab && !imgTab.classList.contains('active')) imgTab.click();
+          this.handleImageFiles(imageFiles);
+          AdminApp.toast('Foto pegada desde el portapapeles');
+        }
+      }
+    });
+
+    this.updateDriveStatusBadge();
+  },
+
+  updateDriveStatusBadge() {
+    const badge = document.getElementById('pf-drive-badge');
+    const dot = document.getElementById('pf-drive-dot');
+    const label = document.getElementById('pf-drive-label');
+    if (!badge || !label) return;
+
+    const hasAppsScript = typeof SheetsService !== 'undefined' && 
+      SheetsService.appsScriptUrl && 
+      !SheetsService.appsScriptUrl.includes('TU_SCRIPT_ID');
+
+    if (hasAppsScript) {
+      if (dot) dot.style.background = '#10B981';
+      label.textContent = 'Google Drive conectado';
+      badge.title = 'Las fotos que subas se guardarán automáticamente en tu Google Drive (carpeta PrincessLov_Imagenes)';
+    } else {
+      if (dot) dot.style.background = '#F43F5E';
+      label.textContent = 'Almacenamiento: Local (WebP optimizado)';
+      badge.title = 'Al conectar tu Apps Script, las fotos se subirán a tu Google Drive automáticamente. Por ahora se optimizan en formato WebP liviano.';
+    }
+  },
+
+  compressImage(file, maxWidth = 1200, maxHeight = 1600, quality = 0.82) {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith('image/')) {
+        return reject(new Error('El archivo no es una imagen válida'));
+      }
+
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Error al leer el archivo'));
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Error al decodificar la imagen'));
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          let outputType = 'image/webp';
+          const testData = canvas.toDataURL('image/webp');
+          if (!testData.startsWith('data:image/webp')) {
+            outputType = 'image/jpeg';
+          }
+
+          const dataUrl = canvas.toDataURL(outputType, quality);
+          const byteLength = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
+          const sizeFormatted = byteLength < 1024 * 1024
+            ? `${(byteLength / 1024).toFixed(0)} KB`
+            : `${(byteLength / (1024 * 1024)).toFixed(1)} MB`;
+
+          resolve({
+            dataUrl,
+            sizeFormatted,
+            mimeType: outputType,
+            width,
+            height,
+            name: file.name
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
+  async handleImageFiles(fileList) {
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) {
+      AdminApp.toast('Por favor seleccioná archivos de imagen válidos (JPG, PNG, WebP)', 'error');
+      return;
+    }
+
+    const spinner = document.getElementById('pf-upload-spinner');
+    const spinnerText = document.getElementById('pf-upload-spinner-text');
+    if (spinner) spinner.style.display = 'flex';
+
+    const hasAppsScript = typeof SheetsService !== 'undefined' && 
+      SheetsService.appsScriptUrl && 
+      !SheetsService.appsScriptUrl.includes('TU_SCRIPT_ID');
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (spinnerText) {
+        spinnerText.textContent = `Optimizando foto ${i + 1} de ${files.length}...`;
+      }
+
+      try {
+        const compressed = await this.compressImage(file);
+        const imageItem = {
+          url: compressed.dataUrl,
+          name: file.name,
+          size: compressed.sizeFormatted,
+          mimeType: compressed.mimeType,
+          status: hasAppsScript ? 'uploading' : 'ready',
+          isDrive: false
+        };
+
+        this.images.push(imageItem);
+        this.renderImagesGrid();
+
+        if (hasAppsScript) {
+          if (spinnerText) spinnerText.textContent = `Guardando foto ${i + 1} en tu Google Drive...`;
+          await this.uploadImageToAppsScript(imageItem);
+        }
+      } catch (err) {
+        console.error('[AdminProducts] Error procesando imagen:', err);
+        AdminApp.toast(`Error con ${file.name}: ${err.message}`, 'error');
+      }
+    }
+
+    if (spinner) spinner.style.display = 'none';
+    this.renderImagesGrid();
+    AdminApp.toast(`${files.length === 1 ? 'Foto procesada' : files.length + ' fotos procesadas'} con éxito`);
+  },
+
+  async uploadImageToAppsScript(imgItem) {
+    try {
+      const res = await SheetsService.postToAppsScript('upload_image', {
+        image: imgItem.url,
+        filename: imgItem.name || `prod_${Date.now()}`,
+        mimeType: imgItem.mimeType || 'image/jpeg'
+      });
+
+      if (res && res.url) {
+        imgItem.url = res.url;
+        imgItem.status = 'ready';
+        imgItem.isDrive = true;
+        this.renderImagesGrid();
+      } else {
+        imgItem.status = 'ready';
+      }
+    } catch (err) {
+      console.warn('[AdminProducts] No se pudo subir a Drive, se conserva versión optimizada:', err);
+      imgItem.status = 'ready';
+      this.renderImagesGrid();
+    }
+  },
+
+  normalizeImageUrl(url) {
+    if (!url) return '';
+    let clean = url.trim();
+
+    // Detección automática de enlaces compartidos de Google Drive:
+    // https://drive.google.com/file/d/1XyZ.../view?usp=sharing
+    // https://drive.google.com/open?id=1XyZ...
+    const gDriveMatch = clean.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || 
+                        clean.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (gDriveMatch && gDriveMatch[1]) {
+      return `https://lh3.googleusercontent.com/d/${gDriveMatch[1]}`;
+    }
+
+    // Dropbox: dl=0 -> raw=1
+    if (clean.includes('dropbox.com')) {
+      return clean.replace(/[?&]dl=0/, '?raw=1').replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+    }
+
+    // Imgur página a link directo
+    const imgurMatch = clean.match(/^https?:\/\/(?:www\.)?imgur\.com\/([a-zA-Z0-9]+)$/);
+    if (imgurMatch && imgurMatch[1]) {
+      return `https://i.imgur.com/${imgurMatch[1]}.jpg`;
+    }
+
+    return clean;
+  },
+
+  addImageFromUrlInput() {
+    const input = document.getElementById('pf-url-input');
+    if (!input) return;
+    const rawUrl = input.value.trim();
+    if (!rawUrl) {
+      AdminApp.toast('Por favor pegá una URL de imagen válida', 'error');
+      return;
+    }
+
+    const normalized = this.normalizeImageUrl(rawUrl);
+    const isDrive = normalized.includes('googleusercontent.com');
+
+    this.images.push({
+      url: normalized,
+      name: isDrive ? 'Google Drive' : 'Enlace web',
+      size: 'URL externa',
+      status: 'ready',
+      isDrive: isDrive
+    });
+
+    input.value = '';
+    this.renderImagesGrid();
+    AdminApp.toast('Foto agregada correctamente');
+  },
+
+  renderImagesGrid() {
+    const countEl = document.getElementById('pf-images-count');
+    const grid = document.getElementById('pf-images-grid');
+    const mainInput = document.getElementById('pf-imagen');
+
+    if (countEl) countEl.textContent = this.images.length;
+    if (mainInput) mainInput.value = this.images[0]?.url || '';
+
+    this.updateImagePreview(this.images[0]?.url || '');
+
+    if (!grid) return;
+
+    if (this.images.length === 0) {
+      grid.innerHTML = `
+        <div class="gallery-empty-state">
+          <div style="font-size:2.2rem; margin-bottom:0.5rem;">🖼️</div>
+          <div style="font-weight:600; color:var(--texto); margin-bottom:0.25rem;">No hay fotos cargadas aún</div>
+          <div style="font-size:0.8rem; color:var(--texto-secundario);">Arrastrá fotos a la zona de arriba o hacé clic para seleccionar desde tu dispositivo.</div>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = this.images.map((img, idx) => {
+      const isMain = idx === 0;
+      const isDrive = img.isDrive || (img.url && img.url.includes('googleusercontent.com'));
+      const isUploading = img.status === 'uploading';
+
+      return `
+        <div class="gallery-card ${isMain ? 'is-main' : ''}" data-idx="${idx}">
+          <div class="gallery-card__thumb">
+            <img src="${this.esc(img.url)}" alt="Foto ${idx + 1}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22130%22><rect width=%22100%22 height=%22130%22 fill=%22%23FEE2E2%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23DC2626%22 font-size=%2210%22>Error de carga</text></svg>'">
+            ${isMain ? '<span class="gallery-badge-main">⭐ Principal</span>' : ''}
+            ${isDrive ? '<span class="gallery-badge-drive" title="Guardada en Google Drive">☁️ Drive</span>' : ''}
+            ${isUploading ? '<div class="gallery-card__uploading"><div class="spinner-sm"></div> <span>Subiendo...</span></div>' : ''}
+          </div>
+          <div class="gallery-card__footer">
+            <div class="gallery-card__meta">
+              <span title="${this.esc(img.name || '')}">${this.esc((img.name || 'Foto ' + (idx + 1)).slice(0, 14))}</span>
+              <span>${this.esc(img.size || '')}</span>
+            </div>
+            <div class="gallery-card__btns">
+              ${!isMain ? `<button type="button" class="btn-set-main" onclick="AdminProducts.makeImageMain(${idx})">⭐ Portada</button>` : '<span class="main-tag">Portada</span>'}
+              <div style="display:flex; gap:2px;">
+                ${idx > 0 ? `<button type="button" class="btn-gallery-nav" title="Mover izquierda" onclick="AdminProducts.moveImage(${idx}, -1)">◀</button>` : ''}
+                ${idx < this.images.length - 1 ? `<button type="button" class="btn-gallery-nav" title="Mover derecha" onclick="AdminProducts.moveImage(${idx}, 1)">▶</button>` : ''}
+                <button type="button" class="btn-gallery-del" title="Eliminar foto" onclick="AdminProducts.removeImage(${idx})">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  makeImageMain(index) {
+    if (index <= 0 || index >= this.images.length) return;
+    const [item] = this.images.splice(index, 1);
+    this.images.unshift(item);
+    this.renderImagesGrid();
+    AdminApp.toast('Foto seleccionada como principal ⭐');
+  },
+
+  moveImage(index, dir) {
+    const newIdx = index + dir;
+    if (newIdx < 0 || newIdx >= this.images.length) return;
+    const temp = this.images[index];
+    this.images[index] = this.images[newIdx];
+    this.images[newIdx] = temp;
+    this.renderImagesGrid();
+  },
+
+  removeImage(index) {
+    if (index < 0 || index >= this.images.length) return;
+    this.images.splice(index, 1);
+    this.renderImagesGrid();
+    AdminApp.toast('Foto eliminada');
   },
 
   updateImagePreview(url) {
@@ -170,6 +528,8 @@ const AdminProducts = {
     const modal = document.getElementById('product-modal');
     const title = document.getElementById('product-modal-title');
 
+    this.resetForm();
+
     if (id) {
       const p = AdminData.getProduct(id);
       if (!p) return;
@@ -201,14 +561,17 @@ const AdminProducts = {
     
     // Clear dynamic sections
     document.getElementById('variantes-container').innerHTML = '';
-    document.getElementById('gallery-container').innerHTML = '';
+    const gc = document.getElementById('gallery-container');
+    if (gc) gc.innerHTML = '';
     document.getElementById('specs-container').innerHTML = '';
     
     this.variantRowId = 0;
     this.galleryRowId = 0;
     this.specRowId = 0;
     
-    this.updateImagePreview('');
+    this.images = [];
+    this.renderImagesGrid();
+    this.updateDriveStatusBadge();
   },
 
   fillForm(p) {
@@ -235,19 +598,41 @@ const AdminProducts = {
     document.getElementById('pf-seo-title').value = p.seoTitle || '';
     document.getElementById('pf-seo-desc').value = p.seoDesc || '';
 
-    this.updateImagePreview(p.imagen);
-
     // Variantes
     const variantesContainer = document.getElementById('variantes-container');
     if (p.variantes && p.variantes.length > 0) {
       p.variantes.forEach(v => this.addVariantRow(v));
     }
 
-    // Galería
-    const galleryContainer = document.getElementById('gallery-container');
-    if (p.galeria && p.galeria.length > 0) {
-      p.galeria.forEach(g => this.addGalleryRow(g));
+    // Galería e Imágenes
+    this.images = [];
+    if (p.imagen) {
+      const isDrive = p.imagen.includes('googleusercontent.com');
+      this.images.push({
+        url: p.imagen,
+        name: 'Principal',
+        size: isDrive ? 'Google Drive' : 'Guardada',
+        status: 'ready',
+        isDrive: isDrive
+      });
     }
+    if (p.galeria && Array.isArray(p.galeria)) {
+      p.galeria.forEach((g, i) => {
+        const u = typeof g === 'string' ? g : (g && g.url ? g.url : '');
+        if (u) {
+          const isDrive = u.includes('googleusercontent.com');
+          this.images.push({
+            url: u,
+            name: `Foto ${i + 2}`,
+            size: isDrive ? 'Google Drive' : 'Guardada',
+            status: 'ready',
+            isDrive: isDrive
+          });
+        }
+      });
+    }
+    this.renderImagesGrid();
+    this.updateDriveStatusBadge();
 
     // Características
     const specsContainer = document.getElementById('specs-container');
@@ -293,19 +678,19 @@ const AdminProducts = {
 
   // ========== GALERÍA ==========
   addGalleryRow(image = {}) {
-    this.galleryRowId++;
-    const container = document.getElementById('gallery-container');
-    const row = document.createElement('div');
-    row.className = 'gallery-row';
-    row.dataset.id = this.galleryRowId;
-    row.innerHTML = `
-      <div class="form-group">
-        <label>URL Imagen galería</label>
-        <input type="url" class="gallery-url" placeholder="https://...jpg" value="${image.url || ''}">
-      </div>
-      <button type="button" class="gallery-remove" onclick="this.closest('.gallery-row').remove()" title="Eliminar">✕</button>
-    `;
-    container.appendChild(row);
+    const url = typeof image === 'string' ? image : (image && image.url ? image.url : '');
+    if (url) {
+      const normalized = this.normalizeImageUrl(url);
+      const isDrive = normalized.includes('googleusercontent.com');
+      this.images.push({
+        url: normalized,
+        name: 'Galería',
+        size: isDrive ? 'Google Drive' : 'URL externa',
+        status: 'ready',
+        isDrive: isDrive
+      });
+      this.renderImagesGrid();
+    }
   },
 
   // ========== CARACTERÍSTICAS ==========
@@ -377,6 +762,14 @@ const AdminProducts = {
     const catId = document.getElementById('pf-categoria').value;
     const catConfig = CONFIG.categorias.find(c => c.id === catId);
 
+    // Validar al menos una imagen
+    if (!this.images || this.images.length === 0) {
+      AdminApp.toast('Por favor agregá al menos una foto para el producto', 'error');
+      const imgTab = document.querySelector('#product-modal .form-tab[data-tab="imagenes"]');
+      if (imgTab) imgTab.click();
+      return;
+    }
+
     // Collect variants
     const variantes = [];
     document.querySelectorAll('.variant-row').forEach(row => {
@@ -389,12 +782,8 @@ const AdminProducts = {
       }
     });
 
-    // Collect gallery
-    const galeria = [];
-    document.querySelectorAll('.gallery-row').forEach(row => {
-      const url = row.querySelector('.gallery-url')?.value?.trim();
-      if (url) galeria.push({ url });
-    });
+    // Collect gallery (fotos secundarias)
+    const galeria = this.images.slice(1).map(img => ({ url: img.url }));
 
     // Collect specs
     const caracteristicas = {};
@@ -421,7 +810,7 @@ const AdminProducts = {
       tags: document.getElementById('pf-tags').value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
       descripcion: document.getElementById('pf-descripcion').value.trim(),
       descripcionCorta: document.getElementById('pf-descripcion-corta').value.trim(),
-      imagen: document.getElementById('pf-imagen').value.trim(),
+      imagen: this.images[0].url,
       activo: document.getElementById('pf-activo').checked,
       destacado: document.getElementById('pf-destacado').checked,
       soloWeb: document.getElementById('pf-solo-web').checked,

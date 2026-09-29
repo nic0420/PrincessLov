@@ -766,23 +766,55 @@
         <!-- TAB 4: IMÁGENES -->
         <div class="form-tab-panel" id="tab-imagenes" role="tabpanel">
           <div class="form-section">
-            <h4>🖼️ Imagen Principal</h4>
-            <div class="form-group">
-              <label for="pf-imagen">URL imagen principal *</label>
-              <input type="url" id="pf-imagen" placeholder="https://...jpg" required>
-              <small class="form-hint">Imagen que se ve en la grilla y como primera en el detalle. Ratio recomendado 3:4 (ej: 600x800px)</small>
+            <div class="images-panel-header">
+              <div>
+                <h4 style="margin-bottom:0.25rem;">🖼️ Fotos del Producto</h4>
+                <p class="form-hint" style="margin-bottom:0;">Cargá fotos desde tu computadora/celular o pegá enlaces web. La primera foto será la <strong>Principal</strong> (portada y catálogo).</p>
+              </div>
+              <div class="drive-status-badge" id="pf-drive-badge" title="Estado de almacenamiento">
+                <span class="drive-status-dot" id="pf-drive-dot"></span>
+                <span id="pf-drive-label">Almacenamiento: Local (WebP)</span>
+              </div>
             </div>
-            <div id="pf-imagen-preview" class="image-preview" style="display:none;">
-              <img id="pf-imagen-preview-img" src="" alt="Preview" style="max-width:200px; max-height:260px; border-radius:4px; border:1px solid var(--border);">
+
+            <!-- ZONA DE CARGA (DRAG & DROP + INPUT ARCHIVO) -->
+            <div class="img-upload-dropzone" id="pf-upload-zone">
+              <input type="file" id="pf-file-input" accept="image/*" multiple style="display:none;">
+              <div class="dropzone-body">
+                <div class="dropzone-icon">📸</div>
+                <div class="dropzone-title">Arrastrá tus fotos acá o <span class="dropzone-highlight">hacé clic para seleccionar</span></div>
+                <div class="dropzone-subtitle">Soporta JPG, PNG, WEBP y fotos de celular. Podés elegir varias juntas o pegar directo con <kbd>Ctrl+V</kbd>.</div>
+              </div>
+              <div class="dropzone-overlay" id="pf-upload-spinner" style="display:none;">
+                <div class="spinner"></div>
+                <span id="pf-upload-spinner-text">Optimizando imágenes...</span>
+              </div>
             </div>
-          </div>
-          <div class="form-section">
-            <h4>📸 Galería Adicional (hasta 8 imágenes)</h4>
-            <div id="gallery-container">
-              <!-- Filas dinámicas -->
+
+            <!-- BARRA ALTERNATIVA DE URL -->
+            <div class="img-url-section">
+              <div class="img-url-input-wrap">
+                <input type="text" id="pf-url-input" placeholder="O pegar enlace web (Google Drive, Dropbox, Imgur, URL directa)...">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="AdminProducts.addImageFromUrlInput()">+ Agregar enlace</button>
+              </div>
+              <small class="form-hint" style="margin-top:0.35rem; display:block;">💡 Los enlaces de Google Drive compartidos se convierten automáticamente al formato directo de imagen.</small>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="AdminProducts.addGalleryRow()">+ Agregar imagen a galería</button>
-            <p class="form-hint" style="margin-top:0.5rem;">Estas imágenes se ven en el carrusel del detalle del producto. La primera de la galería es la segunda imagen del producto.</p>
+
+            <!-- CUADRÍCULA VISUAL DE FOTOS -->
+            <div class="product-gallery-view">
+              <div class="gallery-view-header">
+                <span class="gallery-count">Fotos cargadas: <strong id="pf-images-count">0</strong></span>
+                <span class="gallery-legend">⭐ La primera foto es la que se ve en la tienda</span>
+              </div>
+              <div class="product-gallery-grid" id="pf-images-grid">
+                <!-- Se inyectan las tarjetas de fotos -->
+              </div>
+            </div>
+
+            <!-- Elementos auxiliares para retrocompatibilidad -->
+            <input type="text" id="pf-imagen" style="display:none;">
+            <div id="pf-imagen-preview" style="display:none;"><img id="pf-imagen-preview-img" src="" alt=""></div>
+            <div id="gallery-container" style="display:none;"></div>
           </div>
         </div>
 
