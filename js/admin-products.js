@@ -3,6 +3,37 @@
    ============================================ */
 
 const AdminProducts = {
+  /**
+   * Interpreta un precio en pesos como lo escribe alguien en Argentina:
+   * "16000", "16.000", "$16.000", "16.000,50", "16 000" → 16000 (redondeado).
+   * Antes el campo era type="number" y "16.000" se guardaba como 16.
+   */
+  parseARS(valor) {
+    let t = String(valor ?? '').trim().replace(/[$\s]|ARS/gi, '');
+    if (!t) return null;
+    if (t.includes(',')) {
+      t = t.replace(/\./g, '').replace(',', '.');      // 16.000,50 → 16000.50
+    } else if (/^\d{1,3}(\.\d{3})+$/.test(t)) {
+      t = t.replace(/\./g, '');                         // 16.000 / 1.250.000
+    }
+    const n = Number(t);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+  },
+
+  formatInputARS(n) {
+    return n ? new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(n) : '';
+  },
+
+  /** Muestra debajo del campo cómo va a quedar el precio en la tienda */
+  updateARSPreview(input) {
+    const prev = document.querySelector(`.ars-preview[data-for="${input.id}"]`);
+    if (!prev) return;
+    const raw = input.value.trim();
+    const n = this.parseARS(raw);
+    prev.classList.toggle('ars-preview--error', !!raw && !n);
+    prev.textContent = !raw ? '' : (n ? `En la tienda se ve: ${AdminData.formatARS(n)}` : 'Número no válido');
+  },
+
   searchQuery: '',
   filterCategory: '',
   variantRowId: 0,
@@ -56,6 +87,11 @@ const AdminProducts = {
 
     // Live preview for main image
     const imgInput = document.getElementById('pf-imagen');
+    document.querySelectorAll('#product-modal .input-ars').forEach(inp => {
+      if (inp.dataset.arsBound) return;
+      inp.dataset.arsBound = '1';
+      inp.addEventListener('input', () => this.updateARSPreview(inp));
+    });
     if (imgInput) {
       imgInput.addEventListener('input', () => this.updateImagePreview(imgInput.value));
       if (typeof AdminImages !== 'undefined') AdminImages.attach(imgInput);
@@ -222,8 +258,9 @@ const AdminProducts = {
     document.getElementById('pf-subcategoria').value = p.subcategoria || '';
     document.getElementById('pf-sku').value = p.sku || '';
     document.getElementById('pf-preciousd').value = p.precioUSD || 0;
-    document.getElementById('pf-precio-ars-manual').value = p.precioARSManual || '';
-    document.getElementById('pf-precio-oferta').value = p.precioOferta || '';
+    document.getElementById('pf-precio-ars-manual').value = this.formatInputARS(p.precioARSManual);
+    document.getElementById('pf-precio-oferta').value = this.formatInputARS(p.precioOferta);
+    document.querySelectorAll('#product-modal .input-ars').forEach(i => this.updateARSPreview(i));
     document.getElementById('pf-margen-personalizado').value = p.margenPersonalizado || '';
     document.getElementById('pf-stock').value = p.stock || 0;
     document.getElementById('pf-stock-min').value = p.stockMin || 5;
@@ -419,7 +456,17 @@ const AdminProducts = {
     if (!nombre) { irATab('basico'); AdminApp.toast('El producto necesita un nombre', 'error'); return; }
     if (!catId) { irATab('basico'); AdminApp.toast('Elegí una categoría', 'error'); return; }
     const precioUSD = parseFloat(document.getElementById('pf-preciousd').value);
-    const precioManual = parseFloat(document.getElementById('pf-precio-ars-manual').value);
+    const precioManual = this.parseARS(document.getElementById('pf-precio-ars-manual').value);
+    const precioOfertaVal = this.parseARS(document.getElementById('pf-precio-oferta').value);
+    for (const id of ['pf-precio-ars-manual', 'pf-precio-oferta']) {
+      const el = document.getElementById(id);
+      if (el.value.trim() && !this.parseARS(el.value)) {
+        irATab('precios');
+        el.focus();
+        AdminApp.toast('Revisá el precio en pesos: escribilo como 16000 o 16.000', 'error');
+        return;
+      }
+    }
     if (!(precioUSD > 0) && !(precioManual > 0)) { irATab('precios'); AdminApp.toast('Cargá el precio (USD o precio manual en pesos)', 'error'); return; }
     if (imagen && !/^(https:\/\/|assets\/|data:image\/)/.test(imagen)) {
       irATab('imagenes');
@@ -437,8 +484,8 @@ const AdminProducts = {
       subcategoria: document.getElementById('pf-subcategoria').value.trim(),
       sku: document.getElementById('pf-sku').value.trim(),
       precioUSD: parseFloat(document.getElementById('pf-preciousd').value) || 0,
-      precioARSManual: document.getElementById('pf-precio-ars-manual').value ? parseFloat(document.getElementById('pf-precio-ars-manual').value) : null,
-      precioOferta: document.getElementById('pf-precio-oferta').value ? parseFloat(document.getElementById('pf-precio-oferta').value) : null,
+      precioARSManual: precioManual,
+      precioOferta: precioOfertaVal,
       margenPersonalizado: document.getElementById('pf-margen-personalizado').value ? parseFloat(document.getElementById('pf-margen-personalizado').value) / 100 : null,
       stock: variantes.length ? stockVariantes : (parseInt(document.getElementById('pf-stock').value) || 0),
       stockMin: parseInt(document.getElementById('pf-stock-min').value) || 5,

@@ -3479,3 +3479,8 @@ details.tech-box > summary { cursor: pointer; font-weight: 700; color: var(--bor
 @media (max-width: 520px) {
   .img-upload { flex-direction: column; }
 }
+
+/* Vista previa del precio en pesos */
+.ars-preview { color: #15803d; font-weight: 600; }
+.ars-preview:empty { display: none; }
+.ars-preview--error { color: #b91c1c; }

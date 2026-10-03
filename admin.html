@@ -658,13 +658,15 @@
               </div>
               <div class="form-group">
                 <label for="pf-precio-ars-manual">Precio ARS manual (opcional)</label>
-                <input type="number" step="1" min="0" id="pf-precio-ars-manual" placeholder="Dejá vacío para auto">
-                <small class="form-hint">Si lo completás, este precio fija el valor final en pesos</small>
+                <input type="text" inputmode="numeric" autocomplete="off" id="pf-precio-ars-manual" class="input-ars" placeholder="Ej: 16.000 (vacío = automático)">
+                <small class="form-hint">Precio final en pesos. Podés escribirlo con o sin punto: 16000 o 16.000</small>
+                <small class="form-hint ars-preview" data-for="pf-precio-ars-manual"></small>
               </div>
               <div class="form-group">
                 <label for="pf-precio-oferta">Precio oferta ARS (opcional)</label>
-                <input type="number" step="1" min="0" id="pf-precio-oferta" placeholder="Precio con descuento">
+                <input type="text" inputmode="numeric" autocomplete="off" id="pf-precio-oferta" class="input-ars" placeholder="Ej: 12.500">
                 <small class="form-hint">Si completás, se muestra tachado el precio normal y este en destacado</small>
+                <small class="form-hint ars-preview" data-for="pf-precio-oferta"></small>
               </div>
               <div class="form-group">
                 <label for="pf-margen-personalizado">Margen personalizado %</label>
