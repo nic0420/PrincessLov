@@ -1332,19 +1332,31 @@ const App = {
   renderMegaMenu() {
     const nav = document.getElementById('mega-mujer'); if (!nav) return;
     const cats = (typeof AdminData !== 'undefined' && AdminData.getEffectiveCategorias) ? AdminData.getEffectiveCategorias() : (CONFIG.categorias || []);
-    const grouped = {};
-    cats.forEach(c => { if (c.id === 'todos') return; if (!grouped[c.grupo]) grouped[c.grupo] = []; grouped[c.grupo].push(c); });
-    const gruposOrden = Object.keys(grouped);
-    // Construir columnas por grupo (máx 2 columnas + promo)
+    // Agrupar sin distinguir mayúsculas ni espacios ("Lenceria" = "lenceria ").
+    // Antes solo se mostraban los 2 primeros grupos: el resto no aparecía nunca.
+    const grouped = new Map();
+    cats.forEach(c => {
+      if (c.id === 'todos') return;
+      const nombreGrupo = String(c.grupo || '').trim() || 'Otros';
+      const clave = nombreGrupo.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (!grouped.has(clave)) grouped.set(clave, { nombre: nombreGrupo, cats: [] });
+      grouped.get(clave).cats.push(c);
+    });
     let html = '';
-    gruposOrden.slice(0,2).forEach(grupo => {
+    grouped.forEach(({ nombre: grupo, cats: lista }) => {
       html += `<div class="mega-menu__col"><h4 class="mega-menu__heading">${escHtml(grupo)}</h4>`;
-      grouped[grupo].forEach(cat => { html += `<a href="#productos" class="mega-menu__link" onclick="App.filtrarCategoria('${escJsAttr(cat.id)}')">${cat.icon ? escHtml(cat.icon) + ' ' : ''}${escHtml(cat.nombre)}</a>`; });
+      lista.forEach(cat => {
+        // Una categoría que se llama igual que su grupo ("Pijamas" en "Pijamas") se muestra como "Ver todo"
+        const nombre = String(cat.nombre || '').trim();
+        const mismo = SheetsService.slugCategoria(nombre) === SheetsService.slugCategoria(grupo);
+        const texto = mismo ? 'Ver todo' : (cat.icon ? escHtml(cat.icon) + ' ' : '') + escHtml(nombre);
+        html += `<a href="#productos" class="mega-menu__link${mismo ? ' mega-menu__link--all' : ''}" onclick="App.filtrarCategoria('${escJsAttr(cat.id)}')">${texto}</a>`;
+      });
       html += `</div>`;
     });
     // Columna promo (ofertas u última)
-    const promoCat = cats.find(c=>c.id==='ofertas') || cats[cats.length-1];
-    if (promoCat) html += `<div class="mega-menu__col mega-menu__col--promo"><a href="#productos" class="mega-menu__promo" onclick="App.filtrarCategoria('${escJsAttr(promoCat.id)}')"><img src="assets/conjunto-deportivo-borgona.jpg" alt=""><span class="mega-menu__promo-label">${escHtml(promoCat.nombre)}</span></a></div>`;
+    const promoCat = cats.find(c => c.id === 'ofertas') || { id: 'todos', nombre: 'Ver todo' };
+    html += `<div class="mega-menu__col mega-menu__col--promo"><a href="#productos" class="mega-menu__promo" onclick="App.filtrarCategoria('${escJsAttr(promoCat.id)}')"><img src="assets/conjunto-deportivo-borgona.jpg" alt=""><span class="mega-menu__promo-label">${escHtml(promoCat.id === 'todos' ? 'Ver todo' : promoCat.nombre)}</span></a></div>`;
     nav.innerHTML = html;
   },
 

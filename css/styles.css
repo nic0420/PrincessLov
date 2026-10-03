@@ -254,9 +254,11 @@ input, select { font-family: inherit; font-size: inherit; }
   box-shadow: 0 20px 40px -20px rgba(61,43,36,0.15);
   padding: var(--sp-6) var(--sp-5);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--sp-8);
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--sp-6) var(--sp-8);
   max-width: 100vw;
+  max-height: calc(100vh - var(--header-h) - 16px);
+  overflow-y: auto;
   opacity: 0;
   visibility: hidden;
   transform: translateY(12px);
@@ -289,8 +291,10 @@ input, select { font-family: inherit; font-size: inherit; }
   transition: color var(--fast), padding-left var(--fast);
 }
 .mega-menu__link:hover { color: var(--primary); padding-left: 6px; }
+.mega-menu__link--all { font-weight: 600; color: var(--primary); }
 
 .mega-menu__col--promo { display: flex; justify-content: flex-end; }
+.mega-menu__col--promo .mega-menu__promo { max-width: 240px; }
 .mega-menu__promo {
   position: relative;
   width: 100%; max-width: 380px;

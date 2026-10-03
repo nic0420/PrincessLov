@@ -381,7 +381,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem;">
               <div>
                 <h3 style="margin:0;">📦 Categorías de la tienda</h3>
-                <p style="margin:0.25rem 0 0; color:var(--texto-secundario); font-size:0.85rem;">Cambiá nombre, emoji o grupo y se guarda solo. Con ↑ ↓ cambiás el orden en que aparecen.</p>
+                <p style="margin:0.25rem 0 0; color:var(--texto-secundario); font-size:0.85rem;">Cambiá nombre, emoji o grupo y se guarda solo. Con ↑ ↓ cambiás el orden. El <strong>grupo</strong> es el título de la columna en el menú "Colección": usá el mismo nombre para juntar categorías. Una categoría aparece en los filtros cuando tiene al menos un producto.</p>
               </div>
               <button class="btn btn-secondary" onclick="AdminContent.resetCats()">↺ Restaurar</button>
             </div>
@@ -393,8 +393,8 @@
             </div>
             <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem; align-items:end;">
               <div class="form-group" style="flex:1; min-width:160px;"><label>Nueva categoría — Nombre *</label><input type="text" id="new-cat-nombre" placeholder="Ej: Lencería Premium"></div>
-              <div class="form-group" style="width:90px;"><label>Emoji</label><input type="text" id="new-cat-icon" placeholder="🎀" maxlength="4"></div>
-              <div class="form-group" style="flex:1; min-width:160px;"><label>Grupo</label><input type="text" id="new-cat-grupo" placeholder="Ej: Lencería" list="grupos-list"><datalist id="grupos-list"><option value="Indumentaria Deportiva"><option value="Pijamas"><option value="Accesorios"><option value="Ofertas"><option value="General"></datalist></div>
+              <div class="form-group" style="width:110px;"><label>Emoji (opcional)</label><input type="text" id="new-cat-icon" placeholder="Ninguno" maxlength="8"></div>
+              <div class="form-group" style="flex:1; min-width:160px;"><label>Grupo</label><input type="text" id="new-cat-grupo" placeholder="Elegí uno de la lista o escribí uno nuevo" list="grupos-list"><datalist id="grupos-list"></datalist></div>
               <button class="btn btn-primary" onclick="AdminContent.addCat()">+ Agregar</button>
             </div>
           </div>

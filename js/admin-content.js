@@ -15,56 +15,120 @@ const AdminContent = {
   },
 
   /* ---------- CATEGORÍAS ---------- */
+  /** "  lenceria " → "lenceria" (sin espacios de más) */
+  limpio(v) { return String(v ?? '').replace(/\s+/g, ' ').trim(); },
+
+  claveGrupo(g) {
+    return this.limpio(g).toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  },
+
+  /** Grupos existentes sin repetir (ignora mayúsculas/espacios), para elegir de la lista */
+  gruposExistentes(cats) {
+    const vistos = new Map();
+    (cats || AdminData.getEffectiveCategorias()).forEach(c => {
+      const g = this.limpio(c.grupo);
+      if (g && !vistos.has(this.claveGrupo(g))) vistos.set(this.claveGrupo(g), g);
+    });
+    ['Indumentaria Deportiva', 'Pijamas', 'Lencería', 'Ofertas'].forEach(g => {
+      if (!vistos.has(this.claveGrupo(g))) vistos.set(this.claveGrupo(g), g);
+    });
+    return [...vistos.values()];
+  },
+
+  /** Si escriben "lenceria" y ya existe "Lenceria", usa el que ya existe */
+  unificarGrupo(valor, cats) {
+    const g = this.limpio(valor);
+    if (!g) return '';
+    const existente = this.gruposExistentes(cats).find(x => this.claveGrupo(x) === this.claveGrupo(g));
+    return existente || g;
+  },
+
+  conteoProductos() {
+    const n = {};
+    try { (AdminData.getProducts() || []).forEach(p => { if (p.categoria) n[p.categoria] = (n[p.categoria] || 0) + 1; }); } catch {}
+    return n;
+  },
+
   renderCategorias() {
     const cats = AdminData.getEffectiveCategorias();
     const tbody = document.getElementById('cats-tbody');
     if (!tbody) return;
-    tbody.innerHTML = cats.map(c => `
+    const conteo = this.conteoProductos();
+    const dl = document.getElementById('grupos-list');
+    if (dl) dl.innerHTML = this.gruposExistentes(cats).map(g => `<option value="${this.esc(g)}">`).join('');
+
+    tbody.innerHTML = cats.map(c => {
+      const esTodos = c.id === 'todos';
+      const n = conteo[c.id] || 0;
+      const estado = esTodos ? '<small style="color:var(--texto-secundario);">Muestra todo el catálogo</small>'
+        : n ? `<small style="color:#15803d;">✓ ${n} producto${n === 1 ? '' : 's'} · visible</small>`
+        : `<small style="color:#b45309;" title="Aparece en el menú Colección. En los filtros y el pie aparece cuando le cargues un producto.">⚠ Sin productos · solo en el menú</small>`;
+      return `
       <tr>
-        <td><input type="text" value="${this.esc(c.icon)}" data-id="${this.esc(c.id)}" data-field="icon" style="width:56px; text-align:center;" placeholder="👖" onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','icon',this.value)"></td>
-        <td><input type="text" value="${this.esc(c.nombre)}" data-id="${this.esc(c.id)}" data-field="nombre" style="width:100%;" onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','nombre',this.value)"></td>
-        <td><input type="text" value="${this.esc(c.id)}" style="width:100%; opacity:0.6;" disabled title="ID se genera del nombre"><br><small style="color:var(--texto-secundario);">${this.esc(c.id)}</small></td>
-        <td><input type="text" value="${this.esc(c.grupo)}" data-id="${this.esc(c.id)}" data-field="grupo" style="width:100%;" placeholder="Grupo" onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','grupo',this.value)"></td>
         <td style="white-space:nowrap;">
-          <button class="btn btn-xs btn-secondary" onclick="AdminContent.moveCat('${escJsAttr(c.id)}',-1)">↑</button>
-          <button class="btn btn-xs btn-secondary" onclick="AdminContent.moveCat('${escJsAttr(c.id)}',1)">↓</button>
-          <button class="btn btn-xs btn-ghost" style="color:var(--rojo-500);" onclick="AdminContent.removeCat('${escJsAttr(c.id)}')">✕</button>
+          <input type="text" value="${this.esc(c.icon)}" style="width:52px; text-align:center;" placeholder="—" maxlength="8"
+            aria-label="Emoji de ${this.esc(c.nombre)}" onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','icon',this.value)">
+          ${c.icon ? `<button type="button" class="btn btn-xs btn-ghost" title="Quitar emoji" onclick="AdminContent.updateCatField('${escJsAttr(c.id)}','icon','')">✕</button>` : ''}
         </td>
-      </tr>
-    `).join('');
+        <td><input type="text" value="${this.esc(c.nombre)}" style="width:100%;" onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','nombre',this.value)">
+          ${estado}</td>
+        <td><small style="color:var(--texto-secundario);" title="El ID no cambia aunque cambies el nombre: así los productos siguen en su categoría">${this.esc(c.id)}</small></td>
+        <td><input type="text" value="${this.esc(c.grupo)}" style="width:100%;" placeholder="Elegí un grupo" list="grupos-list" ${esTodos ? 'disabled' : ''}
+          onchange="AdminContent.updateCatField('${escJsAttr(c.id)}','grupo',this.value)"></td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-xs btn-secondary" title="Subir" onclick="AdminContent.moveCat('${escJsAttr(c.id)}',-1)">↑</button>
+          <button class="btn btn-xs btn-secondary" title="Bajar" onclick="AdminContent.moveCat('${escJsAttr(c.id)}',1)">↓</button>
+          ${esTodos ? '' : `<button class="btn btn-xs btn-ghost" style="color:var(--rojo-500);" title="Borrar" onclick="AdminContent.removeCat('${escJsAttr(c.id)}')">✕</button>`}
+        </td>
+      </tr>`;
+    }).join('');
   },
 
   updateCatField(id, field, value) {
-    const cats = AdminData.getEffectiveCategorias().map(c => c.id === id ? { ...c, [field]: value } : c);
-    AdminData.saveCategorias(cats);
-    AdminApp.toast('Categoría actualizada');
+    const cats = AdminData.getEffectiveCategorias();
+    let v = field === 'icon' ? String(value ?? '').trim() : this.limpio(value);
+    if (field === 'nombre' && !v) { AdminApp.toast('El nombre no puede quedar vacío', 'error'); this.renderCategorias(); return; }
+    if (field === 'grupo') v = this.unificarGrupo(v, cats.filter(c => c.id !== id));
+    AdminData.saveCategorias(cats.map(c => {
+      if (c.id !== id) return c;
+      const cambio = { ...c, [field]: v };
+      // Los productos guardan el nombre: el nombre viejo queda como alias
+      // para que sigan apareciendo en esta categoría.
+      if (field === 'nombre' && this.limpio(c.nombre) && this.limpio(c.nombre) !== v) {
+        cambio.alias = [...new Set([...(c.alias || []), this.limpio(c.nombre)])];
+      }
+      return cambio;
+    }));
+    AdminApp.toast(field === 'icon' && !v ? 'Emoji quitado' : 'Categoría actualizada');
     this.renderCategorias();
   },
 
   addCat() {
-    const nombre = document.getElementById('new-cat-nombre')?.value.trim();
-    const icon = document.getElementById('new-cat-icon')?.value.trim() || '📦';
-    const grupoEl = document.getElementById('new-cat-grupo');
-    const grupo = grupoEl?.value.trim() || 'General';
+    const nombre = this.limpio(document.getElementById('new-cat-nombre')?.value);
+    const icon = String(document.getElementById('new-cat-icon')?.value || '').trim();
+    const cats = AdminData.getEffectiveCategorias();
+    const grupo = this.unificarGrupo(document.getElementById('new-cat-grupo')?.value, cats) || 'Otros';
     if (!nombre) { AdminApp.toast('Poné un nombre', 'error'); return; }
     const id = nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     if (!id) { AdminApp.toast('Nombre inválido', 'error'); return; }
-    const cats = AdminData.getEffectiveCategorias();
-    if (cats.some(c=>c.id===id)) { AdminApp.toast('Ya existe una categoría con ese ID', 'error'); return; }
+    if (cats.some(c => c.id === id)) { AdminApp.toast('Ya existe una categoría con ese nombre', 'error'); return; }
+    const nueva = { id, nombre, icon, grupo };
     const todosIdx = cats.findIndex(c => c.id === 'todos');
-    if (todosIdx >= 0) cats.splice(todosIdx, 0, { id, nombre, icon, grupo }); else cats.push({ id, nombre, icon, grupo });
+    if (todosIdx >= 0) cats.splice(todosIdx, 0, nueva); else cats.push(nueva);
     AdminData.saveCategorias(cats);
     document.getElementById('new-cat-nombre').value = '';
     document.getElementById('new-cat-icon').value = '';
-    AdminApp.toast('Categoría agregada');
+    AdminApp.toast('Categoría agregada. Cargale productos para que aparezca en los filtros de la tienda.');
     this.renderCategorias();
   },
 
   removeCat(id) {
     if (id === 'todos') { AdminApp.toast('No se puede borrar "Todos"', 'error'); return; }
-    if (!confirm('¿Borrar categoría "'+id+'"? Los productos quedarán sin reasignar.')) return;
-    const cats = AdminData.getEffectiveCategorias().filter(c=>c.id!==id);
-    AdminData.saveCategorias(cats);
+    const cat = AdminData.getEffectiveCategorias().find(c => c.id === id);
+    const n = this.conteoProductos()[id] || 0;
+    const aviso = n ? `\n\nTiene ${n} producto${n === 1 ? '' : 's'}: van a dejar de aparecer en su categoría hasta que los pases a otra.` : '';
+    if (!confirm(`¿Borrar la categoría "${cat?.nombre || id}"?${aviso}`)) return;
+    AdminData.saveCategorias(AdminData.getEffectiveCategorias().filter(c => c.id !== id));
     this.renderCategorias();
   },
 
@@ -74,12 +138,8 @@ const AdminContent = {
     if (idx<0) return;
     const nIdx = idx + dir;
     if (nIdx <0 || nIdx >= cats.length) return;
-    // no mover "todos" del final? permitir pero mantenerlo último
-    if (cats[idx].id==='todos' || cats[nIdx].id==='todos') {
-      // mantener "todos" al final
-      if (cats[idx].id==='todos') return;
-      if (cats[nIdx].id==='todos' && dir===1) return;
-    }
+    // "Todos" queda siempre al final
+    if (cats[idx].id === 'todos' || cats[nIdx].id === 'todos') return;
     [cats[idx], cats[nIdx]] = [cats[nIdx], cats[idx]];
     AdminData.saveCategorias(cats);
     this.renderCategorias();

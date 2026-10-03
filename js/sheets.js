@@ -134,7 +134,7 @@ const SheetsService = {
       .map(p => ({
         id: p.ID || this.generarId(),
         nombre: p.Nombre || 'Sin nombre',
-        categoria: (p.Categoria || '').toLowerCase().replace(/\s+/g, '-'),
+        categoria: this.resolverCategoria(p.Categoria),
         categoriaOriginal: p.Categoria || '',
         subcategoria: p.Subcategoria || '',
         descripcion: p.Descripcion || '',
@@ -172,7 +172,7 @@ const SheetsService = {
       .map(p => ({
         id: p['ID'] || this.generarId(),
         nombre: p['Nombre'] || 'Sin nombre',
-        categoria: (p['Categoria'] || '').toLowerCase().replace(/\s+/g, '-'),
+        categoria: this.resolverCategoria(p['Categoria']),
         categoriaOriginal: p['Categoria'] || '',
         subcategoria: p['Subcategoria'] || '',
         descripcion: p['Descripcion'] || '',
@@ -375,6 +375,35 @@ const SheetsService = {
     return this.productos;
   },
 
+  /** "Colección Íntima" → "coleccion-intima" */
+  slugCategoria(v) {
+    return String(v ?? '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  },
+
+  /**
+   * La planilla guarda el NOMBRE de la categoría ("Calzas Largas"), no su ID.
+   * Antes el ID se sacaba del nombre, así que renombrar una categoría o usar
+   * tildes dejaba los productos fuera de su categoría. Ahora se busca por
+   * nombre actual, por ID y por nombres anteriores (alias).
+   */
+  resolverCategoria(valor) {
+    const key = this.slugCategoria(valor);
+    if (!key) return '';
+    const cats = this.obtenerTodasCategorias() || [];
+    const porNombre = cats.find(c => this.slugCategoria(c.nombre) === key);
+    if (porNombre) return porNombre.id;
+    const porId = cats.find(c => c.id === valor || this.slugCategoria(c.id) === key);
+    if (porId) return porId.id;
+    const porAlias = cats.find(c => Array.isArray(c.alias) && c.alias.some(a => this.slugCategoria(a) === key));
+    return porAlias ? porAlias.id : key;
+  },
+
+  /** Vuelve a ubicar los productos cuando llegan las categorías publicadas */
+  reasignarCategorias() {
+    (this.productos || []).forEach(p => { p.categoria = this.resolverCategoria(p.categoriaOriginal || p.categoria); });
+  },
+
   obtenerCategoriasConConteo() {
     const conteo = {};
     this.productos.forEach(p => {
@@ -554,6 +583,7 @@ const SheetsService = {
       const parse = (v) => { if (typeof v !== 'string') return v; try { return JSON.parse(v); } catch { return null; } };
       const cats = parse(remote.categorias);
       if (!local.categorias && Array.isArray(cats) && cats.length) CONFIG.categorias = cats;
+      this.reasignarCategorias();
       const cont = parse(remote.contenido);
       if (!local.contenido && cont && typeof cont === 'object') {
         const base = CONFIG.contenido || {};

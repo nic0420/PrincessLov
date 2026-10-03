@@ -216,6 +216,13 @@ const AdminSync = {
       try {
         const cats = parse(cfg.categorias);
         if (Array.isArray(cats) && cats.length) AdminData.saveCategorias(cats);
+        const prods = AdminData.getProducts();
+        let movidos = false;
+        prods.forEach(p => {
+          const id = SheetsService.resolverCategoria(p.categoriaOriginal || p.categoria);
+          if (id && id !== p.categoria) { p.categoria = id; movidos = true; }
+        });
+        if (movidos) AdminData.saveProducts(prods);
         const cont = parse(cfg.contenido);
         if (cont && typeof cont === 'object') AdminData.saveContenido(cont);
         const promos = parse(cfg.promos);
