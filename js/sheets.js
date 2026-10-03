@@ -199,12 +199,23 @@ const SheetsService = {
       }));
   },
 
+  /**
+   * Lee Galeria/Variantes/Caracteristicas de la planilla.
+   * Se guardaban codificadas DOS veces ('"[]"'): al leerlas quedaba el texto
+   * "[]" en vez de una lista, todos los productos parecían tener variantes
+   * (no se podían agregar al carrito) y la ficha fallaba al abrirse.
+   * Ahora decodifica hasta obtener el tipo correcto (sirve para filas viejas).
+   */
   parseJSONSafe(str, fallback) {
-    try {
-      return str ? JSON.parse(str) : fallback;
-    } catch {
-      return fallback;
+    let v = str;
+    for (let i = 0; i < 3 && typeof v === 'string'; i++) {
+      if (!v.trim()) return fallback;
+      try { v = JSON.parse(v); } catch { return fallback; }
     }
+    if (v == null) return fallback;
+    if (Array.isArray(fallback)) return Array.isArray(v) ? v : fallback;
+    if (fallback && typeof fallback === 'object') return (typeof v === 'object' && !Array.isArray(v)) ? v : fallback;
+    return v;
   },
 
   /**
@@ -506,9 +517,11 @@ const SheetsService = {
       dimensiones: p.dimensiones,
       tags: Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || ''),
       sku: p.sku || '',
-      galeria: JSON.stringify(p.galeria || []),
-      variantes: JSON.stringify(p.variantes || []),
-      caracteristicas: JSON.stringify(p.caracteristicas || {}),
+      // El Apps Script ya los convierte a texto: mandarlos como lista/objeto
+      // (antes se mandaban como texto y quedaban codificados dos veces)
+      galeria: Array.isArray(p.galeria) ? p.galeria : this.parseJSONSafe(p.galeria, []),
+      variantes: Array.isArray(p.variantes) ? p.variantes : this.parseJSONSafe(p.variantes, []),
+      caracteristicas: (p.caracteristicas && typeof p.caracteristicas === 'object') ? p.caracteristicas : this.parseJSONSafe(p.caracteristicas, {}),
       activo: p.activo,
       destacado: p.destacado,
       soloWeb: p.soloWeb,
